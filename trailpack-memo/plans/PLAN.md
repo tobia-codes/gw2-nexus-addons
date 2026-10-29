@@ -50,6 +50,8 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 - Note ids are globally unique (32 hex, random 128 bit, `IsNoteId`); `FromJson` migrates legacy
   counter ids (`00000000`, Magpie Memo) and `NotesWindow::Init` saves right after loading so ids
   stay stable.
+- Import / "Export all" live in a menu behind the square hamburger button next to "Create New
+  Note" (single notes: right-click -> "Export note...").
 - Export/import: `NotesStore::ExportJson` / `PrepareImport` / `AddImported` (pure, host-tested;
   format `trailpack-memo-export` v1 with ids; import also takes a bare `notes.json` array). Import
   shows a selection modal; duplicates (same id, or same title + body when the file has no valid

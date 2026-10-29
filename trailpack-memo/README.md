@@ -14,7 +14,7 @@
 - **Markdown toolbar** in edit mode: **B**, *I*, H1, H2, bullet list, task -- works on the
   selection or the current line(s), and toggles off when applied again. `Ctrl+B` / `Ctrl+I` too.
 - **Live preview** beside the editor (`Preview` checkbox, remembered across sessions).
-- **Export / import**: *Export all...* saves every note to one `.json` file, right-click a note ->
+- **Export / import** (menu button next to *Create New Note*): *Export all...* saves every note to one `.json` file, right-click a note ->
   *Export note...* saves just that one; *Import...* shows the notes in such a file (or in a
   Trailpack / Magpie Memo `notes.json`) and you tick which ones to add. Nothing is overwritten,
   and notes you already have are skipped: every note carries a unique id that travels with the

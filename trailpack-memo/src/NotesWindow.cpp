@@ -275,7 +275,7 @@ void NotesWindow::Render()
     //    sits beside the FULL height of this column — not squished under the
     //    button at the bottom of the window. ─────────────────────────────────
     const float leftWidth  = 200.0f;
-    const float createBtnH = ImGui::GetFrameHeightWithSpacing() * 2.0f;   // two button rows
+    const float createBtnH = ImGui::GetFrameHeightWithSpacing();
 
     ImGui::BeginGroup();
 
@@ -328,25 +328,46 @@ void NotesWindow::Render()
 
     ImGui::EndChild();
 
-    // Create New Note button — immediately below the list, inside the column.
+    // Bottom row: "Create New Note" + a square menu button (import / export).
+    const float menuW = ImGui::GetFrameHeight();
+    const float createW = leftWidth - menuW - ImGui::GetStyle().ItemSpacing.x;
     Theme::PushGreenButton();
-    if (ImGui::Button(Tr("Create New Note"), ImVec2(leftWidth, 0))) {
+    if (ImGui::Button(Tr("Create New Note"), ImVec2(createW, 0))) {
         requestCreate_();
     }
     Theme::PopButton();
 
-    // Import / Export all — second row, split in half.
+    ImGui::SameLine();
+    if (ImGui::Button("##notes_menu_btn", ImVec2(menuW, menuW))) {
+        ImGui::OpenPopup("##notes_menu");
+    }
     {
-        const float half = (leftWidth - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
-        if (ImGui::Button(Tr("Import..."), ImVec2(half, 0))) startImport_();
+        // Hamburger icon drawn with lines: Nexus's font has no symbol glyphs, and it
+        // reads the same in every language.
+        const ImVec2 bMin = ImGui::GetItemRectMin();
+        const ImVec2 bMax = ImGui::GetItemRectMax();
+        const float  padX = menuW * 0.25f;
+        const float  gap  = menuW * 0.18f;
+        const float  midY = (bMin.y + bMax.y) * 0.5f;
+        const ImU32  col  = ImGui::GetColorU32(ImGuiCol_Text);
+        ImDrawList*  dl   = ImGui::GetWindowDrawList();
+        for (int i = -1; i <= 1; ++i) {
+            const float y = midY + i * gap;
+            dl->AddLine(ImVec2(bMin.x + padX, y), ImVec2(bMax.x - padX, y), col, 1.5f);
+        }
+    }
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", Tr("Import / Export"));
+
+    if (ImGui::BeginPopup("##notes_menu")) {
+        if (ImGui::MenuItem(Tr("Import..."))) startImport_();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", Tr("Add notes from an exported file (or a notes.json).\n"
                                        "Existing notes are only updated if you choose to."));
-        ImGui::SameLine();
-        if (ImGui::Button(Tr("Export all..."), ImVec2(half, 0))) startExport_(std::string());
+        if (ImGui::MenuItem(Tr("Export all..."))) startExport_(std::string());
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", Tr("Save all notes to one file.\n"
                                        "Right-click a note in the list to export just that one."));
+        ImGui::EndPopup();
     }
 
     ImGui::EndGroup();
