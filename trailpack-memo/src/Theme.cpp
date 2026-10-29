@@ -20,7 +20,7 @@ void PushWindowStyle() {
         ImGui::PushStyleColor(ImGuiCol_Text, s_Colors.text);
         ++s_PushedColors;
     }
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, BORDER_SIZE);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, s_Colors.showBorder ? BORDER_SIZE : 0.0f);
 }
 
 void PopWindowStyle() {

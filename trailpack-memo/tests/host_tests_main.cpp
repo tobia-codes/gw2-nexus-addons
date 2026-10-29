@@ -669,6 +669,7 @@ static void test_settings_roundtrip()
 {
     Magpie::Settings a;
     a.showQaIcon    = false;
+    a.showBorder    = false;
     a.editPreview   = true;
     a.uiTextScale   = 150;
     a.noteTextScale = 80;
@@ -685,6 +686,7 @@ static void test_settings_roundtrip()
     Magpie::Settings b;
     CHECK(b.FromJson(a.ToJson()));
     CHECK(!b.showQaIcon);
+    CHECK(!b.showBorder);
     CHECK(b.editPreview);
     CHECK_EQ(b.uiTextScale, 150);
     CHECK_EQ(b.noteTextScale, 80);

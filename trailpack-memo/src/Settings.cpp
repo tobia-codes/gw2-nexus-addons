@@ -30,6 +30,7 @@ std::string Settings::ToJson() const
     };
     nlohmann::json j;
     j["show_qa_icon"]     = showQaIcon;
+    j["show_border"]      = showBorder;
     j["edit_preview"]     = editPreview;
     j["text_scale"]       = uiTextScale;
     j["note_text_scale"]  = noteTextScale;
@@ -71,6 +72,7 @@ bool Settings::FromJson(const std::string& json)
     };
 
     boolean("show_qa_icon", showQaIcon);
+    boolean("show_border", showBorder);
     boolean("edit_preview", editPreview);
     scale("text_scale", uiTextScale);
     scale("note_text_scale", noteTextScale);
