@@ -1,6 +1,7 @@
 // NotesUi.cpp — see NotesUi.h.
 #include "NotesUi.h"
 
+#include <cmath>
 #include <cstdio>
 #include <ctime>
 #include "I18n.h"
@@ -50,8 +51,18 @@ float DrawTypeBadge(ImDrawList* dl, ImVec2 pos, float height, Magpie::NoteType t
     const float  pad    = height * 0.08f;
     dl->AddRectFilled(ImVec2(pos.x, pos.y + pad), ImVec2(pos.x + w, pos.y + height - pad),
                       ImGui::GetColorU32(TypeColor(t)), 3.0f);
-    dl->AddText(ImVec2(pos.x + (w - ts.x) * 0.5f, pos.y + (height - ts.y) * 0.5f),
-                IM_COL32(20, 20, 20, 255), letter);
+
+    // Centre the glyph's ink box, not the line box: a capital sits above the descender
+    // space, so centring CalcTextSize would draw it too high.
+    ImVec2 textPos(pos.x + (w - ts.x) * 0.5f, pos.y + (height - ts.y) * 0.5f);
+    ImFont* font = ImGui::GetFont();
+    if (const ImFontGlyph* g = font->FindGlyph((ImWchar)(unsigned char)letter[0])) {
+        const float s = ImGui::GetFontSize() / font->FontSize;
+        textPos.x = pos.x + (w - (g->X1 - g->X0) * s) * 0.5f - g->X0 * s;
+        textPos.y = pos.y + (height - (g->Y1 - g->Y0) * s) * 0.5f - g->Y0 * s;
+    }
+    textPos = ImVec2(std::floor(textPos.x + 0.5f), std::floor(textPos.y + 0.5f));   // pixel-snap
+    dl->AddText(textPos, IM_COL32(20, 20, 20, 255), letter);
     return w;
 }
 
