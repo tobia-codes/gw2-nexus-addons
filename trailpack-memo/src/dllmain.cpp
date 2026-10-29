@@ -94,6 +94,7 @@ static std::string SettingsPath() {
 
 static void ApplySettings() {
     Theme::UserColors& c = Theme::Colors();
+    c.showBorder    = g_Settings.showBorder;
     c.border        = ToImVec4(g_Settings.border);
     c.hasBackground = g_Settings.background.set;
     c.background    = ToImVec4(g_Settings.background.color);
@@ -113,6 +114,7 @@ static void ApplySettings() {
 
 static void CollectSettings() {
     const Theme::UserColors& c = Theme::Colors();
+    g_Settings.showBorder  = c.showBorder;
     g_Settings.border      = ToRgba(c.border);
     g_Settings.background  = { c.hasBackground, ToRgba(c.background) };
     g_Settings.text        = { c.hasText,       ToRgba(c.text) };
@@ -425,6 +427,7 @@ static void RenderOptions() {
 
         heading(Tr("Window"));
         ImGui::Indent();
+        if (ImGui::Checkbox(Tr("Show border"), &c.showBorder)) s_ColorsDirty = true;
         ImGui::PushID("border");
         label(Tr("Border"));
         if (ImGui::ColorEdit4("##c", &c.border.x, flags)) s_ColorsDirty = true;

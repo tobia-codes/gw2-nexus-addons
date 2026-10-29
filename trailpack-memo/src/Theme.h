@@ -38,6 +38,7 @@ inline const ImVec4 BADGE_TEXT         = { 0.08f, 0.08f, 0.08f, 1.00f };
 // Border defaults to BORDER_GOLD. Background and text default to Nexus's own style;
 // they only override it once the user picks a colour (has* = true).
 struct UserColors {
+    bool   showBorder    = true;   // off: no window border (colour still used elsewhere)
     ImVec4 border        = BORDER_GOLD;
     bool   hasBackground = false;
     ImVec4 background    = { 0.0f, 0.0f, 0.0f, 0.0f };

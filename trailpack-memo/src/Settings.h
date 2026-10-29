@@ -24,6 +24,7 @@ struct Settings {
     static constexpr float kDefaultListWidth = 200.0f;
 
     bool     showQaIcon    = true;
+    bool     showBorder    = true;    // window border on/off
     bool     editPreview   = false;
     int      uiTextScale   = 100;   // window UI text, percent
     int      noteTextScale = 100;   // note content, percent

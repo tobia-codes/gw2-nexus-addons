@@ -104,6 +104,7 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   (`color_*` in `settings.json`, null = Nexus default). Daily / weekly badge background and letter
   colours (`color_daily_badge[_text]`, `color_weekly_badge[_text]`, defaults in `Theme::BADGE_*`)
   are read by `NotesUi::TypeColor` / `TypeTextColor`; the badge colour also tints the countdown.
+  Window border on/off: `show_border` (`UserColors::showBorder`, `PushWindowStyle` sets size 0).
   "No group" label: `color_no_group` (null = Nexus disabled text), `NotesUi::NoGroupColor`.
   Options layout: label | swatch | Reset in fixed columns, subheadings Window / Note list /
   badges (2x2 table with preview), "Reset all colours" resets `Theme::UserColors`.
