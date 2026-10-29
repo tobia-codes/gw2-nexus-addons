@@ -195,6 +195,142 @@ static void test_create_after_fromjson_has_unique_id()
     CHECK(store.Notes().size() == 3);
 }
 
+// ── Export / import ────────────────────────────────────────────────────────────
+
+static void test_export_all_import_roundtrip()
+{
+    Magpie::NotesStore src;
+    src.Create("First").body  = "- [ ] task\n[&AgH1WQAA]";
+    src.Create("Second").body = "# Head";
+    const std::string file = src.ExportJson();
+
+    Magpie::NotesStore dst;
+    dst.Create("Existing");
+    CHECK_EQ(dst.ImportJson(file), 2);
+    CHECK(dst.Notes().size() == 3);
+    CHECK_EQ(dst.Notes()[0].title, std::string("Existing"));   // appended, never replaced
+    CHECK_EQ(dst.Notes()[1].title, std::string("First"));
+    CHECK_EQ(dst.Notes()[1].body,  std::string("- [ ] task\n[&AgH1WQAA]"));
+    CHECK_EQ(dst.Notes()[2].title, std::string("Second"));
+}
+
+static void test_export_selected_ids_only()
+{
+    Magpie::NotesStore src;
+    src.Create("A");
+    const std::string idB = src.Create("B").id;
+    src.Create("C");
+    Magpie::NotesStore dst;
+    CHECK_EQ(dst.ImportJson(src.ExportJson({idB, "missing"})), 1);
+    CHECK_EQ(dst.Notes()[0].title, std::string("B"));
+}
+
+static void test_reimport_same_note_is_skipped()
+{
+    Magpie::NotesStore src;
+    src.Create("A");
+    const std::string file = src.ExportJson();
+    Magpie::NotesStore dst;
+    CHECK_EQ(dst.ImportJson(file), 1);
+    CHECK_EQ(dst.ImportJson(file), 0);     // same id already present
+    CHECK(dst.Notes().size() == 1);
+    CHECK_EQ(dst.Notes()[0].id, src.Notes()[0].id);   // id travels with the note
+    // Even after editing locally, the note stays "the same note".
+    dst.Get(src.Notes()[0].id)->body = "changed";
+    CHECK_EQ(dst.ImportJson(file), 0);
+}
+
+static void test_import_into_source_store_adds_nothing()
+{
+    Magpie::NotesStore store;
+    store.Create("A");
+    store.Create("B");
+    CHECK_EQ(store.ImportJson(store.ExportJson()), 0);
+    CHECK(store.Notes().size() == 2);
+}
+
+static void test_prepare_import_flags_duplicates()
+{
+    Magpie::NotesStore src;
+    const std::string idA = src.Create("A").id;
+    src.Create("B");
+    Magpie::NotesStore dst;
+    dst.ImportJson(src.ExportJson({idA}));
+
+    std::vector<Magpie::ImportItem> items;
+    CHECK(dst.PrepareImport(src.ExportJson(), items));
+    CHECK(items.size() == 2);
+    CHECK(items[0].duplicate);       // A already imported
+    CHECK(!items[1].duplicate);
+    CHECK(dst.Notes().size() == 1);  // prepare never changes the store
+
+    // Import only the selected (non-duplicate) item.
+    CHECK_EQ(dst.AddImported({items[1]}), 1);
+    CHECK_EQ(dst.Notes()[1].title, std::string("B"));
+}
+
+static void test_prepare_import_flags_repeats_within_file()
+{
+    Magpie::NotesStore dst;
+    std::vector<Magpie::ImportItem> items;
+    const std::string id = std::string(32, 'a');
+    CHECK(dst.PrepareImport(
+        "[{\"id\":\"" + id + "\",\"title\":\"A\",\"body\":\"\"},"
+        " {\"id\":\"" + id + "\",\"title\":\"A2\",\"body\":\"\"}]", items));
+    CHECK(items.size() == 2);
+    CHECK(!items[0].duplicate);
+    CHECK(items[1].duplicate);
+}
+
+static void test_ids_are_unique_format()
+{
+    Magpie::NotesStore store;
+    const std::string id = store.Create("A").id;
+    CHECK(Magpie::IsNoteId(id));
+    CHECK(!Magpie::IsNoteId("00000000"));
+    CHECK(!Magpie::IsNoteId(std::string(32, 'G')));
+}
+
+static void test_fromjson_migrates_legacy_ids()
+{
+    Magpie::NotesStore store;
+    const std::string keep = std::string(31, '0') + "1";
+    CHECK(store.FromJson(
+        "[{\"id\":\"00000000\",\"title\":\"Old\",\"body\":\"\"},"
+        " {\"id\":\"" + keep + "\",\"title\":\"New\",\"body\":\"\"},"
+        " {\"id\":\"" + keep + "\",\"title\":\"Dup\",\"body\":\"\"}]"));
+    CHECK(Magpie::IsNoteId(store.Notes()[0].id));
+    CHECK_EQ(store.Notes()[1].id, keep);             // valid ids are kept
+    CHECK(store.Notes()[2].id != keep);              // repeats get a new id
+    CHECK(Magpie::IsNoteId(store.Notes()[2].id));
+}
+
+static void test_import_plain_notes_json_array()
+{
+    // A Trailpack / Magpie Memo notes.json: ids are ignored, notes appended.
+    Magpie::NotesStore dst;
+    dst.Create("Mine");
+    const std::string legacy = "[{\"id\":\"00000000\",\"title\":\"Old\",\"body\":\"x\"}]";
+    CHECK_EQ(dst.ImportJson(legacy), 1);
+    CHECK(dst.Notes().size() == 2);
+    CHECK(Magpie::IsNoteId(dst.Notes()[1].id));      // legacy id replaced
+    CHECK_EQ(dst.Notes()[1].body, std::string("x"));
+    // No usable id -> identical title + body counts as a duplicate.
+    CHECK_EQ(dst.ImportJson(legacy), 0);
+}
+
+static void test_import_invalid_leaves_store_untouched()
+{
+    Magpie::NotesStore dst;
+    dst.Create("Keep");
+    CHECK_EQ(dst.ImportJson("not json"), -1);
+    CHECK_EQ(dst.ImportJson("{\"format\":\"other\",\"notes\":[]}"), -1);
+    CHECK_EQ(dst.ImportJson("{\"notes\":[{\"title\":\"a\",\"body\":\"b\"}]}"), -1);
+    // One bad entry rejects the whole file (all-or-nothing).
+    CHECK_EQ(dst.ImportJson("[{\"title\":\"ok\",\"body\":\"\"},{\"title\":1,\"body\":\"\"}]"), -1);
+    CHECK(dst.Notes().size() == 1);
+}
+
 // ── Decoder Ring ABI header tests ──────────────────────────────────────────────
 
 static void test_decoder_header_is_v4()
@@ -998,6 +1134,16 @@ int main()
     test_delete_noop_for_missing();
     test_json_roundtrip_ordered();
     test_fromjson_invalid_returns_false_and_leaves_state();
+    test_export_all_import_roundtrip();
+    test_export_selected_ids_only();
+    test_reimport_same_note_is_skipped();
+    test_import_into_source_store_adds_nothing();
+    test_prepare_import_flags_duplicates();
+    test_prepare_import_flags_repeats_within_file();
+    test_ids_are_unique_format();
+    test_fromjson_migrates_legacy_ids();
+    test_import_plain_notes_json_array();
+    test_import_invalid_leaves_store_untouched();
     test_fromjson_wrong_shape_returns_false();
     test_fromjson_empty_array();
     test_create_after_fromjson_has_unique_id();

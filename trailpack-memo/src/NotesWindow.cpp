@@ -7,6 +7,9 @@
 #include <filesystem>
 #include <fstream>
 #include <sstream>
+#include <ctime>
+#include <algorithm>
+#include <commdlg.h>
 #include "imgui.h"
 #include "imgui_stdlib.h"
 #include "Theme.h"
@@ -28,6 +31,7 @@ void NotesWindow::Init(AddonAPI_t* api)
         std::error_code ec;
         fs::create_directories(addonDir, ec);   // no-op if already exists
         notesFile_ = addonDir / "notes.json";
+        exportDir_ = addonDir / "exports";
     }
 
     if (!notesFile_.empty() && fs::exists(notesFile_)) {
@@ -35,7 +39,9 @@ void NotesWindow::Init(AddonAPI_t* api)
         if (f.is_open()) {
             std::ostringstream ss;
             ss << f.rdbuf();
-            store_.FromJson(ss.str());  // rolls back silently on bad JSON
+            // Rolls back silently on bad JSON. On success, save at once: loading may have
+            // replaced legacy ids, and exported ids must stay stable across sessions.
+            if (store_.FromJson(ss.str())) Save();
         }
     }
 
@@ -55,6 +61,9 @@ void NotesWindow::Save()
 
 void NotesWindow::Shutdown()
 {
+    // A file dialog still open on its worker thread must finish before the DLL goes
+    // away; this blocks the unload until the user closes it (the dialog stays visible).
+    if (ioDialog_.valid()) ioDialog_.wait();
     Save();
 }
 
@@ -233,6 +242,9 @@ void NotesWindow::Render()
     // Draw the modals first so they can open this frame if triggered below.
     renderUnsavedModal_();
     renderDeleteModal_();
+    pollFileDialog_();
+    renderIoModal_();
+    renderImportModal_();
 
     const auto& notes = store_.Notes();
 
@@ -246,7 +258,7 @@ void NotesWindow::Render()
     //    sits beside the FULL height of this column — not squished under the
     //    button at the bottom of the window. ─────────────────────────────────
     const float leftWidth  = 200.0f;
-    const float createBtnH = ImGui::GetFrameHeightWithSpacing();
+    const float createBtnH = ImGui::GetFrameHeightWithSpacing() * 2.0f;   // two button rows
 
     ImGui::BeginGroup();
 
@@ -268,6 +280,10 @@ void NotesWindow::Render()
         const ImVec2 rowPos = ImGui::GetCursorScreenPos();
         if (ImGui::Selectable("##note_row", selected)) {
             clickedId = note.id;
+        }
+        if (ImGui::BeginPopupContextItem("##row_ctx")) {
+            if (ImGui::MenuItem("Export note...")) startExport_(note.id);
+            ImGui::EndPopup();
         }
         ImGui::PopID();
 
@@ -301,6 +317,20 @@ void NotesWindow::Render()
         requestCreate_();
     }
     Theme::PopButton();
+
+    // Import / Export all — second row, split in half.
+    {
+        const float half = (leftWidth - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
+        if (ImGui::Button("Import...", ImVec2(half, 0))) startImport_();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Add notes from an exported file (or a notes.json).\n"
+                              "Existing notes are never replaced.");
+        ImGui::SameLine();
+        if (ImGui::Button("Export all...", ImVec2(half, 0))) startExport_(std::string());
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("Save all notes to one file.\n"
+                              "Right-click a note in the list to export just that one.");
+    }
 
     ImGui::EndGroup();
 
@@ -509,6 +539,7 @@ void NotesWindow::renderViewBody_(Magpie::Note* note)
             Magpie::Md::UncheckAllTasks(note->body);
             Save();
         }
+        if (ImGui::MenuItem("Export note...")) startExport_(note->id);
         ImGui::EndPopup();
     }
 
@@ -556,3 +587,243 @@ void NotesWindow::renderDeleteModal_()
         ImGui::EndPopup();
     }
 }
+
+// ── Export / import ─────────────────────────────────────────────────────────
+
+namespace {
+
+std::wstring Widen(const std::string& utf8)
+{
+    if (utf8.empty()) return std::wstring();
+    const int n = MultiByteToWideChar(CP_UTF8, 0, utf8.data(), (int)utf8.size(), nullptr, 0);
+    std::wstring w(n, L'\0');
+    MultiByteToWideChar(CP_UTF8, 0, utf8.data(), (int)utf8.size(), &w[0], n);
+    return w;
+}
+
+// A note title as a safe file name: ASCII letters/digits/-/_ kept, spaces -> '_'.
+std::string FileNameFor(const std::string& title)
+{
+    std::string out;
+    for (unsigned char c : title) {
+        if (std::isalnum(c) || c == '-' || c == '_') out += (char)c;
+        else if (c == ' ' && !out.empty() && out.back() != '_') out += '_';
+        if (out.size() >= 60) break;
+    }
+    while (!out.empty() && out.back() == '_') out.pop_back();
+    return out.empty() ? "note" : out;
+}
+
+// Modal Windows open/save dialog (runs on a worker thread). Returns the chosen
+// path, or empty if cancelled.
+std::wstring RunFileDialog(bool save, std::wstring dir, std::wstring fileName)
+{
+    wchar_t buf[MAX_PATH * 4] = L"";
+    if (save) fileName.copy(buf, (sizeof buf / sizeof buf[0]) - 1);
+
+    OPENFILENAMEW ofn = {};
+    ofn.lStructSize     = sizeof ofn;
+    ofn.lpstrFilter     = L"Trailpack Memo notes (*.json)\0*.json\0All files (*.*)\0*.*\0";
+    ofn.lpstrFile       = buf;
+    ofn.nMaxFile        = sizeof buf / sizeof buf[0];
+    ofn.lpstrInitialDir = dir.empty() ? nullptr : dir.c_str();
+    ofn.lpstrDefExt     = L"json";
+    ofn.lpstrTitle      = save ? L"Export notes" : L"Import notes";
+    ofn.Flags = OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR |
+                (save ? OFN_OVERWRITEPROMPT : OFN_FILEMUSTEXIST);
+
+    const BOOL ok = save ? GetSaveFileNameW(&ofn) : GetOpenFileNameW(&ofn);
+    return ok ? std::wstring(buf) : std::wstring();
+}
+
+} // namespace
+
+void NotesWindow::startExport_(const std::string& id)
+{
+    if (ioDialog_.valid()) return;   // one dialog at a time
+
+    std::string name;
+    if (id.empty()) {
+        char date[16] = "";
+        const std::time_t now = std::time(nullptr);
+        std::strftime(date, sizeof date, "%Y-%m-%d", std::localtime(&now));
+        name = std::string("trailpack-notes-") + date + ".json";
+    } else {
+        const Magpie::Note* note = store_.Get(id);
+        if (note == nullptr) return;
+        name = FileNameFor(note->title) + ".json";
+    }
+
+    std::error_code ec;
+    if (!exportDir_.empty()) fs::create_directories(exportDir_, ec);
+
+    ioAction_   = IoAction::Export;
+    ioExportId_ = id;
+    ioDialog_   = std::async(std::launch::async, RunFileDialog, true,
+                             exportDir_.wstring(), Widen(name));
+}
+
+void NotesWindow::startImport_()
+{
+    if (ioDialog_.valid()) return;
+    std::error_code ec;
+    if (!exportDir_.empty()) fs::create_directories(exportDir_, ec);
+
+    ioAction_ = IoAction::Import;
+    ioDialog_ = std::async(std::launch::async, RunFileDialog, false,
+                           exportDir_.wstring(), std::wstring());
+}
+
+void NotesWindow::pollFileDialog_()
+{
+    if (!ioDialog_.valid() ||
+        ioDialog_.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
+        return;
+
+    const fs::path path(ioDialog_.get());
+    const IoAction action = ioAction_;
+    ioAction_ = IoAction::None;
+    if (path.empty()) return;   // cancelled
+
+    const std::string fileName = path.filename().u8string();
+    char msg[512];
+
+    if (action == IoAction::Export) {
+        std::vector<std::string> ids;
+        if (!ioExportId_.empty()) ids.push_back(ioExportId_);
+        const size_t count = ids.empty() ? store_.Notes().size() : 1;
+
+        std::ofstream f(path, std::ios::out | std::ios::trunc | std::ios::binary);
+        if (f.is_open()) f << store_.ExportJson(ids);
+        if (f.is_open() && f.good())
+            snprintf(msg, sizeof msg, "Exported %zu note%s to %s.", count,
+                     count == 1 ? "" : "s", fileName.c_str());
+        else
+            snprintf(msg, sizeof msg, "Could not write %s.", fileName.c_str());
+    } else {
+        std::ifstream f(path, std::ios::in | std::ios::binary);
+        std::ostringstream ss;
+        if (f.is_open()) ss << f.rdbuf();
+
+        std::vector<Magpie::ImportItem> items;
+        const bool valid = f.is_open() && store_.PrepareImport(ss.str(), items);
+        const size_t fresh = std::count_if(items.begin(), items.end(),
+                                           [](const Magpie::ImportItem& i) { return !i.duplicate; });
+        if (!valid) {
+            snprintf(msg, sizeof msg,
+                     "%s is not a Trailpack Memo export or notes file.\nNothing was imported.",
+                     fileName.c_str());
+        } else if (items.empty()) {
+            snprintf(msg, sizeof msg, "%s contains no notes.", fileName.c_str());
+        } else if (fresh == 0) {
+            snprintf(msg, sizeof msg, "All notes in %s already exist.\nNothing was imported.",
+                     fileName.c_str());
+        } else {
+            // Let the user pick: every new note pre-selected, duplicates shown but locked.
+            importItems_ = std::move(items);
+            importChecked_.assign(importItems_.size(), 0);
+            for (size_t i = 0; i < importItems_.size(); ++i)
+                importChecked_[i] = importItems_[i].duplicate ? 0 : 1;
+            importFile_ = fileName;
+            ImGui::OpenPopup("Import Notes");
+            return;
+        }
+    }
+
+    ioMessage_ = msg;
+    ImGui::OpenPopup("Import / Export");
+}
+
+void NotesWindow::renderIoModal_()
+{
+    ImVec2 display = ImGui::GetIO().DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2(display.x * 0.5f, display.y * 0.5f),
+                            ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+
+    if (ImGui::BeginPopupModal("Import / Export", nullptr,
+                               ImGuiWindowFlags_AlwaysAutoResize))
+    {
+        ImGui::TextUnformatted(ioMessage_.c_str());
+        ImGui::Spacing();
+        if (ImGui::Button("OK", ImVec2(80, 0))) {
+            ioMessage_.clear();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
+}
+
+void NotesWindow::renderImportModal_()
+{
+    ImVec2 display = ImGui::GetIO().DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2(display.x * 0.5f, display.y * 0.5f),
+                            ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    ImGui::SetNextWindowSize(ImVec2(420.0f, 0.0f), ImGuiCond_Appearing);
+
+    if (!ImGui::BeginPopupModal("Import Notes", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+        return;
+
+    ImGui::Text("Notes in %s:", importFile_.c_str());
+    ImGui::Spacing();
+
+    // Scrollable list once the file holds more than a handful of notes.
+    const float rowH  = ImGui::GetFrameHeightWithSpacing();
+    const float listH = rowH * (float)std::min<size_t>(importItems_.size(), 10);
+    ImGui::BeginChild("##import_list", ImVec2(400.0f, listH), false);
+    int selected = 0;
+    for (size_t i = 0; i < importItems_.size(); ++i) {
+        const Magpie::ImportItem& item = importItems_[i];
+        ImGui::PushID((int)i);
+        const char* title = item.title.empty() ? "(untitled)" : item.title.c_str();
+        if (item.duplicate) {
+            // Already in the notes (same id, or same title + text): never imported again.
+            ImGui::TextDisabled("[-] %s  (already exists)", title);
+        } else {
+            bool on = importChecked_[i] != 0;
+            if (ImGui::Checkbox(title, &on)) importChecked_[i] = on ? 1 : 0;
+            if (on) ++selected;
+        }
+        ImGui::PopID();
+    }
+    ImGui::EndChild();
+
+    ImGui::Spacing();
+    if (ImGui::SmallButton("All")) {
+        for (size_t i = 0; i < importItems_.size(); ++i)
+            importChecked_[i] = importItems_[i].duplicate ? 0 : 1;
+    }
+    ImGui::SameLine();
+    if (ImGui::SmallButton("None")) {
+        std::fill(importChecked_.begin(), importChecked_.end(), 0);
+    }
+    ImGui::Separator();
+
+    char label[48];
+    snprintf(label, sizeof label, "Import %d note%s", selected, selected == 1 ? "" : "s");
+    Theme::PushGreenButton();
+    const bool doImport = ImGui::Button(label, ImVec2(140, 0)) && selected > 0;
+    Theme::PopButton();
+    ImGui::SameLine();
+    const bool cancel = ImGui::Button("Cancel", ImVec2(80, 0));
+
+    if (doImport) {
+        std::vector<Magpie::ImportItem> chosen;
+        for (size_t i = 0; i < importItems_.size(); ++i)
+            if (importChecked_[i]) chosen.push_back(importItems_[i]);
+
+        const size_t before = store_.Notes().size();
+        if (store_.AddImported(chosen) > 0) {
+            Save();
+            // Show the first imported note, unless an edit is in progress.
+            if (mode_ == Mode::View) selectedId_ = store_.Notes()[before].id;
+        }
+    }
+    if (doImport || cancel) {
+        importItems_.clear();
+        importChecked_.clear();
+        importFile_.clear();
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+}
+

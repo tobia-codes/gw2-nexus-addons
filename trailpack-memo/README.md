@@ -14,6 +14,12 @@
 - **Markdown toolbar** in edit mode: **B**, *I*, H1, H2, bullet list, task -- works on the
   selection or the current line(s), and toggles off when applied again. `Ctrl+B` / `Ctrl+I` too.
 - **Live preview** beside the editor (`Preview` checkbox, remembered across sessions).
+- **Export / import**: *Export all...* saves every note to one `.json` file, right-click a note ->
+  *Export note...* saves just that one; *Import...* shows the notes in such a file (or in a
+  Trailpack / Magpie Memo `notes.json`) and you tick which ones to add. Nothing is overwritten,
+  and notes you already have are skipped: every note carries a unique id that travels with the
+  export (notes without one are matched by identical title + text). Dialogs open in
+  `addons/TrailpackMemo/exports/`.
 - **Adjustable text size** (70-200 %) in the Nexus addon options; headings and chips scale along.
 - **Lists continue on Enter**: a new `- ` / `- [ ] ` is started automatically; Enter on an empty
   item ends the list.

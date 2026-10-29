@@ -46,6 +46,14 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 - Edit toolbar B / I / H1 / H2 / list / task + `Ctrl+B` / `Ctrl+I`, toggles off when reapplied.
 - Enter continues bullet/task lists; Enter on an empty item ends the list.
 - Optional side-by-side live preview, persisted in `settings.json`.
+- Note ids are globally unique (32 hex, random 128 bit, `IsNoteId`); `FromJson` migrates legacy
+  counter ids (`00000000`, Magpie Memo) and `NotesWindow::Init` saves right after loading so ids
+  stay stable.
+- Export/import: `NotesStore::ExportJson` / `PrepareImport` / `AddImported` (pure, host-tested;
+  format `trailpack-memo-export` v1 with ids; import also takes a bare `notes.json` array). Import
+  shows a selection modal; duplicates (same id, or same title + body when the file has no valid
+  id) are shown locked and never added. Windows file dialogs run on a worker thread
+  (`std::async`) and are polled in `Render()`.
 - Text-size setting (70-200 %, Nexus options, `text_scale` in `settings.json`) via
   `SetWindowFontScale`; `RenderMarkdown` uses `ImGui::GetFontSize()` so view text follows it.
 
@@ -89,7 +97,7 @@ release of one repo, but the monorepo will hold several addon DLLs.
 
 ### Ideas (not scheduled — only on user request)
 - Search/filter in the note list; note reordering (drag or up/down).
-- Export/import a single note as `.md`.
+- Export/import a single note as plain `.md` (JSON export/import exists).
 - Pinning or a "daily routine" auto-uncheck at reset time.
 
 ---

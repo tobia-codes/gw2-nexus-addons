@@ -3,6 +3,7 @@
 
 #include <string>
 #include <filesystem>
+#include <future>
 #include "nexus/Nexus.h"
 #include "NotesStore.h"
 #include "ChipTextEdit.h"
@@ -29,6 +30,7 @@ private:
     Magpie::NotesStore    store_;
     std::string           selectedId_;
     std::filesystem::path notesFile_;
+    std::filesystem::path exportDir_;   // default folder for export/import dialogs
 
     // ── Edit-mode working copies ──────────────────────────────────────────
     Mode                   mode_        = Mode::View;
@@ -44,6 +46,20 @@ private:
     // the "Unsaved Changes" modal.  Both fields are cleared after resolution.
     std::string pendingSelectId_;  // non-empty => switch to this note after save/discard
     bool        pendingCreate_ = false;  // true => create new note after save/discard
+
+    // ── Export / import ───────────────────────────────────────────────────
+    // The Windows file dialog runs on a worker thread so the game keeps rendering;
+    // Render() polls the result and performs the file I/O on the render thread.
+    enum class IoAction { None, Export, Import };
+    std::future<std::wstring> ioDialog_;      // valid while a dialog is open
+    IoAction                  ioAction_ = IoAction::None;
+    std::string               ioExportId_;    // Export: single note id; empty = all notes
+    std::string               ioMessage_;     // result shown in the "Import / Export" modal
+
+    // Import selection: the notes read from the chosen file, awaiting the user's pick.
+    std::vector<Magpie::ImportItem> importItems_;
+    std::vector<char>               importChecked_;   // parallel to importItems_
+    std::string                     importFile_;      // file name shown in the modal
 
     // ── Delete-confirmation ───────────────────────────────────────────────
     std::string pendingDeleteId_;  // non-empty => the note awaiting delete confirmation
@@ -77,6 +93,17 @@ private:
 
     // Perform the actual deletion of `id` (handles edit-mode + selection).
     void performDelete_(const std::string& id);
+
+    // Open the save dialog for one note (`id`) or all notes (empty id).
+    void startExport_(const std::string& id);
+    // Open the open-file dialog; the chosen file's notes are appended.
+    void startImport_();
+    // Finish a completed dialog (write/read the file) and open the result modal.
+    void pollFileDialog_();
+    // Draw the "Import / Export" result modal.
+    void renderIoModal_();
+    // Draw the "Import Notes" selection modal (one checkbox per note in the file).
+    void renderImportModal_();
 
     // Nexus's FontBig (for headings), or null.
     ImFont* fontBig_() const;
