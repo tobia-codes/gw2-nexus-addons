@@ -3,6 +3,7 @@
 // Inherits Nexus's default ImGui style; applies the PieOrCake suite's
 // consistent accent colours per-widget (no global ApplyTheme call needed).
 
+#include <initializer_list>
 #include "imgui.h"
 
 namespace Theme {
@@ -143,10 +144,31 @@ struct PopupTextScope {
 };
 
 // ── Scoped helpers ────────────────────────────────────────────────────────
-// Push the window border + user colours (border, background, text) for the whole
-// window, its child panes and its modals. Call PopWindowStyle() after ImGui::End().
+// Push the window border + user colours (border, background, text) and the corner rounding
+// for the whole window, its child panes, popups and modals. Call PopWindowStyle() after
+// ImGui::End().
 void PushWindowStyle();
 void PopWindowStyle();
+
+// Nexus's window and popup backgrounds made opaque (same colour, alpha 1), for the plain-styled
+// settings and guide windows. Create before ImGui::Begin, let it end after ImGui::End.
+struct OpaqueWindowScope {
+    OpaqueWindowScope() {
+        for (ImGuiCol idx : { ImGuiCol_WindowBg, ImGuiCol_PopupBg }) {
+            ImVec4 c = ImGui::GetStyle().Colors[idx];
+            c.w      = 1.0f;
+            ImGui::PushStyleColor(idx, c);
+        }
+    }
+    ~OpaqueWindowScope() { ImGui::PopStyleColor(2); }
+    OpaqueWindowScope(const OpaqueWindowScope&) = delete;
+    OpaqueWindowScope& operator=(const OpaqueWindowScope&) = delete;
+};
+
+// Corner rounding in px for the note window (windows, panes, buttons, fields, popups, list row
+// highlight); set by dllmain from settings.json (`corner_rounding`, default 0 = square).
+void  SetRounding(float px);
+float Rounding();
 
 // Push green action-button colours. Call PopButton() after the button widget.
 inline void PushGreenButton() {

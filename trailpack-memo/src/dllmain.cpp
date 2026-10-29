@@ -433,6 +433,16 @@ void AddonUnload() {
 void AddonRender() {
     if (!g_WindowVisible && !g_HelpVisible && !g_SettingsVisible) return;
     ApplyLanguage();   // Auto follows a Nexus language switch without a restart
+    // ImGui's text cursor shows up as a gear in GW2: our text fields keep the normal game
+    // cursor. Only a TextInput cursor set by our windows is replaced (not another addon's).
+    const bool textCursorBefore = ImGui::GetMouseCursor() == ImGuiMouseCursor_TextInput;
+    struct TextCursorFix {
+        bool before;
+        ~TextCursorFix() {
+            if (!before && ImGui::GetMouseCursor() == ImGuiMouseCursor_TextInput)
+                ImGui::SetMouseCursor(ImGuiMouseCursor_Arrow);
+        }
+    } textCursorFix{ textCursorBefore };
 
     // Fonts for sharp scaling, read outside any window (see FontScale.h).
     {
@@ -441,6 +451,7 @@ void AddonRender() {
     }
 
     if (g_WindowVisible) {
+        Theme::SetRounding(g_Settings.cornerRounding);
         Theme::PushWindowStyle();
         const bool open = ImGui::Begin(WINDOW_NAME, &g_WindowVisible);
         Help::TitleBarButton(WINDOW_NAME, &g_HelpVisible);   // "?" next to the title
@@ -462,8 +473,10 @@ void AddonRender() {
     Help::Render(&g_HelpVisible, g_Settings.uiTextScale / 100.0f);
 
     // Own settings window: the same options as in Nexus (RenderOptions), so both stay in sync.
-    // Plain Nexus style (no user colours), so it stays readable whatever theme is picked.
+    // Plain Nexus style (no user colours), so it stays readable whatever theme is picked;
+    // only the background is made opaque.
     if (g_SettingsVisible) {
+        Theme::OpaqueWindowScope opaque;
         const std::string title = SettingsTitle();
         ImGui::SetNextWindowSize(ImVec2(480.0f, 420.0f), ImGuiCond_FirstUseEver);
         if (ImGui::Begin(title.c_str(), &g_SettingsVisible)) {
@@ -536,6 +549,37 @@ static void RenderOptions() {
         };
         sizeSlider("ui_size",   Tr("UI text size"),   g_Settings.uiTextScale);
         sizeSlider("note_size", Tr("Note text size"), g_Settings.noteTextScale);
+    }
+
+    // ── Layout options ────────────────────────────────────────────────────
+    // Corner rounding of the note window: slider plus a number field next to it, since even small values
+    // (e.g. 0.5 px) are visible. Saved when either is released.
+    if (ImGui::CollapsingHeader(Tr("Layout options"))) {
+        ImGui::PushID("corner_rounding");
+        float& r = g_Settings.cornerRounding;
+        const float numW   = ImGui::CalcTextSize("00.00").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+        const float resetW = NotesUi::ButtonWidth(Tr("Reset"), 0.0f);
+        const float labelW = ImGui::CalcTextSize(Tr("Corner rounding")).x;
+        const float sp     = ImGui::GetStyle().ItemSpacing.x;
+        float sliderW = ImGui::GetContentRegionAvail().x - numW - resetW - labelW - 3.0f * sp;
+        if (sliderW < 80.0f) sliderW = 80.0f;
+        ImGui::SetNextItemWidth(sliderW);
+        ImGui::SliderFloat("##slider", &r, 0.0f, Magpie::Settings::kRoundingMax, "%.1f px");
+        bool save = ImGui::IsItemDeactivatedAfterEdit();
+        ImGui::SameLine();
+        ImGui::SetNextItemWidth(numW);
+        ImGui::InputFloat("##value", &r, 0.0f, 0.0f, "%.2f");
+        save = save || ImGui::IsItemDeactivatedAfterEdit();
+        r = r < 0.0f ? 0.0f : r > Magpie::Settings::kRoundingMax ? Magpie::Settings::kRoundingMax : r;
+        ImGui::SameLine();
+        if (ImGui::Button(Tr("Reset")) && r != 0.0f) {
+            r    = 0.0f;
+            save = true;
+        }
+        ImGui::SameLine();
+        ImGui::TextUnformatted(Tr("Corner rounding"));
+        if (save) SaveSettings();
+        ImGui::PopID();
     }
 
     // ── Colour options ────────────────────────────────────────────────────

@@ -313,7 +313,7 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
     ImGui::InvisibleButton(id, ImVec2(width, h));
     const bool hovered = ImGui::IsItemHovered();
     const bool held    = ImGui::IsItemActive();
-    if (hovered) ImGui::SetMouseCursor(ImGuiMouseCursor_TextInput);
+    // No ImGuiMouseCursor_TextInput: GW2 / Nexus shows it as a gear (see AddonRender).
 
     // Focus: claim on click inside; release on a click that isn't ours.
     if (ImGui::IsItemClicked()) focused = true;

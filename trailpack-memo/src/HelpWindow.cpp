@@ -105,6 +105,7 @@ const Section kSections[] = {
       "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
       "- Language (Auto follows Nexus), quick access icon.\n"
       "- 'Font options': UI and note text size.\n"
+      "- 'Layout options': corner rounding of the note window, its buttons, fields, popups and list rows (0 = square).\n"
       "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text), popups (background, text) and the daily / weekly badges.\n"
       "- 'Colour options' > Theme: Default, Light, Dark or one of your own; 'Save as theme' "
       "stores the current colours under a name. Borders are off by default.\n"
@@ -149,7 +150,9 @@ void Render(bool* open, float uiScale)
 
     const std::string title = Title();
     ImGui::SetNextWindowSize(ImVec2(460.0f, 520.0f), ImGuiCond_FirstUseEver);
-    // Plain Nexus style (no user colours), so the guide stays readable with any theme.
+    // Plain Nexus style (no user colours), so the guide stays readable with any theme;
+    // only the background is made opaque.
+    Theme::OpaqueWindowScope opaque;
     if (ImGui::Begin(title.c_str(), open)) {
         Magpie::FontScaleScope uiFont(uiScale);
         for (size_t i = 0; i < sizeof kSections / sizeof kSections[0]; ++i) {

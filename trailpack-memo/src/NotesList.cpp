@@ -35,12 +35,13 @@ static void DrawHamburger(float size)
 // padding). ImGui stretches a Selectable's highlight by half the item spacing on every side,
 // which made it start left of the row content and run into the next row; spacing 0 while it
 // is submitted removes that, and the gap to the next row is added by RowGap(). ImGui 1.80
-// draws that highlight square, so it is made transparent and drawn here with the window
-// rounding. Row content starts RowPadX() inside the highlight.
+// draws that highlight square, so it is made transparent and drawn here with `rounding`
+// (Theme::Rounding(), default 0). Row content starts RowPadX() inside the highlight.
 static float RowPadY() { return std::floor(ImGui::GetFontSize() * 0.15f); }
 static float RowPadX() { return std::floor(ImGui::GetFontSize() * 0.4f); }
 
-static bool RowSelectable(const char* id, bool selected, float indent, ImVec2& pos, float& height)
+static bool RowSelectable(const char* id, bool selected, float indent, float rounding,
+                          ImVec2& pos, float& height)
 {
     if (indent > 0.0f) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + indent);
     pos    = ImGui::GetCursorScreenPos();
@@ -59,9 +60,8 @@ static bool RowSelectable(const char* id, bool selected, float indent, ImVec2& p
         const ImGuiCol col = (hovered && ImGui::IsItemActive()) ? ImGuiCol_HeaderActive
                            : hovered                            ? ImGuiCol_HeaderHovered
                                                                 : ImGuiCol_Header;
-        const float rounding = std::min(ImGui::GetStyle().WindowRounding, height * 0.5f);
         ImGui::GetWindowDrawList()->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(),
-                                                  ImGui::GetColorU32(col), rounding);
+                                                  ImGui::GetColorU32(col), std::min(rounding, height * 0.5f));
     }
     return clicked;
 }
@@ -248,7 +248,7 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
     ImGui::PushID(note.id.c_str());
     ImVec2 rowPos;
     float  rowH = 0.0f;
-    if (RowSelectable("##note_row", selected, indent, rowPos, rowH)) {
+    if (RowSelectable("##note_row", selected, indent, Theme::Rounding(), rowPos, rowH)) {
         selectRequestId_ = note.id;
     }
     const float rowRight = ImGui::GetItemRectMax().x;
@@ -341,7 +341,7 @@ bool NotesWindow::renderGroupHeader_(Magpie::Group& group)
     ImGui::PushID(group.id.c_str());
     ImVec2 rowPos;
     float  rowH = 0.0f;
-    if (RowSelectable("##group_row", false, 0.0f, rowPos, rowH)) {
+    if (RowSelectable("##group_row", false, 0.0f, Theme::Rounding(), rowPos, rowH)) {
         group.collapsed = !group.collapsed;
         Save();
     }
