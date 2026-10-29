@@ -32,7 +32,7 @@ public:
 
     // Note text size (view, editor, preview) as a factor of Nexus's base font size,
     // independent of the window's UI text size (set by dllmain from settings.json).
-    // Applied with Magpie::FontScaleScope (FontScale.h).
+    // Applied with Trailpack::FontScaleScope (FontScale.h).
     void SetNoteTextScale(float scale) { noteTextScale_ = scale; }
 
     // Width of the note list in px (drag the splitter; persisted by dllmain's settings.json).
@@ -71,14 +71,14 @@ private:
 
     // ── Persistent state ──────────────────────────────────────────────────
     AddonAPI_t*           api_ = nullptr;  // Nexus API (for FontBig via DataLink)
-    Magpie::NotesStore    store_;
+    Trailpack::NotesStore    store_;
     std::string           selectedId_;
     std::filesystem::path notesFile_;
     std::filesystem::path exportDir_;   // default folder for export/import dialogs
 
     // ── Edit-mode working copies ──────────────────────────────────────────
     Mode                   mode_        = Mode::View;
-    Magpie::ChipTextEdit   bodyEditor_;  // working copy of note body while editing
+    Trailpack::ChipTextEdit   bodyEditor_;  // working copy of note body while editing
     std::string            titleBuffer_; // working copy of note title while editing
     // Event picker (toolbar "Event", EventPicker.h): search text + focus-once flag.
     std::string            eventQuery_;
@@ -119,7 +119,7 @@ private:
     std::string               ioMessage_;        // result shown in the "Import / Export" modal
 
     // Import selection: the notes read from the chosen file, awaiting the user's pick.
-    std::vector<Magpie::ImportItem> importItems_;
+    std::vector<Trailpack::ImportItem> importItems_;
     std::vector<char>               importChecked_;   // parallel to importItems_
     std::string                     importFile_;      // file name shown in the modal
 
@@ -145,15 +145,15 @@ private:
     struct ParseCache {
         bool                          valid = false;
         std::string                   body;
-        std::vector<Magpie::Md::Line> lines;
+        std::vector<Trailpack::Md::Line> lines;
     };
     ParseCache viewParse_, previewParse_;
     // Task progress per note id, keyed by a hash of the body.
-    struct TaskCache { size_t bodyHash = 0; Magpie::Md::TaskCount count; };
+    struct TaskCache { size_t bodyHash = 0; Trailpack::Md::TaskCount count; };
     std::unordered_map<std::string, TaskCache> taskCache_;
 
-    const std::vector<Magpie::Md::Line>& parsed_(ParseCache& cache, const std::string& body);
-    Magpie::Md::TaskCount taskCount_(const Magpie::Note& note);
+    const std::vector<Trailpack::Md::Line>& parsed_(ParseCache& cache, const std::string& body);
+    Trailpack::Md::TaskCount taskCount_(const Trailpack::Note& note);
 
     // ── NotesWindow.cpp: state + navigation ───────────────────────────────
     // Load notes.json; an unreadable file is set aside (never overwritten) and the last
@@ -161,7 +161,7 @@ private:
     void loadNotes_();
     void selectFirst_();
     void advanceSelectionAfterDelete_(const std::string& deletedId);
-    void enterEdit_(Magpie::Note* note);   // seed the edit buffers, switch to Edit
+    void enterEdit_(Trailpack::Note* note);   // seed the edit buffers, switch to Edit
     void commitEdit_();                     // write the buffers back and save
     void cancelEdit_();                     // drop the buffers, back to View
     bool editIsDirty_();
@@ -180,19 +180,19 @@ private:
     void  requestNewGroup_();     // "New group..." (menu button, list context menu)
     void  requestBulkDelete_();   // "Delete notes..." (menu button, list context menu)
     // One note row (selectable, badge, progress, context menu, drag source).
-    void  renderNoteRow_(const Magpie::Note& note, float indent);
+    void  renderNoteRow_(const Trailpack::Note& note, float indent);
     // A group header (collapse toggle, count, context menu, drop target); true if expanded.
-    bool  renderGroupHeader_(Magpie::Group& group);
+    bool  renderGroupHeader_(Trailpack::Group& group);
     void  typeMenu_(const std::string& noteId);   // "Type" submenu: Note / Daily / Weekly
     // A group's name colour: its own, else the addon-wide group colour, else the border.
-    ImVec4 groupColor_(const Magpie::Group& group) const;
+    ImVec4 groupColor_(const Trailpack::Group& group) const;
 
     // ── NotesDetail.cpp ───────────────────────────────────────────────────
     void renderDetailPane_();
-    void renderEditMode_(Magpie::Note& note);
-    void renderViewMode_(Magpie::Note& note);
+    void renderEditMode_(Trailpack::Note& note);
+    void renderViewMode_(Trailpack::Note& note);
     void renderEditToolbar_();
-    void renderViewBody_(Magpie::Note* note);
+    void renderViewBody_(Trailpack::Note* note);
 
     // ── NotesModals.cpp ───────────────────────────────────────────────────
     void renderModals_();

@@ -2,7 +2,7 @@
 #include <string>
 #include <cstdint>
 
-namespace Magpie {
+namespace Trailpack {
 
 // The view of a chip used by both the markdown renderer and the chip text editor.
 // Structural tier (Task 9): label + colour derived purely from the vendored codec,
@@ -15,4 +15,4 @@ struct ChipView {
 // Resolve a raw "[&...]" chat code to its structural view (offline; no Decoder Ring).
 ChipView ResolveChip(const std::string& chatCode);
 
-} // namespace Magpie
+} // namespace Trailpack

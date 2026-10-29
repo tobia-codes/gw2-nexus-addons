@@ -1,8 +1,8 @@
 #include "ChipTextEdit.h"
-#include "ChipResolver.h"      // Magpie::ResolveChip (replaces Pie UI's RichLineResolveChip)
+#include "ChipResolver.h"      // Trailpack::ResolveChip (replaces Pie UI's RichLineResolveChip)
 #include "EventChip.h"         // event tokens: name-only label + colour (D10)
 #include "Events.h"
-#include "ChipRich.h"          // Magpie::ChipLabel (resolved name when Decoder Ring is warm)
+#include "ChipRich.h"          // Trailpack::ChipLabel (resolved name when Decoder Ring is warm)
 #include "ChipCodec.h"         // pure text<->cell model + UTF-8 helpers
 #include <algorithm>
 #include <atomic>
@@ -24,7 +24,7 @@ static inline float ClampF(float v, float lo, float hi) { return v < lo ? lo : (
 // Our STRING type is ChipTextEdit; each "character" is a ChipCell (text codepoint OR an atomic
 // chip). Widths are per-cell so a chip occupies its rendered token width. A newline cell
 // (isChip==false, cp=='\n') has the sentinel width so stb treats it as a line break.
-namespace Magpie {
+namespace Trailpack {
 
 static inline bool IsNewlineCell(const ChipCell& c) { return !c.isChip && c.cp == '\n'; }
 
@@ -86,18 +86,18 @@ static int   ChipTE_InsertChars(ChipTextEdit* o, int i, const int* chars, int n)
     return 1;
 }
 
-} // namespace Magpie
+} // namespace Trailpack
 
 // stb_textedit configuration (mirrors ImGui's, so editing behaviour matches its InputText).
 #define STB_TEXTEDIT_CHARTYPE       int
 #define STB_TEXTEDIT_POSITIONTYPE   int
-#define STB_TEXTEDIT_STRING         Magpie::ChipTextEdit
-#define STB_TEXTEDIT_STRINGLEN(o)            Magpie::ChipTE_StringLen(o)
-#define STB_TEXTEDIT_GETCHAR(o,i)            Magpie::ChipTE_GetChar(o,i)
-#define STB_TEXTEDIT_GETWIDTH(o,ls,i)        Magpie::ChipTE_GetWidth(o,ls,i)
-#define STB_TEXTEDIT_LAYOUTROW(r,o,ls)       Magpie::ChipTE_Layout(r,o,ls)
-#define STB_TEXTEDIT_DELETECHARS(o,i,n)      Magpie::ChipTE_DeleteChars(o,i,n)
-#define STB_TEXTEDIT_INSERTCHARS(o,i,c,n)    Magpie::ChipTE_InsertChars(o,i,c,n)
+#define STB_TEXTEDIT_STRING         Trailpack::ChipTextEdit
+#define STB_TEXTEDIT_STRINGLEN(o)            Trailpack::ChipTE_StringLen(o)
+#define STB_TEXTEDIT_GETCHAR(o,i)            Trailpack::ChipTE_GetChar(o,i)
+#define STB_TEXTEDIT_GETWIDTH(o,ls,i)        Trailpack::ChipTE_GetWidth(o,ls,i)
+#define STB_TEXTEDIT_LAYOUTROW(r,o,ls)       Trailpack::ChipTE_Layout(r,o,ls)
+#define STB_TEXTEDIT_DELETECHARS(o,i,n)      Trailpack::ChipTE_DeleteChars(o,i,n)
+#define STB_TEXTEDIT_INSERTCHARS(o,i,c,n)    Trailpack::ChipTE_InsertChars(o,i,c,n)
 #define STB_TEXTEDIT_KEYTOTEXT(k)            ((k) >= 0x200000 ? 0 : (k))
 #define STB_TEXTEDIT_NEWLINE                 '\n'
 #define STB_TEXTEDIT_GETWIDTH_NEWLINE        (-1.0f)
@@ -121,7 +121,7 @@ static int   ChipTE_InsertChars(ChipTextEdit* o, int i, const int* chars, int n)
 #define STB_TEXTEDIT_IMPLEMENTATION
 #include "imstb_textedit.h"
 
-namespace Magpie {
+namespace Trailpack {
 
 // Focus timestamp (ms, steady clock) for the WndProc keyboard-capture reinforcement (see header).
 static std::atomic<long long> s_lastFocusMs{-100000};
@@ -159,9 +159,9 @@ static void Measure(std::vector<ChipCell>& cells) {
             // (ChipLabel never returns empty); colour matches the view-mode chips:
             // native GW2 type colour, items by rarity (Basic until resolved).
             if (Events::IsToken(c.code)) {
-                c.name = Magpie::EventChipLabel(c.code); c.color = Magpie::EventChipColor(c.code);
+                c.name = Trailpack::EventChipLabel(c.code); c.color = Trailpack::EventChipColor(c.code);
             } else {
-                c.name = Magpie::ChipLabel(c.code); c.color = Magpie::ChipDisplayColor(c.code);
+                c.name = Trailpack::ChipLabel(c.code); c.color = Trailpack::ChipDisplayColor(c.code);
             }
             c.width = ImGui::CalcTextSize(c.name.c_str()).x + 6.0f;   // small side padding
         } else if (IsNewlineCell(c)) {
@@ -179,9 +179,9 @@ void ChipTextEdit::InsertChip(const std::string& code) {
     int at = ClampI(s.cursor, 0, (int)cells.size());
     ChipCell c; c.isChip = true; c.code = code;
     if (Events::IsToken(code)) {
-        c.name = Magpie::EventChipLabel(code); c.color = Magpie::EventChipColor(code);
+        c.name = Trailpack::EventChipLabel(code); c.color = Trailpack::EventChipColor(code);
     } else {
-        ChipView v = Magpie::ResolveChip(code);
+        ChipView v = Trailpack::ResolveChip(code);
         c.name = v.label.empty() ? "[link]" : v.label;
         c.color = v.color;
     }
@@ -202,9 +202,9 @@ void ChipTextEdit::SetText(const std::string& utf8) {
     for (const auto& pc : ParseToCells(utf8)) {
         ChipCell c; c.isChip = pc.isChip; c.cp = pc.cp; c.code = pc.code;
         if (c.isChip && Events::IsToken(c.code)) {
-            c.name = Magpie::EventChipLabel(c.code); c.color = Magpie::EventChipColor(c.code);
+            c.name = Trailpack::EventChipLabel(c.code); c.color = Trailpack::EventChipColor(c.code);
         } else if (c.isChip) {
-            ChipView v = Magpie::ResolveChip(c.code);
+            ChipView v = Trailpack::ResolveChip(c.code);
             c.name = v.label.empty() ? "[link]" : v.label;
             c.color = v.color;
         }
@@ -476,4 +476,4 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
     return changed;
 }
 
-} // namespace Magpie
+} // namespace Trailpack

@@ -41,7 +41,7 @@ are static, so start times are computed locally from UTC — like the daily / we
 ImGui / Nexus / Win32), in wiki order (category, then meta, then segment):
 
 ```cpp
-namespace Magpie { namespace Events {
+namespace Trailpack { namespace Events {
 
 constexpr int kDayMinutes = 1440;
 
@@ -70,7 +70,7 @@ struct EventDef {
 extern const CategoryDef kCategories[]; extern const size_t kCategoryCount;
 extern const EventDef    kEvents[];     extern const size_t kEventCount;
 
-}} // namespace Magpie::Events
+}} // namespace Trailpack::Events
 ```
 
 Every event repeats **daily** (the wiki widget restarts its sequence at 00:00 UTC), so a plain

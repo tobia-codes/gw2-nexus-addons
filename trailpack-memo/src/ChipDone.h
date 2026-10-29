@@ -5,7 +5,7 @@
 
 #include "imgui.h"
 
-namespace Magpie {
+namespace Trailpack {
 
 struct ChipDoneStyle {
     bool  showTime = false;   // event chips keep their countdown, in a much lighter event colour
@@ -13,4 +13,4 @@ struct ChipDoneStyle {
     ImU32 textCol  = 0;       // the task's dimmed text colour (label when not showing the time)
 };
 
-} // namespace Magpie
+} // namespace Trailpack

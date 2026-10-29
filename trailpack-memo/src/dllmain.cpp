@@ -1,6 +1,5 @@
 // dllmain.cpp — Trailpack Memo Nexus addon lifecycle.
-// Fork of PieOrCake's Magpie Memo (MIT) with task-list checkboxes and a markdown toolbar.
-// Stage 2: two-pane notes shell + JSON persistence.
+// Notepad with markdown, task-list checkboxes, chat-link and event chips.
 
 #include <windows.h>
 #include <algorithm>
@@ -28,7 +27,7 @@
 #include "NotesUi.h"
 #include "MarkdownRender.h"
 #include "IconCache.h"
-#include "EmbeddedIcon.h"   // MAGPIE_ICON[] + MAGPIE_ICON_size (generated from icon.png)
+#include "EmbeddedIcon.h"   // TRAILPACK_ICON[] + TRAILPACK_ICON_size (generated from icon.png)
 
 // ── Quick-access identifiers ──────────────────────────────────────────────
 #define QA_ID    "QA_TRAILPACK_MEMO"
@@ -49,7 +48,7 @@ bool             g_WindowVisible = false;
 bool             g_QAIconAdded   = false;  // tracks whether the shortcut is currently registered
 bool             g_HelpVisible   = false;  // the guide window ("?" in the title bar)
 bool             g_SettingsVisible = false;  // own settings window (menu -> "Settings...")
-Magpie::Settings g_Settings;               // settings.json (see Settings.h); colours, preview
+Trailpack::Settings g_Settings;               // settings.json (see Settings.h); colours, preview
                                            // and list width live in Theme / g_Notes meanwhile
 NotesWindow      g_Notes;
 
@@ -61,24 +60,24 @@ void AddonRender();
 void AddonOptions();
 static void RenderOptions();
 
-using Magpie::I18n::Tr;
+using Trailpack::I18n::Tr;
 
 // Language Nexus is currently set to, read through a probe key registered at load
 // (Localization_Set for "en" and "de"). Any other Nexus language returns the key
 // itself -> English.
-static Magpie::I18n::Lang NexusLang() {
-    if (!APIDefs || !APIDefs->Localization_Translate) return Magpie::I18n::Lang::En;
+static Trailpack::I18n::Lang NexusLang() {
+    if (!APIDefs || !APIDefs->Localization_Translate) return Trailpack::I18n::Lang::En;
     const char* code = APIDefs->Localization_Translate(LOC_LANG_PROBE);
-    return (code && strcmp(code, "de") == 0) ? Magpie::I18n::Lang::De : Magpie::I18n::Lang::En;
+    return (code && strcmp(code, "de") == 0) ? Trailpack::I18n::Lang::De : Trailpack::I18n::Lang::En;
 }
 
 // Resolve the setting to the language used this frame (cheap; called per render).
 static void ApplyLanguage() {
-    using Magpie::I18n::Lang;
+    using Trailpack::I18n::Lang;
     switch (g_Settings.language) {
-        case Magpie::Settings::Language::En:   Magpie::I18n::SetLang(Lang::En); break;
-        case Magpie::Settings::Language::De:   Magpie::I18n::SetLang(Lang::De); break;
-        case Magpie::Settings::Language::Auto: Magpie::I18n::SetLang(NexusLang()); break;
+        case Trailpack::Settings::Language::En:   Trailpack::I18n::SetLang(Lang::En); break;
+        case Trailpack::Settings::Language::De:   Trailpack::I18n::SetLang(Lang::De); break;
+        case Trailpack::Settings::Language::Auto: Trailpack::I18n::SetLang(NexusLang()); break;
     }
 }
 
@@ -86,8 +85,8 @@ static void ApplyLanguage() {
 // g_Settings is the file's model; the live colours (Theme::Colors), the preview toggle and
 // the list width (g_Notes) are copied in on load and collected again before saving.
 
-static ImVec4 ToImVec4(const Magpie::Rgba& c) { return ImVec4(c.r, c.g, c.b, c.a); }
-static Magpie::Rgba ToRgba(const ImVec4& c)   { return Magpie::Rgba{ c.x, c.y, c.z, c.w }; }
+static ImVec4 ToImVec4(const Trailpack::Rgba& c) { return ImVec4(c.r, c.g, c.b, c.a); }
+static Trailpack::Rgba ToRgba(const ImVec4& c)   { return Trailpack::Rgba{ c.x, c.y, c.z, c.w }; }
 
 static std::string SettingsPath() {
     if (!APIDefs) return std::string();
@@ -99,7 +98,7 @@ static std::string SettingsPath() {
 }
 
 // Live colours (Theme::Colors) <-> a ColorSet (settings.json, themes).
-static void ApplyColors(const Magpie::ColorSet& s) {
+static void ApplyColors(const Trailpack::ColorSet& s) {
     Theme::UserColors& c = Theme::Colors();
     c.showBorder      = s.showBorder;
     c.border          = ToImVec4(s.border);
@@ -137,9 +136,9 @@ static void ApplyColors(const Magpie::ColorSet& s) {
     c.weeklyBadgeText = ToImVec4(s.weeklyBadgeText);
 }
 
-static Magpie::ColorSet CollectColors() {
+static Trailpack::ColorSet CollectColors() {
     const Theme::UserColors& c = Theme::Colors();
-    Magpie::ColorSet s;
+    Trailpack::ColorSet s;
     s.showBorder      = c.showBorder;
     s.border          = ToRgba(c.border);
     s.background      = { c.hasBackground, ToRgba(c.background) };
@@ -180,14 +179,14 @@ static void SaveSettings() {
     const std::string path = SettingsPath();
     if (path.empty()) return;
     CollectSettings();
-    Magpie::SafeFile::WriteAtomic(path, g_Settings.ToJson());   // crash-safe replace
+    Trailpack::SafeFile::WriteAtomic(path, g_Settings.ToJson());   // crash-safe replace
 }
 
 static void LoadSettings() {
     const std::string path = SettingsPath();
     std::string content;
-    if (!path.empty() && Magpie::SafeFile::Read(path, content) && !g_Settings.FromJson(content))
-        Magpie::SafeFile::SetAside(path);   // malformed: keep it for inspection, use defaults
+    if (!path.empty() && Trailpack::SafeFile::Read(path, content) && !g_Settings.FromJson(content))
+        Trailpack::SafeFile::SetAside(path);   // malformed: keep it for inspection, use defaults
     ApplySettings();
 }
 
@@ -249,9 +248,9 @@ static void PollBackupDialog() {
     char msg[512];
     if (s_BackupSaving) {
         CollectSettings();
-        const std::string text = Magpie::Backup::Make(g_Notes.NotesJson(), g_Settings.ToJson(),
+        const std::string text = Trailpack::Backup::Make(g_Notes.NotesJson(), g_Settings.ToJson(),
                                                       (int64_t)std::time(nullptr));
-        const bool ok = !text.empty() && Magpie::SafeFile::WriteAtomic(path, text);
+        const bool ok = !text.empty() && Trailpack::SafeFile::WriteAtomic(path, text);
         snprintf(msg, sizeof msg, ok ? Tr("Backup saved as %s.") : Tr("Could not write %s."),
                  fileName.c_str());
         s_BackupMessage = msg;
@@ -260,9 +259,9 @@ static void PollBackupDialog() {
 
     // Restore: validate everything now, replace only after the user confirmed.
     std::string text, notes, settings;
-    Magpie::NotesStore checkNotes;
-    Magpie::Settings   checkSettings;
-    if (!Magpie::SafeFile::Read(path, text) || !Magpie::Backup::Parse(text, notes, settings) ||
+    Trailpack::NotesStore checkNotes;
+    Trailpack::Settings   checkSettings;
+    if (!Trailpack::SafeFile::Read(path, text) || !Trailpack::Backup::Parse(text, notes, settings) ||
         !checkNotes.FromJson(notes) || !checkSettings.FromJson(settings)) {
         snprintf(msg, sizeof msg, Tr("%s is not a Trailpack Memo backup. Nothing was changed."),
                  fileName.c_str());
@@ -280,7 +279,7 @@ static void RestoreBackup() {
     if (!g_Notes.RestoreNotes(s_RestoreNotes)) {
         s_BackupMessage = Tr("The backup could not be restored. Nothing was changed.");
     } else {
-        Magpie::Settings restored;              // start from defaults: the backup is complete
+        Trailpack::Settings restored;              // start from defaults: the backup is complete
         restored.FromJson(s_RestoreSettings);
         g_Settings = restored;
         ApplySettings();
@@ -288,7 +287,7 @@ static void RestoreBackup() {
         if (g_Settings.showQaIcon) AddQAIcon();
         else                       RemoveQAIcon();
         SaveSettings();
-        snprintf(msg, sizeof msg, Magpie::I18n::TrN(s_RestoreNoteCount, "Backup restored: %d note.",
+        snprintf(msg, sizeof msg, Trailpack::I18n::TrN(s_RestoreNoteCount, "Backup restored: %d note.",
                  "Backup restored: %d notes."), s_RestoreNoteCount);
         s_BackupMessage = msg;
     }
@@ -317,19 +316,19 @@ BOOL APIENTRY DllMain(HMODULE /*hModule*/, DWORD /*ul_reason*/, LPVOID /*lpReser
 
 // ── GetAddonDef (exported) ────────────────────────────────────────────────
 extern "C" __declspec(dllexport) AddonDefinition_t* GetAddonDef() {
-    AddonDef.Signature        = 0x54504D6D;          // "TPMm" — distinct from Magpie Memo 0x4D61704D
+    AddonDef.Signature        = 0x54504D6D;          // "TPMm"
     AddonDef.APIVersion       = NEXUS_API_VERSION;
     AddonDef.Name             = WINDOW_NAME;
     AddonDef.Version.Major    = V_MAJOR;
     AddonDef.Version.Minor    = V_MINOR;
     AddonDef.Version.Build    = V_BUILD;
     AddonDef.Version.Revision = V_REVISION;
-    AddonDef.Author           = "PieOrCake.7635 & tobia-codes";
-    AddonDef.Description      = "Notepad with markdown, checklists and rich chips. Based on Magpie Memo. Recommended: Decoder Ring.";
+    AddonDef.Author           = "tobia-codes";
+    AddonDef.Description      = "Notepad with markdown, checklists, event timers and rich chips. Recommended: Decoder Ring.";
     AddonDef.Load             = AddonLoad;
     AddonDef.Unload           = AddonUnload;
     AddonDef.Flags            = AF_None;
-    // No auto-update source yet: pointing at upstream would "update" this fork back to Magpie Memo.
+    // No auto-update source yet (see PLAN backlog B2).
     AddonDef.Provider         = UP_None;
     AddonDef.UpdateLink       = nullptr;
 
@@ -338,7 +337,7 @@ extern "C" __declspec(dllexport) AddonDefinition_t* GetAddonDef() {
 
 // ── AddonLoad ─────────────────────────────────────────────────────────────
 // TODO: register a WndProc via APIDefs->WndProc_Register to call
-//       Magpie::ChipInputActive / Magpie::RequestChipBlur for held-key edge
+//       Trailpack::ChipInputActive / Trailpack::RequestChipBlur for held-key edge
 //       cases (e.g. WASD leaking to the game while a chip cell is focused).
 //       This is deferred polish -- not required for the basic integration.
 void AddonLoad(AddonAPI_t* aApi) {
@@ -359,15 +358,15 @@ void AddonLoad(AddonAPI_t* aApi) {
     APIDefs->Localization_Set(LOC_LANG_PROBE, "en", "en");
     APIDefs->Localization_Set(LOC_LANG_PROBE, "de", "de");
     APIDefs->Localization_Set(KB_TOGGLE, "en", "Toggle Trailpack Memo");
-    Magpie::I18n::SetLang(Magpie::I18n::Lang::De);
+    Trailpack::I18n::SetLang(Trailpack::I18n::Lang::De);
     APIDefs->Localization_Set(KB_TOGGLE, "de", Tr("Toggle Trailpack Memo"));
     s_EscapeTitles[0] = SettingsTitle();
     s_EscapeTitles[1] = Help::Title();
-    Magpie::I18n::SetLang(Magpie::I18n::Lang::En);
+    Trailpack::I18n::SetLang(Trailpack::I18n::Lang::En);
     s_EscapeTitles[2] = SettingsTitle();
     s_EscapeTitles[3] = Help::Title();
 
-    // Register toggle keybind (default CTRL+SHIFT+T; Magpie Memo keeps CTRL+SHIFT+M).
+    // Register toggle keybind (default CTRL+SHIFT+T).
     APIDefs->InputBinds_RegisterWithString(KB_TOGGLE, ProcessKeybind, "CTRL+SHIFT+T");
 
     // Close windows on Escape (settings / guide: in both languages, see s_EscapeTitles).
@@ -380,19 +379,19 @@ void AddonLoad(AddonAPI_t* aApi) {
     g_Notes.Init(APIDefs);
 
     // Icon cache (async chip-icon download/upload via Nexus textures).
-    Magpie::Icons::Init(APIDefs);
+    Trailpack::Icons::Init(APIDefs);
 
     // Decoder Ring consumer client (optional provider; lifetime-contract safe).
-    Magpie::Decoder::Init(APIDefs);
+    Trailpack::Decoder::Init(APIDefs);
 
     // Pie UI consumer client (optional provider; latched presence, no-op when absent).
-    Magpie::PieUi::Init(APIDefs);
+    Trailpack::PieUi::Init(APIDefs);
 
     // Load persisted settings (e.g. the quick-access toggle), then register the
     // quick-access icon from the embedded icon.png (same method as Alter Ego).
     LoadSettings();
     ApplyLanguage();
-    APIDefs->Textures_LoadFromMemory(TEX_ICON, (void*)MAGPIE_ICON, MAGPIE_ICON_size, nullptr);
+    APIDefs->Textures_LoadFromMemory(TEX_ICON, (void*)TRAILPACK_ICON, TRAILPACK_ICON_size, nullptr);
     if (g_Settings.showQaIcon) AddQAIcon();
 
     APIDefs->Log(LOGL_INFO, "TrailpackMemo", "Trailpack Memo loaded.");
@@ -404,13 +403,13 @@ void AddonUnload() {
     if (s_BackupDialog.valid()) s_BackupDialog.wait();
 
     // Drop Decoder Ring subscriptions + cache before APIDefs goes away.
-    Magpie::Decoder::Shutdown();
+    Trailpack::Decoder::Shutdown();
 
     // Unsubscribe Pie UI's READY handler before APIDefs goes away.
-    Magpie::PieUi::Shutdown();
+    Trailpack::PieUi::Shutdown();
 
     // Mark the icon cache dead so a late texture-load callback can't touch torn-down state.
-    Magpie::Icons::Shutdown();
+    Trailpack::Icons::Shutdown();
 
     // Save notes before we lose APIDefs (Shutdown only writes to disk — safe).
     g_Notes.Shutdown();
@@ -446,17 +445,17 @@ void AddonRender() {
     // Fonts for sharp scaling, read outside any window (see FontScale.h).
     {
         auto* nl = static_cast<NexusLinkData_t*>(APIDefs->DataLink_Get(DL_NEXUS_LINK));
-        Magpie::SetFontBase(ImGui::GetFont(), nl != nullptr ? static_cast<ImFont*>(nl->FontBig) : nullptr);
+        Trailpack::SetFontBase(ImGui::GetFont(), nl != nullptr ? static_cast<ImFont*>(nl->FontBig) : nullptr);
     }
 
     if (g_WindowVisible) {
-        Magpie::SetCheckedTaskChips(g_Settings.doneShowTime, g_Settings.doneShowPopups);
+        Trailpack::SetCheckedTaskChips(g_Settings.doneShowTime, g_Settings.doneShowPopups);
         Theme::PushWindowStyle();
         const bool open = Theme::BeginWindow(WINDOW_NAME, &g_WindowVisible);
         Help::TitleBarButton(WINDOW_NAME, &g_HelpVisible);   // "?" next to the title
         if (open) {
             // UI text size for everything inside the window (not the title bar).
-            Magpie::FontScaleScope uiFont(g_Settings.uiTextScale / 100.0f);
+            Trailpack::FontScaleScope uiFont(g_Settings.uiTextScale / 100.0f);
             g_Notes.SetNoteTextScale(g_Settings.noteTextScale / 100.0f);
             g_Notes.Render();
             if (g_Notes.ConsumeSettingsChanged()) SaveSettings();
@@ -479,7 +478,7 @@ void AddonRender() {
         const std::string title = SettingsTitle();
         ImGui::SetNextWindowSize(ImVec2(480.0f, 420.0f), ImGuiCond_FirstUseEver);
         if (Theme::BeginWindow(title.c_str(), &g_SettingsVisible)) {
-            Magpie::FontScaleScope uiFont(g_Settings.uiTextScale / 100.0f);
+            Trailpack::FontScaleScope uiFont(g_Settings.uiTextScale / 100.0f);
             RenderOptions();
         }
         ImGui::End();
@@ -500,7 +499,7 @@ static void RenderOptions() {
         const char* items[] = { Tr("Auto (Nexus language)"), "English", "Deutsch" };
         int mode = (int)g_Settings.language;
         if (ImGui::Combo(Tr("Language"), &mode, items, IM_ARRAYSIZE(items))) {
-            g_Settings.language = (Magpie::Settings::Language)mode;
+            g_Settings.language = (Trailpack::Settings::Language)mode;
             ApplyLanguage();
             SaveSettings();
         }
@@ -510,7 +509,7 @@ static void RenderOptions() {
     // Live Decoder Ring presence — re-evaluated every frame, never latched.
     // Drives the chip experience: full names + icons + tooltips when present,
     // basic labels (still fully usable) when absent.
-    if (Magpie::Decoder::Present()) {
+    if (Trailpack::Decoder::Present()) {
         ImGui::TextColored(ImVec4(0.50f, 0.85f, 0.50f, 1.0f),
             "%s", Tr("Decoder Ring: connected -- chips show full names and icons."));
     } else {
@@ -537,7 +536,7 @@ static void RenderOptions() {
     if (ImGui::CollapsingHeader(Tr("Font options"))) {
         auto sizeSlider = [](const char* id, const char* label, int& pct) {
             ImGui::PushID(id);
-            ImGui::SliderInt(label, &pct, Magpie::Settings::kScaleMin, Magpie::Settings::kScaleMax, "%d%%");
+            ImGui::SliderInt(label, &pct, Trailpack::Settings::kScaleMin, Trailpack::Settings::kScaleMax, "%d%%");
             if (ImGui::IsItemDeactivatedAfterEdit()) SaveSettings();
             ImGui::SameLine();
             if (ImGui::Button(Tr("Reset")) && pct != 100) {
@@ -576,13 +575,13 @@ static void RenderOptions() {
         float sliderW = ImGui::GetContentRegionAvail().x - numW - resetW - labelW - 3.0f * sp;
         if (sliderW < 80.0f) sliderW = 80.0f;
         ImGui::SetNextItemWidth(sliderW);
-        ImGui::SliderFloat("##slider", &r, 0.0f, Magpie::Settings::kRoundingMax, "%.1f px");
+        ImGui::SliderFloat("##slider", &r, 0.0f, Trailpack::Settings::kRoundingMax, "%.1f px");
         bool save = ImGui::IsItemDeactivatedAfterEdit();
         ImGui::SameLine();
         ImGui::SetNextItemWidth(numW);
         ImGui::InputFloat("##value", &r, 0.0f, 0.0f, "%.2f");
         save = save || ImGui::IsItemDeactivatedAfterEdit();
-        r = r < 0.0f ? 0.0f : r > Magpie::Settings::kRoundingMax ? Magpie::Settings::kRoundingMax : r;
+        r = r < 0.0f ? 0.0f : r > Trailpack::Settings::kRoundingMax ? Trailpack::Settings::kRoundingMax : r;
         ImGui::SameLine();
         if (ImGui::Button(Tr("Reset")) && r != 0.0f) {
             r    = 0.0f;
@@ -612,7 +611,7 @@ static void RenderOptions() {
         for (const char* l : { Tr("Theme"), Tr("Save as theme"), Tr("Border"), Tr("Background"), Tr("Text"),
                                Tr("Group names"), Tr("Menu button"), Tr("Menu icon") })
             labelW = std::max(labelW, ImGui::CalcTextSize(l).x);
-        for (Magpie::NoteType t : { Magpie::NoteType::Daily, Magpie::NoteType::Weekly })
+        for (Trailpack::NoteType t : { Trailpack::NoteType::Daily, Trailpack::NoteType::Weekly })
             labelW = std::max(labelW, badgeW + style.ItemSpacing.x + ImGui::CalcTextSize(NotesUi::TypeName(t)).x);
         ImGui::Indent();
         const float colSwatch = ImGui::GetCursorPosX() + labelW + style.ItemSpacing.x * 2.0f;
@@ -652,12 +651,12 @@ static void RenderOptions() {
         // The combo shows the theme matching the current colours, else "Custom". Picking
         // one replaces every colour option; single colours can still be changed afterwards.
         {
-            const Magpie::ColorSet current = CollectColors();
-            struct Builtin { const char* name; Magpie::ColorSet colors; };
+            const Trailpack::ColorSet current = CollectColors();
+            struct Builtin { const char* name; Trailpack::ColorSet colors; };
             const Builtin builtins[] = {
-                { Tr("Default (Nexus)"), Magpie::ColorSet()        },
-                { Tr("Light"),           Magpie::ColorSet::Light() },
-                { Tr("Dark"),            Magpie::ColorSet::Dark()  },
+                { Tr("Default (Nexus)"), Trailpack::ColorSet()        },
+                { Tr("Light"),           Trailpack::ColorSet::Light() },
+                { Tr("Dark"),            Trailpack::ColorSet::Dark()  },
             };
             std::string preview = Tr("Custom");
             std::string currentUser;   // name of the matching user theme, if any
@@ -668,7 +667,7 @@ static void RenderOptions() {
                     if (b.colors == current) { preview = b.name; break; }
 
             const float fieldW = ImGui::GetFontSize() * 12.0f;
-            Magpie::ColorSet pick;
+            Trailpack::ColorSet pick;
             bool picked = false;
             ImGui::Indent();
             label(Tr("Theme"));
@@ -680,7 +679,7 @@ static void RenderOptions() {
                     }
                 if (!g_Settings.themes.empty()) ImGui::Separator();
                 for (size_t i = 0; i < g_Settings.themes.size(); ++i) {
-                    const Magpie::NamedTheme& t = g_Settings.themes[i];
+                    const Trailpack::NamedTheme& t = g_Settings.themes[i];
                     ImGui::PushID((int)i);   // a user theme may share a built-in's name
                     if (ImGui::Selectable(t.name.c_str(), t.name == currentUser)) {
                         pick = t.colors; picked = true;
@@ -776,7 +775,7 @@ static void RenderOptions() {
         if (section(Tr("Daily / weekly badges"), "sec_badges")) {
             ImGui::SetCursorPosX(colSwatch); ImGui::TextDisabled("%s", Tr("Background"));
             ImGui::SameLine(colText);   ImGui::TextDisabled("%s", Tr("Text"));
-            auto badgeRow = [&](Magpie::NoteType t, ImVec4& bgCol, ImVec4& textCol, const ImVec4& bgDef) {
+            auto badgeRow = [&](Trailpack::NoteType t, ImVec4& bgCol, ImVec4& textCol, const ImVec4& bgDef) {
                 ImGui::PushID((int)t);
                 const ImVec2 p = ImGui::GetCursorScreenPos();
                 NotesUi::DrawTypeBadge(ImGui::GetWindowDrawList(), p, ImGui::GetFrameHeight(), t);
@@ -790,14 +789,14 @@ static void RenderOptions() {
                 if (ImGui::Button(Tr("Reset"))) { bgCol = bgDef; textCol = Theme::BADGE_TEXT; s_ColorsDirty = true; }
                 ImGui::PopID();
             };
-            badgeRow(Magpie::NoteType::Daily,  c.dailyBadge,  c.dailyBadgeText,  Theme::BADGE_DAILY);
-            badgeRow(Magpie::NoteType::Weekly, c.weeklyBadge, c.weeklyBadgeText, Theme::BADGE_WEEKLY);
+            badgeRow(Trailpack::NoteType::Daily,  c.dailyBadge,  c.dailyBadgeText,  Theme::BADGE_DAILY);
+            badgeRow(Trailpack::NoteType::Weekly, c.weeklyBadge, c.weeklyBadgeText, Theme::BADGE_WEEKLY);
             ImGui::TreePop();
         }
 
         ImGui::Spacing();
         if (ImGui::Button(Tr("Reset all colours"))) {
-            ApplyColors(Magpie::ColorSet());
+            ApplyColors(Trailpack::ColorSet());
             s_ColorsDirty = true;
         }
     }
@@ -819,7 +818,7 @@ static void RenderOptions() {
         if (!s_RestoreFile.empty()) {
             char line[512];
             snprintf(line, sizeof line,
-                     Magpie::I18n::TrN(s_RestoreNoteCount,
+                     Trailpack::I18n::TrN(s_RestoreNoteCount,
                                        "Restore %s (%d note)? This replaces all notes and settings.",
                                        "Restore %s (%d notes)? This replaces all notes and settings."),
                      s_RestoreFile.c_str(), s_RestoreNoteCount);

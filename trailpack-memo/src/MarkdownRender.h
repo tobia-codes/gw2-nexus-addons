@@ -1,7 +1,7 @@
 #pragma once
 // MarkdownRender.h — ImGui draw-list rendering of parsed markdown (VIEW mode).
 //
-// Renders the subset of markdown produced by Magpie::Md::Parse: headings,
+// Renders the subset of markdown produced by Trailpack::Md::Parse: headings,
 // bullets, task checkboxes, paragraphs, with inline bold (faux via double-draw) and italic
 // (faux via per-glyph vertex shear), since Nexus exposes no bold/italic font.
 // Chips render as a placeholder token for now (Task 13 replaces with real
@@ -12,7 +12,7 @@
 
 struct ImFont;  // forward (defined in imgui.h)
 
-namespace Magpie {
+namespace Trailpack {
 
 // Render parsed markdown lines at the current ImGui cursor, wrapping to
 // `wrapWidth` pixels. `fontBig` is Nexus's FontBig for headings (may be null
@@ -29,4 +29,4 @@ int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wr
 // event countdown kept (in a much lighter colour) / tooltips + right-click menu kept.
 void SetCheckedTaskChips(bool showTime, bool popups);
 
-} // namespace Magpie
+} // namespace Trailpack

@@ -1,21 +1,17 @@
 # Trailpack Memo — Working Plan
 
-> Living plan: current state and open backlog. The rules (build, fork identity, code rules,
+> Living plan: current state and open backlog. The rules (build, identity, code rules,
 > optional dependencies) are in [`../AGENTS.md`](../AGENTS.md). Work the backlog top-down unless
 > the user says otherwise, tick boxes (`- [x]`) as tasks land, and update "Current state" when the
 > architecture changes.
->
-> History: this file replaces the original upstream plan `2026-06-11-magpie-memo.md` (Magpie Memo
-> by PieOrCake), which built the base addon and is fully implemented. Read it via
-> `git show f64c3e3:plans/2026-06-11-magpie-memo.md`.
 
 ---
 
 ## Current state (as of 2026-10-29)
 
-All upstream stages (scaffold, CRUD + persistence, view/edit + unsaved modal, markdown render,
-chips with Decoder Ring, icon cache, Pie UI waypoint/open-link) plus the fork features are done.
-Forked from upstream commit `aa02219`. Host tests: 80 test functions in
+Base (CRUD + persistence, view/edit + unsaved modal, markdown render, chips with Decoder Ring,
+icon cache, Pie UI waypoint/open-link) and the features below are done. Standalone addon, C++
+namespace `Trailpack`. Host tests: 80 test functions in
 `tests/host_tests_main.cpp`, all green.
 
 ### Module map (`src/`)
@@ -54,7 +50,7 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 | `Theme.{h,cpp}` | no | Accent palette (gold border, green/amber buttons, edit tint) |
 | `chat/*` | yes | **Vendored** Pie UI codec — do not edit |
 
-### Fork features (beyond upstream)
+### Features
 
 - GFM task lists `- [ ]` / `- [x]`: clickable in view mode (saves immediately), checked items dimmed
   and struck through (chips too: grey name only by default; `done_show_time` keeps the event
@@ -92,13 +88,13 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   existing groups). Resolution in `NotesWindow::groupColor_`.
 - Bulk delete: menu -> "Delete notes..." modal (`renderBulkDeleteModal_`, two steps: select, then
   confirm) -> `NotesStore::DeleteMany`; groups are left in place.
-- Groups (`Magpie::Group`: id, name, collapsed; one level): `Note::groupId`. notes.json is now
+- Groups (`Trailpack::Group`: id, name, collapsed; one level): `Note::groupId`. notes.json is now
   `{"format":"trailpack-memo-notes","version":2,groups,notes}` (v1 plain array still loads).
   Export v2 carries `groups` + per-note `group`; `ExportGroupJson` for one group; import reuses a
   group by id or recreates it (only groups used by imported notes). Deleting a group ungroups its
   notes. List UI: `renderGroupHeader_` / `renderNoteRow_`, drag payload `TPM_NOTE`.
 - Note ids are globally unique (32 hex, random 128 bit, `IsNoteId`); `FromJson` migrates legacy
-  counter ids (`00000000`, Magpie Memo) and `NotesWindow::Init` saves right after loading so ids
+  counter ids (`00000000`, old notes.json files) and `NotesWindow::Init` saves right after loading so ids
   stay stable.
 - Menu -> "Settings..." opens an own settings window (`g_SettingsVisible`, dllmain) that renders
   `RenderOptions()`, the same function Nexus's options pane (`AddonOptions`) calls.
@@ -128,7 +124,7 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   Pane borders: `show_{list,note}_border` + `color_{list,note}_border` (null = follow the window
   border colour), pushed via `Theme::PushListBorder/PushNoteBorder` around BeginChild only
   (ChildBorderSize + ImGuiCol_Border); the preview pane uses the note's border.
-  All colour options are one `Magpie::ColorSet` (`g_Settings.colors`; JSON keys stay flat);
+  All colour options are one `Trailpack::ColorSet` (`g_Settings.colors`; JSON keys stay flat);
   dllmain `ApplyColors` / `CollectColors` map it to `Theme::UserColors`. Borders default off.
   Themes: Default (= `ColorSet{}`), `ColorSet::Light()` / `Dark()` (window text stays Nexus's;
   editor fields on a custom note background use `Theme::FieldBg`), user themes in
@@ -156,7 +152,7 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   badges (2x2 table with preview), "Reset all colours" resets `Theme::UserColors`.
 - Two text sizes (70-200 %, Nexus options > "Font options"; colours under "Colour options", both
   collapsible sections in `AddonOptions`): UI = `text_scale`, note content = `note_text_scale`,
-  both applied with `Magpie::FontScaleScope` (`FontScale.{h,cpp}`) -- the UI scope right after
+  both applied with `Trailpack::FontScaleScope` (`FontScale.{h,cpp}`) -- the UI scope right after
   `Begin`, the note scope around view / editor / preview. It sets the font size directly
   (ImGui 1.80 inherits `SetWindowFontScale` only one child level deep) and draws enlarged text
   from Nexus's FontBig scaled down instead of stretching the 15 px font (less blur). Headings use
@@ -173,7 +169,7 @@ in game.
 ### B1 — WndProc key capture while editing
 **Why:** `dllmain.cpp` has a TODO: while a chip editor is focused, held keys can leak to the game
 (e.g. WASD moves, `H` opens Hero panel) because `WantTextInput` flickers.
-**Files:** `src/dllmain.cpp` (uses `Magpie::ChipInputActive()` / `Magpie::RequestChipBlur()` from
+**Files:** `src/dllmain.cpp` (uses `Trailpack::ChipInputActive()` / `Trailpack::RequestChipBlur()` from
 `ChipTextEdit.h`).
 - [ ] Register a WndProc via `APIDefs->WndProc_Register` in `AddonLoad`, deregister in `AddonUnload`.
 - [ ] Keyboard messages (`WM_KEYDOWN/UP`, `WM_CHAR`, `WM_SYSKEY*`) while `ChipInputActive()`: reinforce
@@ -192,15 +188,6 @@ release of one repo, but the monorepo will hold several addon DLLs.
 - [ ] Implement the chosen option (`Provider`, `UpdateLink`), plus a release step (e.g. GitHub
       Actions building with MinGW and attaching `TrailpackMemo.dll`). Only bump `V_*` when asked.
 
-### B3 — Clean up outdated upstream docs
-- [x] Removed `build-magpie-memo-prompt.md` and `docs/superpowers/` (upstream's build prompt and
-      Pie UI "open map" spec/plan; implemented, stale names/paths). Still in git history (`f64c3e3`).
-
-### B4 — Upstream sync procedure
-- [ ] Document how to pull new `PieOrCake/magpie_memo` commits into `trailpack-memo/` (e.g.
-      `git subtree`-style or manual diff of `src/` against upstream at a given commit), keeping our
-      identity and fork features. Record the last synced upstream commit here (currently `aa02219`).
-
 ### B5 — Event timers in notes (next big feature)
 **Why:** world bosses and map metas follow fixed UTC schedules; notes should show them as chips
 with a live countdown and copy the waypoint on click.
@@ -215,6 +202,7 @@ with a live countdown and copy the waypoint on click.
 ---
 
 ## Changelog of this plan
-- 2026-10-29 — Rewritten from the upstream implementation plan for the Trailpack Memo fork in the
-  monorepo; rules moved to `AGENTS.md`; B3 done.
+- 2026-10-29 — Plan set up in the monorepo; rules in `AGENTS.md`.
 - 2026-10-29 — B5 (event timers) planned with the user; details in `EVENTS.md`.
+- 2026-10-29 — Standalone: fork references removed, namespace `Magpie` -> `Trailpack`; B3 / B4
+  (upstream docs / sync) dropped.

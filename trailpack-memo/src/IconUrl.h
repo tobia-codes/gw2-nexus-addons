@@ -2,7 +2,7 @@
 #include <string>
 #include <cstdint>
 
-namespace Magpie { namespace Icons {
+namespace Trailpack { namespace Icons {
 
 // FNV-1a 32-bit hash of the URL (stable key for the cache / texture identifier).
 uint32_t UrlKey(const char* url);
@@ -13,4 +13,4 @@ uint32_t UrlKey(const char* url);
 struct SplitUrl { std::string remote; std::string endpoint; };
 SplitUrl SplitIconUrl(const std::string& url);
 
-}} // namespace Magpie::Icons
+}} // namespace Trailpack::Icons

@@ -15,7 +15,7 @@
 #include <cstdint>
 #include "ChipDone.h"
 
-namespace Magpie {
+namespace Trailpack {
 
 // Resolved display label for a chip: Decoder Ring's resolved name if warm, else
 // the structural label from ResolveChip. Bracketed to match the structural
@@ -42,4 +42,4 @@ float MeasureRichChip(ImFont* font, float fontSize, const std::string& code,
 float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& pos,
                    const std::string& code, int uid, const ChipDoneStyle* done = nullptr);
 
-} // namespace Magpie
+} // namespace Trailpack

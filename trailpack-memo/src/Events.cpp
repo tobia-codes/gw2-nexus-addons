@@ -3,7 +3,7 @@
 
 #include <cstdio>
 
-namespace Magpie { namespace Events {
+namespace Trailpack { namespace Events {
 
 using I18n::Lang;
 using I18n::Tr;
@@ -212,4 +212,4 @@ std::string FormatDuration(int64_t seconds)
     return buf;
 }
 
-}} // namespace Magpie::Events
+}} // namespace Trailpack::Events

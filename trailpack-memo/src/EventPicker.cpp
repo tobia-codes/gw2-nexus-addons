@@ -7,7 +7,7 @@
 #include "Events.h"
 #include "I18n.h"
 
-namespace Magpie { namespace EventPicker {
+namespace Trailpack { namespace EventPicker {
 
 using I18n::Tr;
 
@@ -64,4 +64,4 @@ std::string Render(std::string& query, bool& focusSearch)
     return picked;
 }
 
-}} // namespace Magpie::EventPicker
+}} // namespace Trailpack::EventPicker

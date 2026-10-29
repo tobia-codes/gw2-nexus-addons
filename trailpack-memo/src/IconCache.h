@@ -1,7 +1,7 @@
 #pragma once
 #include "nexus/Nexus.h"
 
-namespace Magpie { namespace Icons {
+namespace Trailpack { namespace Icons {
 
 // Initialise with the Nexus API pointer. Must be called before RequestUrl/Get.
 void Init(AddonAPI_t* api);
@@ -18,4 +18,4 @@ void RequestUrl(const char* url);
 // NEVER returns a texture whose Resource is null.
 Texture_t* Get(const char* url);
 
-}} // namespace Magpie::Icons
+}} // namespace Trailpack::Icons

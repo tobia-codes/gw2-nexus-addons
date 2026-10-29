@@ -3,7 +3,7 @@
 
 #include <nlohmann/json.hpp>
 
-namespace Magpie { namespace Backup {
+namespace Trailpack { namespace Backup {
 
 static const char* kFormat  = "trailpack-memo-backup";
 static const int   kVersion = 1;
@@ -42,4 +42,4 @@ bool Parse(const std::string& text, std::string& notesJson, std::string& setting
     return true;
 }
 
-}} // namespace Magpie::Backup
+}} // namespace Trailpack::Backup

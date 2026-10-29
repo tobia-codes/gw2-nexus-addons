@@ -17,10 +17,10 @@ std::string Ellipsize(const std::string& text, float maxWidth);
 // Note types (daily / weekly reset): translated name, badge colour (user-set; also used
 // for the countdown), badge letter colour, countdown text ("Daily reset in 3h 12m";
 // empty for a plain note).
-const char* TypeName(Magpie::NoteType t);
-ImVec4      TypeColor(Magpie::NoteType t);
-ImVec4      TypeTextColor(Magpie::NoteType t);
-std::string ResetText(Magpie::NoteType t);
+const char* TypeName(Trailpack::NoteType t);
+ImVec4      TypeColor(Trailpack::NoteType t);
+ImVec4      TypeTextColor(Trailpack::NoteType t);
+std::string ResetText(Trailpack::NoteType t);
 
 // Colour of note titles in the list (user-set, else the current text colour).
 ImVec4      ListTextColor();
@@ -33,6 +33,6 @@ ImVec4      MenuIconColor();
 ImVec4      Dimmed(ImVec4 c);
 
 // Small coloured badge ("D" / "W") at `pos`; returns its width (0 for a plain note).
-float DrawTypeBadge(ImDrawList* dl, ImVec2 pos, float height, Magpie::NoteType t);
+float DrawTypeBadge(ImDrawList* dl, ImVec2 pos, float height, Trailpack::NoteType t);
 
 } // namespace NotesUi

@@ -9,7 +9,7 @@
 #include <filesystem>
 #include <string>
 
-namespace Magpie { namespace SafeFile {
+namespace Trailpack { namespace SafeFile {
 
 // Whole file into `out` (binary). False if it can't be opened or read.
 bool Read(const std::filesystem::path& path, std::string& out);
@@ -26,4 +26,4 @@ std::filesystem::path BackupPath(const std::filesystem::path& path);
 // n), so it can be inspected and is never overwritten. Returns the new path, or empty.
 std::filesystem::path SetAside(const std::filesystem::path& path);
 
-}} // namespace Magpie::SafeFile
+}} // namespace Trailpack::SafeFile

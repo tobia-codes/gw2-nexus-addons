@@ -11,7 +11,7 @@
 #include <string>
 #include "ChipDone.h"
 
-namespace Magpie {
+namespace Trailpack {
 
 // Editor label (name only, current language) and colour for an event token "{{event:<id>}}".
 std::string EventChipLabel(const std::string& token);
@@ -28,4 +28,4 @@ float MeasureEventChip(ImFont* font, float fontSize, const std::string& id,
 float DrawEventChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& pos,
                     const std::string& id, int uid, const ChipDoneStyle* done = nullptr);
 
-} // namespace Magpie
+} // namespace Trailpack

@@ -2,7 +2,7 @@
 #include <string>
 #include <vector>
 
-namespace Magpie { namespace Md {
+namespace Trailpack { namespace Md {
 
 enum class Block  { Paragraph, Heading, Bullet, Task };
 enum class Inline { Text, Bold, Italic, Chip, Event };
@@ -43,4 +43,4 @@ bool ToggleTask(std::string& body, int lineIndex);
 // Set every task line to unchecked ("[ ]"). Returns the number of lines changed.
 int UncheckAllTasks(std::string& body);
 
-}} // namespace Magpie::Md
+}} // namespace Trailpack::Md

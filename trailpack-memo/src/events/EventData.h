@@ -10,7 +10,7 @@
 #include <cstddef>
 #include <cstdint>
 
-namespace Magpie { namespace Events {
+namespace Trailpack { namespace Events {
 
 constexpr int kDayMinutes = 1440;
 
@@ -46,4 +46,4 @@ extern const size_t      kCategoryCount;
 extern const EventDef    kEvents[];
 extern const size_t      kEventCount;
 
-}} // namespace Magpie::Events
+}} // namespace Trailpack::Events

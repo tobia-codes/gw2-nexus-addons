@@ -1,7 +1,7 @@
 // FontScale.cpp — see FontScale.h.
 #include "FontScale.h"
 
-namespace Magpie {
+namespace Trailpack {
 
 static ImFont* s_Normal = nullptr;
 static ImFont* s_Big    = nullptr;
@@ -54,4 +54,4 @@ FontScaleScope::~FontScaleScope()
     ImGui::PopFont();
 }
 
-} // namespace Magpie
+} // namespace Trailpack

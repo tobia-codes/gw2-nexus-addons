@@ -50,7 +50,7 @@ static int s_failures = 0;
 
 static void test_create_appears_in_notes()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     auto& n = store.Create("My note");
     CHECK(store.Notes().size() == 1);
     CHECK_EQ(store.Notes()[0].title, std::string("My note"));
@@ -62,14 +62,14 @@ static void test_create_appears_in_notes()
 
 static void test_default_title()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     store.Create();
     CHECK_EQ(store.Notes()[0].title, std::string("Untitled note"));
 }
 
 static void test_two_creates_have_different_ids()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     std::string idA = store.Create("A").id;
     std::string idB = store.Create("B").id;
     CHECK(idA != idB);
@@ -78,26 +78,26 @@ static void test_two_creates_have_different_ids()
 
 static void test_get_returns_note()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     auto& n = store.Create("Find me");
-    Magpie::Note* p = store.Get(n.id);
+    Trailpack::Note* p = store.Get(n.id);
     CHECK(p != nullptr);
     CHECK_EQ(p->title, std::string("Find me"));
 }
 
 static void test_get_returns_nullptr_for_missing()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     store.Create("something");
-    Magpie::Note* p = store.Get("nonexistent-id");
+    Trailpack::Note* p = store.Get("nonexistent-id");
     CHECK(p == nullptr);
 }
 
 static void test_edit_via_get_persists()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     auto& n = store.Create("Original");
-    Magpie::Note* p = store.Get(n.id);
+    Trailpack::Note* p = store.Get(n.id);
     p->body = "edited body";
     p->title = "Updated";
     CHECK_EQ(store.Notes()[0].body, std::string("edited body"));
@@ -106,7 +106,7 @@ static void test_edit_via_get_persists()
 
 static void test_edit_via_create_ref_persists()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     auto& n = store.Create("Ref test");
     n.body = "body via ref";
     CHECK_EQ(store.Notes()[0].body, std::string("body via ref"));
@@ -114,7 +114,7 @@ static void test_edit_via_create_ref_persists()
 
 static void test_delete_removes_note()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     std::string aid = store.Create("A").id;
     std::string bid = store.Create("B").id;
     store.Delete(aid);
@@ -125,7 +125,7 @@ static void test_delete_removes_note()
 
 static void test_delete_noop_for_missing()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     store.Create("X");
     store.Delete("does-not-exist");
     CHECK(store.Notes().size() == 1);
@@ -133,7 +133,7 @@ static void test_delete_noop_for_missing()
 
 static void test_json_roundtrip_ordered()
 {
-    Magpie::NotesStore src;
+    Trailpack::NotesStore src;
     std::string id1 = src.Create("First").id;
     src.Get(id1)->body = "body one";
     std::string id2 = src.Create("Second").id;
@@ -144,7 +144,7 @@ static void test_json_roundtrip_ordered()
     std::string json = src.ToJson();
     CHECK(!json.empty());
 
-    Magpie::NotesStore dst;
+    Trailpack::NotesStore dst;
     dst.Create("should be replaced");
     bool ok = dst.FromJson(json);
     CHECK(ok);
@@ -163,7 +163,7 @@ static void test_json_roundtrip_ordered()
 
 static void test_fromjson_invalid_returns_false_and_leaves_state()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     store.Create("keep me");
     bool ok = store.FromJson("{ not valid json !!!");
     CHECK(!ok);
@@ -174,7 +174,7 @@ static void test_fromjson_invalid_returns_false_and_leaves_state()
 static void test_fromjson_wrong_shape_returns_false()
 {
     // Valid JSON but not an array of note objects
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     store.Create("keep me");
     bool ok = store.FromJson("{\"hello\":\"world\"}");
     CHECK(!ok);
@@ -183,7 +183,7 @@ static void test_fromjson_wrong_shape_returns_false()
 
 static void test_fromjson_empty_array()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     store.Create("will be cleared");
     bool ok = store.FromJson("[]");
     CHECK(ok);
@@ -194,7 +194,7 @@ static void test_create_after_fromjson_has_unique_id()
 {
     // Regression: loading notes from disk must advance the id counter so a
     // subsequent Create() cannot mint an id that collides with a loaded one.
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     bool ok = store.FromJson(
         "[{\"id\":\"00000000\",\"title\":\"A\",\"body\":\"\"},"
         " {\"id\":\"00000001\",\"title\":\"B\",\"body\":\"\"}]");
@@ -211,12 +211,12 @@ static void test_create_after_fromjson_has_unique_id()
 
 static void test_export_all_import_roundtrip()
 {
-    Magpie::NotesStore src;
+    Trailpack::NotesStore src;
     src.Create("First").body  = "- [ ] task\n[&AgH1WQAA]";
     src.Create("Second").body = "# Head";
     const std::string file = src.ExportJson();
 
-    Magpie::NotesStore dst;
+    Trailpack::NotesStore dst;
     dst.Create("Existing");
     CHECK_EQ(dst.ImportJson(file), 2);
     CHECK(dst.Notes().size() == 3);
@@ -228,21 +228,21 @@ static void test_export_all_import_roundtrip()
 
 static void test_export_selected_ids_only()
 {
-    Magpie::NotesStore src;
+    Trailpack::NotesStore src;
     src.Create("A");
     const std::string idB = src.Create("B").id;
     src.Create("C");
-    Magpie::NotesStore dst;
+    Trailpack::NotesStore dst;
     CHECK_EQ(dst.ImportJson(src.ExportJson({idB, "missing"})), 1);
     CHECK_EQ(dst.Notes()[0].title, std::string("B"));
 }
 
 static void test_reimport_same_note_is_skipped()
 {
-    Magpie::NotesStore src;
+    Trailpack::NotesStore src;
     src.Create("A");
     const std::string file = src.ExportJson();
-    Magpie::NotesStore dst;
+    Trailpack::NotesStore dst;
     CHECK_EQ(dst.ImportJson(file), 1);
     CHECK_EQ(dst.ImportJson(file), 0);     // same id already present
     CHECK(dst.Notes().size() == 1);
@@ -254,7 +254,7 @@ static void test_reimport_same_note_is_skipped()
 
 static void test_import_into_source_store_adds_nothing()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     store.Create("A");
     store.Create("B");
     CHECK_EQ(store.ImportJson(store.ExportJson()), 0);
@@ -263,13 +263,13 @@ static void test_import_into_source_store_adds_nothing()
 
 static void test_prepare_import_flags_duplicates()
 {
-    Magpie::NotesStore src;
+    Trailpack::NotesStore src;
     const std::string idA = src.Create("A").id;
     src.Create("B");
-    Magpie::NotesStore dst;
+    Trailpack::NotesStore dst;
     dst.ImportJson(src.ExportJson({idA}));
 
-    std::vector<Magpie::ImportItem> items;
+    std::vector<Trailpack::ImportItem> items;
     CHECK(dst.PrepareImport(src.ExportJson(), items));
     CHECK(items.size() == 2);
     CHECK(items[0].duplicate);       // A already imported
@@ -283,13 +283,13 @@ static void test_prepare_import_flags_duplicates()
 
 static void test_changed_duplicate_can_be_updated()
 {
-    Magpie::NotesStore src;
+    Trailpack::NotesStore src;
     const std::string id = src.Create("Daily").id;
     src.Get(id)->body = "- [ ] old";
-    Magpie::NotesStore dst;
+    Trailpack::NotesStore dst;
     dst.ImportJson(src.ExportJson());
 
-    std::vector<Magpie::ImportItem> items;
+    std::vector<Trailpack::ImportItem> items;
     CHECK(dst.PrepareImport(src.ExportJson(), items));
     CHECK(items[0].duplicate);
     CHECK(!items[0].changed);                 // identical -> nothing to update
@@ -312,10 +312,10 @@ static void test_changed_duplicate_can_be_updated()
 
 static void test_update_ignores_unknown_and_idless_items()
 {
-    Magpie::NotesStore dst;
+    Trailpack::NotesStore dst;
     dst.Create("A");
-    Magpie::ImportItem unknown;  unknown.id = std::string(32, 'b'); unknown.title = "X";
-    Magpie::ImportItem idless;   idless.title = "A"; idless.body = "changed";
+    Trailpack::ImportItem unknown;  unknown.id = std::string(32, 'b'); unknown.title = "X";
+    Trailpack::ImportItem idless;   idless.title = "A"; idless.body = "changed";
     CHECK_EQ(dst.UpdateImported({unknown, idless}), 0);
     CHECK(dst.Notes().size() == 1);
     CHECK_EQ(dst.Notes()[0].body, std::string(""));
@@ -323,8 +323,8 @@ static void test_update_ignores_unknown_and_idless_items()
 
 static void test_prepare_import_flags_repeats_within_file()
 {
-    Magpie::NotesStore dst;
-    std::vector<Magpie::ImportItem> items;
+    Trailpack::NotesStore dst;
+    std::vector<Trailpack::ImportItem> items;
     const std::string id = std::string(32, 'a');
     CHECK(dst.PrepareImport(
         "[{\"id\":\"" + id + "\",\"title\":\"A\",\"body\":\"\"},"
@@ -336,36 +336,36 @@ static void test_prepare_import_flags_repeats_within_file()
 
 static void test_ids_are_unique_format()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     const std::string id = store.Create("A").id;
-    CHECK(Magpie::IsNoteId(id));
-    CHECK(!Magpie::IsNoteId("00000000"));
-    CHECK(!Magpie::IsNoteId(std::string(32, 'G')));
+    CHECK(Trailpack::IsNoteId(id));
+    CHECK(!Trailpack::IsNoteId("00000000"));
+    CHECK(!Trailpack::IsNoteId(std::string(32, 'G')));
 }
 
 static void test_fromjson_migrates_legacy_ids()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     const std::string keep = std::string(31, '0') + "1";
     CHECK(store.FromJson(
         "[{\"id\":\"00000000\",\"title\":\"Old\",\"body\":\"\"},"
         " {\"id\":\"" + keep + "\",\"title\":\"New\",\"body\":\"\"},"
         " {\"id\":\"" + keep + "\",\"title\":\"Dup\",\"body\":\"\"}]"));
-    CHECK(Magpie::IsNoteId(store.Notes()[0].id));
+    CHECK(Trailpack::IsNoteId(store.Notes()[0].id));
     CHECK_EQ(store.Notes()[1].id, keep);             // valid ids are kept
     CHECK(store.Notes()[2].id != keep);              // repeats get a new id
-    CHECK(Magpie::IsNoteId(store.Notes()[2].id));
+    CHECK(Trailpack::IsNoteId(store.Notes()[2].id));
 }
 
 static void test_import_plain_notes_json_array()
 {
-    // A Trailpack / Magpie Memo notes.json: ids are ignored, notes appended.
-    Magpie::NotesStore dst;
+    // A plain notes.json array: ids are ignored, notes appended.
+    Trailpack::NotesStore dst;
     dst.Create("Mine");
     const std::string legacy = "[{\"id\":\"00000000\",\"title\":\"Old\",\"body\":\"x\"}]";
     CHECK_EQ(dst.ImportJson(legacy), 1);
     CHECK(dst.Notes().size() == 2);
-    CHECK(Magpie::IsNoteId(dst.Notes()[1].id));      // legacy id replaced
+    CHECK(Trailpack::IsNoteId(dst.Notes()[1].id));      // legacy id replaced
     CHECK_EQ(dst.Notes()[1].body, std::string("x"));
     // No usable id -> identical title + body counts as a duplicate.
     CHECK_EQ(dst.ImportJson(legacy), 0);
@@ -373,7 +373,7 @@ static void test_import_plain_notes_json_array()
 
 static void test_import_invalid_leaves_store_untouched()
 {
-    Magpie::NotesStore dst;
+    Trailpack::NotesStore dst;
     dst.Create("Keep");
     CHECK_EQ(dst.ImportJson("not json"), -1);
     CHECK_EQ(dst.ImportJson("{\"format\":\"other\",\"notes\":[]}"), -1);
@@ -387,10 +387,10 @@ static void test_import_invalid_leaves_store_untouched()
 
 static void test_group_create_move_delete()
 {
-    Magpie::NotesStore store;
-    Magpie::Group& g = store.CreateGroup("Dailies");
+    Trailpack::NotesStore store;
+    Trailpack::Group& g = store.CreateGroup("Dailies");
     const std::string gid = g.id;
-    CHECK(Magpie::IsNoteId(gid));
+    CHECK(Trailpack::IsNoteId(gid));
     const std::string a = store.Create("A", gid).id;
     const std::string b = store.Create("B").id;
     CHECK_EQ(store.Get(a)->groupId, gid);
@@ -413,14 +413,14 @@ static void test_group_create_move_delete()
 
 static void test_groups_persist_roundtrip()
 {
-    Magpie::NotesStore src;
-    Magpie::Group& g = src.CreateGroup("Raids");
+    Trailpack::NotesStore src;
+    Trailpack::Group& g = src.CreateGroup("Raids");
     g.collapsed = true;
     const std::string gid = g.id;
     src.Create("W1", gid);
     src.Create("Loose");
 
-    Magpie::NotesStore dst;
+    Trailpack::NotesStore dst;
     CHECK(dst.FromJson(src.ToJson()));
     CHECK(dst.Groups().size() == 1);
     CHECK_EQ(dst.Groups()[0].id, gid);
@@ -432,7 +432,7 @@ static void test_groups_persist_roundtrip()
 
 static void test_fromjson_drops_unknown_group_refs()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     const std::string nid = std::string(31, '0') + "1";
     CHECK(store.FromJson(
         "{\"format\":\"trailpack-memo-notes\",\"version\":2,\"groups\":[],"
@@ -443,13 +443,13 @@ static void test_fromjson_drops_unknown_group_refs()
 
 static void test_export_all_includes_groups_and_import_recreates_them()
 {
-    Magpie::NotesStore src;
+    Trailpack::NotesStore src;
     const std::string gid = src.CreateGroup("Dailies").id;
     src.CreateGroup("Empty");
     src.Create("A", gid);
     src.Create("B");
 
-    Magpie::NotesStore dst;
+    Trailpack::NotesStore dst;
     CHECK_EQ(dst.ImportJson(src.ExportJson()), 2);
     CHECK(dst.Groups().size() == 1);               // only groups used by imported notes
     CHECK_EQ(dst.Groups()[0].id, gid);              // group keeps its id
@@ -460,13 +460,13 @@ static void test_export_all_includes_groups_and_import_recreates_them()
 
 static void test_import_reuses_existing_group_by_id()
 {
-    Magpie::NotesStore src;
+    Trailpack::NotesStore src;
     const std::string gid = src.CreateGroup("Dailies").id;
     src.Create("A", gid);
     const std::string file = src.ExportJson();
     src.Create("B", gid);
 
-    Magpie::NotesStore dst;
+    Trailpack::NotesStore dst;
     dst.ImportJson(file);
     dst.GetGroup(gid)->name = "Renamed locally";
     CHECK_EQ(dst.ImportJson(src.ExportJson()), 1);  // only B is new
@@ -477,15 +477,15 @@ static void test_import_reuses_existing_group_by_id()
 
 static void test_export_single_note_and_group()
 {
-    Magpie::NotesStore src;
+    Trailpack::NotesStore src;
     const std::string g1 = src.CreateGroup("G1").id;
     const std::string g2 = src.CreateGroup("G2").id;
     const std::string a  = src.Create("A", g1).id;
     src.Create("B", g1);
     src.Create("C", g2);
 
-    std::vector<Magpie::ImportItem> items;
-    Magpie::NotesStore probe;
+    std::vector<Trailpack::ImportItem> items;
+    Trailpack::NotesStore probe;
     CHECK(probe.PrepareImport(src.ExportJson({a}), items));
     CHECK(items.size() == 1);
     CHECK_EQ(items[0].groupId, g1);                 // the note's group travels along
@@ -499,7 +499,7 @@ static void test_export_single_note_and_group()
 
 static void test_import_v1_export_without_groups()
 {
-    Magpie::NotesStore dst;
+    Trailpack::NotesStore dst;
     CHECK_EQ(dst.ImportJson("{\"format\":\"trailpack-memo-export\",\"version\":1,"
                             "\"notes\":[{\"id\":\"" + std::string(32, 'a') + "\","
                             "\"title\":\"Old\",\"body\":\"x\"}]}"), 1);
@@ -509,27 +509,27 @@ static void test_import_v1_export_without_groups()
 
 static void test_group_color_persists_and_travels()
 {
-    Magpie::NotesStore src;
-    Magpie::Group& g = src.CreateGroup("Coloured");
+    Trailpack::NotesStore src;
+    Trailpack::Group& g = src.CreateGroup("Coloured");
     g.hasColor = true;
     g.color[0] = 1.0f; g.color[1] = 0.5f; g.color[2] = 0.0f; g.color[3] = 1.0f;
     const std::string gid = g.id;
     src.Create("A", gid);
     src.CreateGroup("Plain");
 
-    Magpie::NotesStore loaded;
+    Trailpack::NotesStore loaded;
     CHECK(loaded.FromJson(src.ToJson()));
     CHECK(loaded.GetGroup(gid)->hasColor);
     CHECK(loaded.GetGroup(gid)->color[1] == 0.5f);
     CHECK(!loaded.Groups()[1].hasColor);
 
-    Magpie::NotesStore imported;
+    Trailpack::NotesStore imported;
     CHECK_EQ(imported.ImportJson(src.ExportJson()), 1);
     CHECK(imported.GetGroup(gid)->hasColor);           // new group takes the file's colour
     CHECK(imported.GetGroup(gid)->color[0] == 1.0f);
 
     // An existing group keeps its local colour.
-    Magpie::NotesStore local;
+    Trailpack::NotesStore local;
     local.ImportJson(src.ExportJson());
     local.GetGroup(gid)->hasColor = false;
     src.Create("B", gid);
@@ -541,7 +541,7 @@ static void test_group_color_persists_and_travels()
 
 static void test_reset_times()
 {
-    using namespace Magpie::Reset;
+    using namespace Trailpack::Reset;
     // 2026-10-29 (Thursday) 12:00:00 UTC
     const int64_t thu = 1793275200;
     CHECK_EQ(LastDaily(thu), (int64_t)1793232000);              // 2026-10-29 00:00 UTC
@@ -563,11 +563,11 @@ static void test_reset_times()
 static void test_daily_note_resets_after_reset_only()
 {
     const int64_t thu = 1793275200;                 // Thu 12:00 UTC
-    Magpie::NotesStore store;
-    Magpie::Note& n = store.Create("Dailies");
+    Trailpack::NotesStore store;
+    Trailpack::Note& n = store.Create("Dailies");
     n.body = "- [x] a\n- [ ] b";
     const std::string id = n.id;
-    CHECK(store.SetType(id, Magpie::NoteType::Daily, thu));
+    CHECK(store.SetType(id, Trailpack::NoteType::Daily, thu));
 
     CHECK_EQ(store.ApplyResets(thu + 3600), 0);      // same day: ticks stay
     CHECK_EQ(store.Get(id)->body, std::string("- [x] a\n- [ ] b"));
@@ -585,14 +585,14 @@ static void test_daily_note_resets_after_reset_only()
 static void test_weekly_and_plain_notes()
 {
     const int64_t thu = 1793275200;
-    Magpie::NotesStore store;
-    Magpie::Note& w = store.Create("Weekly");
+    Trailpack::NotesStore store;
+    Trailpack::Note& w = store.Create("Weekly");
     w.body = "- [x] raid";
     const std::string wid = w.id;
-    Magpie::Note& p = store.Create("Plain");
+    Trailpack::Note& p = store.Create("Plain");
     p.body = "- [x] keep";
     const std::string pid = p.id;
-    store.SetType(wid, Magpie::NoteType::Weekly, thu);
+    store.SetType(wid, Trailpack::NoteType::Weekly, thu);
 
     CHECK_EQ(store.ApplyResets(thu + 2 * 86400), 0);         // Sat: no weekly reset yet
     CHECK_EQ(store.ApplyResets(1793604600 + 1), 1);          // after Mon 07:30 UTC
@@ -603,11 +603,11 @@ static void test_weekly_and_plain_notes()
 static void test_reset_skips_note_in_editor()
 {
     const int64_t thu = 1793275200;
-    Magpie::NotesStore store;
-    Magpie::Note& n = store.Create("D");
+    Trailpack::NotesStore store;
+    Trailpack::Note& n = store.Create("D");
     n.body = "- [x] a";
     const std::string id = n.id;
-    store.SetType(id, Magpie::NoteType::Daily, thu);
+    store.SetType(id, Trailpack::NoteType::Daily, thu);
     CHECK_EQ(store.ApplyResets(thu + 86400, id), 0);   // open in the editor
     CHECK_EQ(store.ApplyResets(thu + 86400), 1);        // reset once the edit ended
 }
@@ -615,21 +615,21 @@ static void test_reset_skips_note_in_editor()
 static void test_type_persists_and_travels()
 {
     const int64_t thu = 1793275200;
-    Magpie::NotesStore src;
+    Trailpack::NotesStore src;
     const std::string id = src.Create("D").id;
-    src.SetType(id, Magpie::NoteType::Weekly, thu);
+    src.SetType(id, Trailpack::NoteType::Weekly, thu);
 
-    Magpie::NotesStore loaded;
+    Trailpack::NotesStore loaded;
     CHECK(loaded.FromJson(src.ToJson()));
-    CHECK(loaded.Get(id)->type == Magpie::NoteType::Weekly);
+    CHECK(loaded.Get(id)->type == Trailpack::NoteType::Weekly);
     CHECK_EQ(loaded.Get(id)->resetStamp, src.Get(id)->resetStamp);
 
-    Magpie::NotesStore imported;
+    Trailpack::NotesStore imported;
     imported.ImportJson(src.ExportJson());
-    CHECK(imported.Get(id)->type == Magpie::NoteType::Weekly);
+    CHECK(imported.Get(id)->type == Trailpack::NoteType::Weekly);
     CHECK_EQ(imported.Get(id)->resetStamp, src.Get(id)->resetStamp);
 
-    CHECK(Magpie::NoteTypeFromKey("bogus") == Magpie::NoteType::Note);
+    CHECK(Trailpack::NoteTypeFromKey("bogus") == Trailpack::NoteType::Note);
 }
 
 // ── Safe file I/O ──────────────────────────────────────────────────────────────
@@ -637,7 +637,7 @@ static void test_type_persists_and_travels()
 static void test_safe_file_write_backup_and_set_aside()
 {
     namespace fs = std::filesystem;
-    using namespace Magpie::SafeFile;
+    using namespace Trailpack::SafeFile;
     const fs::path dir = fs::temp_directory_path() / "tpm_safefile_test";
     fs::remove_all(dir);
     fs::create_directories(dir);
@@ -672,7 +672,7 @@ static void test_safe_file_write_backup_and_set_aside()
 
 static void test_settings_roundtrip()
 {
-    Magpie::Settings a;
+    Trailpack::Settings a;
     a.showQaIcon    = false;
     a.editPreview   = true;
     a.uiTextScale   = 150;
@@ -680,24 +680,24 @@ static void test_settings_roundtrip()
     a.listWidth     = 333.0f;
     a.doneShowTime   = true;
     a.cornerRounding   = 2.5f;
-    a.language      = Magpie::Settings::Language::De;
-    Magpie::ColorSet& c = a.colors;
+    a.language      = Trailpack::Settings::Language::De;
+    Trailpack::ColorSet& c = a.colors;
     c.showBorder      = true;
     c.showListBorder  = true;
-    c.listBorder      = { true, Magpie::Rgba{ 0.0f, 0.0f, 0.7f, 1.0f } };
-    c.menuIcon        = { true, Magpie::Rgba{ 0.3f, 0.3f, 0.3f, 1.0f } };
-    c.popupBackground = { true, Magpie::Rgba{ 0.1f, 0.1f, 0.2f, 0.9f } };
-    c.popupText       = { true, Magpie::Rgba{ 1.0f, 0.9f, 0.6f, 1.0f } };
-    c.border          = Magpie::Rgba{ 0.5f, 0.25f, 1.0f, 1.0f };
-    c.groupName       = { true, Magpie::Rgba{ 1.0f, 0.0f, 0.0f, 1.0f } };
-    c.listBackground  = { true, Magpie::Rgba{ 0.2f, 0.2f, 0.2f, 1.0f } };
-    c.noteText        = { true, Magpie::Rgba{ 0.9f, 0.9f, 0.1f, 1.0f } };
-    c.dailyBadge      = Magpie::Rgba{ 0.1f, 0.2f, 0.3f, 1.0f };
-    c.dailyBadgeText  = Magpie::Rgba{ 1.0f, 1.0f, 1.0f, 0.5f };
-    c.weeklyBadge     = Magpie::Rgba{ 0.0f, 1.0f, 0.0f, 1.0f };
-    c.weeklyBadgeText = Magpie::Rgba{ 0.0f, 0.0f, 1.0f, 1.0f };
+    c.listBorder      = { true, Trailpack::Rgba{ 0.0f, 0.0f, 0.7f, 1.0f } };
+    c.menuIcon        = { true, Trailpack::Rgba{ 0.3f, 0.3f, 0.3f, 1.0f } };
+    c.popupBackground = { true, Trailpack::Rgba{ 0.1f, 0.1f, 0.2f, 0.9f } };
+    c.popupText       = { true, Trailpack::Rgba{ 1.0f, 0.9f, 0.6f, 1.0f } };
+    c.border          = Trailpack::Rgba{ 0.5f, 0.25f, 1.0f, 1.0f };
+    c.groupName       = { true, Trailpack::Rgba{ 1.0f, 0.0f, 0.0f, 1.0f } };
+    c.listBackground  = { true, Trailpack::Rgba{ 0.2f, 0.2f, 0.2f, 1.0f } };
+    c.noteText        = { true, Trailpack::Rgba{ 0.9f, 0.9f, 0.1f, 1.0f } };
+    c.dailyBadge      = Trailpack::Rgba{ 0.1f, 0.2f, 0.3f, 1.0f };
+    c.dailyBadgeText  = Trailpack::Rgba{ 1.0f, 1.0f, 1.0f, 0.5f };
+    c.weeklyBadge     = Trailpack::Rgba{ 0.0f, 1.0f, 0.0f, 1.0f };
+    c.weeklyBadgeText = Trailpack::Rgba{ 0.0f, 0.0f, 1.0f, 1.0f };
 
-    Magpie::Settings b;
+    Trailpack::Settings b;
     CHECK(b.FromJson(a.ToJson()));
     CHECK(!b.showQaIcon);
     CHECK(b.editPreview);
@@ -706,7 +706,7 @@ static void test_settings_roundtrip()
     CHECK(b.listWidth == 333.0f);
     CHECK(b.doneShowTime && !b.doneShowPopups);
     CHECK(b.cornerRounding == 2.5f);
-    CHECK(b.language == Magpie::Settings::Language::De);
+    CHECK(b.language == Trailpack::Settings::Language::De);
     CHECK(b.colors == a.colors);                         // every colour option survives
     CHECK(b.colors.showBorder && b.colors.showListBorder && !b.colors.showNoteBorder);
     CHECK(!b.colors.background.set && !b.colors.text.set);   // null stays unset
@@ -717,7 +717,7 @@ static void test_settings_roundtrip()
 
 static void test_settings_validation()
 {
-    Magpie::Settings s;
+    Trailpack::Settings s;
     CHECK(!s.FromJson("not json"));
     CHECK(!s.FromJson("[1,2]"));
     CHECK_EQ(s.uiTextScale, 100);                       // untouched on failure
@@ -726,7 +726,7 @@ static void test_settings_validation()
     CHECK(!s.colors.showBorder && !s.colors.showListBorder && !s.colors.showNoteBorder);
     CHECK(!s.colors.popupBackground.set && !s.colors.popupText.set);
     // The short-lived "color_popup_background" (always opaque black) is ignored.
-    Magpie::Settings old;
+    Trailpack::Settings old;
     CHECK(old.FromJson("{\"color_popup_background\": [0, 0, 0, 1]}"));
     CHECK(!old.colors.popupBackground.set);
 
@@ -734,16 +734,16 @@ static void test_settings_validation()
     CHECK(s.FromJson("{\"text_scale\": 999, \"note_text_scale\": 5, \"show_qa_icon\": \"yes\","
                      " \"language\": \"fr\", \"color_border\": [2, -1, 0.5],"
                      " \"color_text\": [0.1, 0.2, 0.3, 7], \"list_width\": -5, \"corner_rounding\": 99}"));
-    CHECK_EQ(s.uiTextScale, Magpie::Settings::kScaleMax);
-    CHECK_EQ(s.noteTextScale, Magpie::Settings::kScaleMin);
+    CHECK_EQ(s.uiTextScale, Trailpack::Settings::kScaleMax);
+    CHECK_EQ(s.noteTextScale, Trailpack::Settings::kScaleMin);
     CHECK(s.showQaIcon);
-    CHECK(s.language == Magpie::Settings::Language::Auto);
+    CHECK(s.language == Trailpack::Settings::Language::Auto);
     CHECK(s.colors.border.r == 0.90f);                  // 3 components: ignored
     CHECK(s.colors.text.set && s.colors.text.color.a == 1.0f);   // clamped
-    CHECK(s.listWidth == Magpie::Settings::kDefaultListWidth);
-    CHECK(s.cornerRounding == Magpie::Settings::kRoundingMax);
-    CHECK(Magpie::Settings{}.cornerRounding == 0.0f);      // square by default
-    CHECK(!Magpie::Settings{}.doneShowTime && !Magpie::Settings{}.doneShowPopups);
+    CHECK(s.listWidth == Trailpack::Settings::kDefaultListWidth);
+    CHECK(s.cornerRounding == Trailpack::Settings::kRoundingMax);
+    CHECK(Trailpack::Settings{}.cornerRounding == 0.0f);      // square by default
+    CHECK(!Trailpack::Settings{}.doneShowTime && !Trailpack::Settings{}.doneShowPopups);
 
     // Badge colours: a missing or malformed value keeps the default.
     CHECK(s.FromJson("{\"color_daily_badge\": null, \"color_weekly_badge_text\": [1, 1]}"));
@@ -755,13 +755,13 @@ static void test_settings_themes()
 {
     // Built-ins differ from the default and from each other; equality ignores the stored
     // value of an unset optional colour.
-    const Magpie::ColorSet def, light = Magpie::ColorSet::Light(), dark = Magpie::ColorSet::Dark();
+    const Trailpack::ColorSet def, light = Trailpack::ColorSet::Light(), dark = Trailpack::ColorSet::Dark();
     CHECK(light != def && dark != def && light != dark);
-    Magpie::ColorSet unsetDiffers;
-    unsetDiffers.text.color = Magpie::Rgba{ 0.1f, 0.1f, 0.1f, 1.0f };   // still unset
+    Trailpack::ColorSet unsetDiffers;
+    unsetDiffers.text.color = Trailpack::Rgba{ 0.1f, 0.1f, 0.1f, 1.0f };   // still unset
     CHECK(unsetDiffers == def);
 
-    Magpie::Settings s;
+    Trailpack::Settings s;
     CHECK(!s.SaveTheme("   ", light));                  // empty name
     CHECK(s.SaveTheme("  Mine ", light));               // trimmed
     CHECK(s.FindTheme("Mine") != nullptr && s.FindTheme("Mine")->colors == light);
@@ -771,7 +771,7 @@ static void test_settings_themes()
     CHECK(s.SaveTheme("Other", def));
 
     // Round trip keeps names, order and colours; a nameless entry is skipped.
-    Magpie::Settings b;
+    Trailpack::Settings b;
     CHECK(b.FromJson(s.ToJson()));
     CHECK_EQ(b.themes.size(), (size_t)2);
     CHECK_EQ(b.themes[0].name, std::string("Mine"));
@@ -787,34 +787,34 @@ static void test_settings_themes()
 
 static void test_backup()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     store.Create("First");
     store.Create("Second");
-    Magpie::Settings settings;
+    Trailpack::Settings settings;
     settings.uiTextScale = 120;
-    settings.SaveTheme("Mine", Magpie::ColorSet::Dark());
+    settings.SaveTheme("Mine", Trailpack::ColorSet::Dark());
 
-    const std::string text = Magpie::Backup::Make(store.ToJson(), settings.ToJson(), 1700000000);
+    const std::string text = Trailpack::Backup::Make(store.ToJson(), settings.ToJson(), 1700000000);
     CHECK(!text.empty());
 
     std::string notes, cfg;
-    CHECK(Magpie::Backup::Parse(text, notes, cfg));
-    Magpie::NotesStore restored;
+    CHECK(Trailpack::Backup::Parse(text, notes, cfg));
+    Trailpack::NotesStore restored;
     CHECK(restored.FromJson(notes));
     CHECK_EQ(restored.Notes().size(), (size_t)2);
     CHECK_EQ(restored.Notes()[0].id, store.Notes()[0].id);   // ids stay stable
-    Magpie::Settings restoredSettings;
+    Trailpack::Settings restoredSettings;
     CHECK(restoredSettings.FromJson(cfg));
     CHECK_EQ(restoredSettings.uiTextScale, 120);
     CHECK(restoredSettings.FindTheme("Mine") != nullptr);
 
     // Not a backup: invalid input, a notes export, a newer version, missing parts.
-    CHECK(Magpie::Backup::Make("not json", "{}", 0).empty());
-    CHECK(!Magpie::Backup::Parse("not json", notes, cfg));
-    CHECK(!Magpie::Backup::Parse(store.ExportJson({}), notes, cfg));
-    CHECK(!Magpie::Backup::Parse("{\"format\":\"trailpack-memo-backup\",\"version\":2,"
+    CHECK(Trailpack::Backup::Make("not json", "{}", 0).empty());
+    CHECK(!Trailpack::Backup::Parse("not json", notes, cfg));
+    CHECK(!Trailpack::Backup::Parse(store.ExportJson({}), notes, cfg));
+    CHECK(!Trailpack::Backup::Parse("{\"format\":\"trailpack-memo-backup\",\"version\":2,"
                                  "\"notes\":[],\"settings\":{}}", notes, cfg));
-    CHECK(!Magpie::Backup::Parse("{\"format\":\"trailpack-memo-backup\",\"version\":1,"
+    CHECK(!Trailpack::Backup::Parse("{\"format\":\"trailpack-memo-backup\",\"version\":1,"
                                  "\"notes\":[]}", notes, cfg));
 }
 
@@ -822,7 +822,7 @@ static void test_backup()
 
 static void test_event_data()
 {
-    using namespace Magpie::Events;
+    using namespace Trailpack::Events;
     CHECK(kEventCount > 50);
     CHECK(kCategoryCount > 5);
 
@@ -875,8 +875,8 @@ static const int64_t kOct29 = 1793232000;   // 2026-10-29 00:00 UTC
 
 static void test_events_lookup()
 {
-    using namespace Magpie::Events;
-    using Magpie::I18n::Lang;
+    using namespace Trailpack::Events;
+    using Trailpack::I18n::Lang;
     CHECK(Find("nope") == nullptr);
     const EventDef* teq = Find("tequatl-the-sunless");
     CHECK(teq != nullptr);
@@ -900,7 +900,7 @@ static void test_events_lookup()
 
 static void test_events_state()
 {
-    using namespace Magpie::Events;
+    using namespace Trailpack::Events;
     const EventDef* teq = Find("tequatl-the-sunless");   // 00:00 03:00 07:00 11:30 16:00 19:00, 30 min
     const EventDef* ds  = Find("dragons-stand");         // every 2 h from 01:30, 120 min
     const EventDef* tt  = Find("triple-trouble");        // 01:00 04:00 08:00 12:30 17:00 20:00
@@ -946,8 +946,8 @@ static void test_events_state()
 // stays the running one until that run has ended, then moves to the next.
 static void test_events_rotating_places()
 {
-    using namespace Magpie::Events;
-    using Magpie::I18n::Lang;
+    using namespace Trailpack::Events;
+    using Trailpack::I18n::Lang;
     const EventDef* lla = Find("ley-line-anomaly");
     CHECK(lla != nullptr);
     if (lla == nullptr) return;
@@ -979,7 +979,7 @@ static void test_events_rotating_places()
 // both 2026 switches (EU: 29 Mar and 25 Oct, 01:00 UTC).
 static void test_events_ignore_time_zone()
 {
-    using namespace Magpie::Events;
+    using namespace Trailpack::Events;
     const EventDef* teq = Find("tequatl-the-sunless");
     CHECK(teq != nullptr);
     if (teq == nullptr) return;
@@ -1012,8 +1012,8 @@ static void test_events_ignore_time_zone()
 
 static void test_events_search_and_format()
 {
-    using namespace Magpie::Events;
-    using Magpie::I18n::Lang;
+    using namespace Trailpack::Events;
+    using Trailpack::I18n::Lang;
     auto has = [](const std::vector<const EventDef*>& v, const char* id) {
         for (const EventDef* e : v) if (std::string(e->id) == id) return true;
         return false;
@@ -1025,27 +1025,27 @@ static void test_events_search_and_format()
     CHECK_EQ(Search("").size(), kEventCount);
     CHECK(Search("zzzz-no-such-event").empty());
 
-    const Lang before = Magpie::I18n::Current();
-    Magpie::I18n::SetLang(Lang::En);
+    const Lang before = Trailpack::I18n::Current();
+    Trailpack::I18n::SetLang(Lang::En);
     CHECK_EQ(FormatTime(45, false), std::string("in 45 s"));
     CHECK_EQ(FormatTime(23 * 60 + 59, false), std::string("in 23 min"));
     CHECK_EQ(FormatTime(83 * 60, false), std::string("in 1 h 23 min"));
     CHECK_EQ(FormatTime(2 * 3600, false), std::string("in 2 h"));
     CHECK_EQ(FormatTime(4 * 60 + 30, true), std::string("for 4 min"));
     CHECK_EQ(FormatTime(-5, false), std::string("in 0 s"));
-    Magpie::I18n::SetLang(Lang::De);
+    Trailpack::I18n::SetLang(Lang::De);
     CHECK_EQ(FormatTime(23 * 60, false), std::string("in 23 Min"));
     CHECK_EQ(FormatTime(4 * 60, true), std::string("seit 4 Min"));
     CHECK_EQ(FormatTime(83 * 60, false), std::string("in 1 Std 23 Min"));
     CHECK_EQ(FormatTime(45, true), std::string("seit 45 s"));
-    Magpie::I18n::SetLang(before);
+    Trailpack::I18n::SetLang(before);
 }
 
 // ── Event tokens in notes: {{event:<id>}} (stage 3) ────────────────────────────
 
 static void test_event_tokens()
 {
-    using namespace Magpie::Events;
+    using namespace Trailpack::Events;
     CHECK_EQ(Token("tequatl-the-sunless"), std::string("{{event:tequatl-the-sunless}}"));
 
     size_t len = 0;
@@ -1072,46 +1072,46 @@ static void test_event_tokens()
 
     // Codec: a token is ONE chip cell between text cells; chat codes still work; round trip.
     const std::string body = "a {{event:dragons-stand}} [&BNABAAA=]\n{{event:gone}}";
-    const std::vector<Magpie::ParsedCell> cells = Magpie::ParseToCells(body);
+    const std::vector<Trailpack::ParsedCell> cells = Trailpack::ParseToCells(body);
     int chips = 0;
     for (const auto& c : cells) if (c.isChip) ++chips;
     CHECK_EQ(chips, 3);
     CHECK(cells.size() > 2 && cells[2].isChip && cells[2].code == "{{event:dragons-stand}}");
     CHECK(cells.back().isChip && cells.back().code == "{{event:gone}}");
-    CHECK_EQ(Magpie::CellsToText(cells), body);
+    CHECK_EQ(Trailpack::CellsToText(cells), body);
 
     // Parser: Event spans carry the id; text and emphasis around them stay intact.
-    const auto lines = Magpie::Md::Parse("- [ ] **Run** {{event:tequatl-the-sunless}} now");
+    const auto lines = Trailpack::Md::Parse("- [ ] **Run** {{event:tequatl-the-sunless}} now");
     CHECK_EQ(lines.size(), (size_t)1);
     if (lines.size() == 1) {
         const auto& sp = lines[0].spans;
         bool event = false, bold = false;
         for (const auto& x : sp) {
-            if (x.kind == Magpie::Md::Inline::Event) event = x.text == "tequatl-the-sunless";
-            if (x.kind == Magpie::Md::Inline::Bold)  bold  = x.text == "Run";
+            if (x.kind == Trailpack::Md::Inline::Event) event = x.text == "tequatl-the-sunless";
+            if (x.kind == Trailpack::Md::Inline::Bold)  bold  = x.text == "Run";
         }
         CHECK(event && bold);
-        CHECK(lines[0].block == Magpie::Md::Block::Task);
+        CHECK(lines[0].block == Trailpack::Md::Block::Task);
     }
 
-    const Magpie::I18n::Lang before = Magpie::I18n::Current();
-    Magpie::I18n::SetLang(Magpie::I18n::Lang::En);
+    const Trailpack::I18n::Lang before = Trailpack::I18n::Current();
+    Trailpack::I18n::SetLang(Trailpack::I18n::Lang::En);
     CHECK_EQ(FormatDuration(30 * 60), std::string("30 min"));
     CHECK_EQ(FormatDuration(2 * 3600), std::string("2 h"));
     CHECK_EQ(FormatDuration(90 * 60), std::string("1 h 30 min"));
-    Magpie::I18n::SetLang(Magpie::I18n::Lang::De);
+    Trailpack::I18n::SetLang(Trailpack::I18n::Lang::De);
     CHECK_EQ(FormatDuration(90 * 60), std::string("1 Std 30 Min"));
-    Magpie::I18n::SetLang(before);
+    Trailpack::I18n::SetLang(before);
 }
 
 // ── Editor soft wrap (ChipCodec WrapRowLength) ──────────────────────────────────
 
 // Cells from a pattern: 'a' = 10 px glyph, ' ' = 10 px space, '\n' = newline, 'C' = 50 px chip.
-static std::vector<Magpie::WrapCell> wrapCells(const std::string& pattern)
+static std::vector<Trailpack::WrapCell> wrapCells(const std::string& pattern)
 {
-    std::vector<Magpie::WrapCell> v;
+    std::vector<Trailpack::WrapCell> v;
     for (char ch : pattern) {
-        Magpie::WrapCell c;
+        Trailpack::WrapCell c;
         c.width   = ch == 'C' ? 50.0f : ch == '\n' ? 0.0f : 10.0f;
         c.newline = ch == '\n';
         c.space   = ch == ' ';
@@ -1120,9 +1120,9 @@ static std::vector<Magpie::WrapCell> wrapCells(const std::string& pattern)
     return v;
 }
 
-static int wrapLen(const std::vector<Magpie::WrapCell>& v, int start, float maxW)
+static int wrapLen(const std::vector<Trailpack::WrapCell>& v, int start, float maxW)
 {
-    return Magpie::WrapRowLength((int)v.size(), start, maxW,
+    return Trailpack::WrapRowLength((int)v.size(), start, maxW,
                                  [&v](int i) { return v[i]; });
 }
 
@@ -1157,7 +1157,7 @@ static void test_soft_wrap()
 
 static void test_delete_many()
 {
-    Magpie::NotesStore store;
+    Trailpack::NotesStore store;
     const std::string g = store.CreateGroup("G").id;
     const std::string a = store.Create("A", g).id;
     const std::string b = store.Create("B").id;
@@ -1173,7 +1173,7 @@ static void test_delete_many()
 
 static void test_i18n_lookup_and_fallback()
 {
-    using namespace Magpie::I18n;
+    using namespace Trailpack::I18n;
     SetLang(Lang::En);
     CHECK_EQ(std::string(Tr("Save")), std::string("Save"));
     SetLang(Lang::De);
@@ -1203,7 +1203,7 @@ static std::vector<std::string> FormatSpecs(const char* f)
 static void test_i18n_table_is_consistent()
 {
     std::set<std::string> keys;
-    for (const auto& e : Magpie::I18n::GermanTable()) {
+    for (const auto& e : Trailpack::I18n::GermanTable()) {
         CHECK(e.first != nullptr && e.first[0] != '\0');
         CHECK(e.second != nullptr && e.second[0] != '\0');
         CHECK(keys.insert(e.first).second);                        // no duplicate keys
@@ -1359,20 +1359,20 @@ static void test_specdata_profession_name()
 
 static void test_md_heading_level1()
 {
-    auto lines = Magpie::Md::Parse("# Hello");
+    auto lines = Trailpack::Md::Parse("# Hello");
     CHECK(lines.size() == 1);
-    CHECK(lines[0].block == Magpie::Md::Block::Heading);
+    CHECK(lines[0].block == Trailpack::Md::Block::Heading);
     CHECK(lines[0].headingLevel == 1);
     CHECK(lines[0].spans.size() == 1);
-    CHECK(lines[0].spans[0].kind == Magpie::Md::Inline::Text);
+    CHECK(lines[0].spans[0].kind == Trailpack::Md::Inline::Text);
     CHECK_EQ(lines[0].spans[0].text, std::string("Hello"));
 }
 
 static void test_md_heading_level3()
 {
-    auto lines = Magpie::Md::Parse("### SubHead");
+    auto lines = Trailpack::Md::Parse("### SubHead");
     CHECK(lines.size() == 1);
-    CHECK(lines[0].block == Magpie::Md::Block::Heading);
+    CHECK(lines[0].block == Trailpack::Md::Block::Heading);
     CHECK(lines[0].headingLevel == 3);
     CHECK(lines[0].spans.size() == 1);
     CHECK_EQ(lines[0].spans[0].text, std::string("SubHead"));
@@ -1380,14 +1380,14 @@ static void test_md_heading_level3()
 
 static void test_md_bullet()
 {
-    auto lines = Magpie::Md::Parse("- item text");
+    auto lines = Trailpack::Md::Parse("- item text");
     CHECK(lines.size() == 1);
-    CHECK(lines[0].block == Magpie::Md::Block::Bullet);
+    CHECK(lines[0].block == Trailpack::Md::Block::Bullet);
     CHECK(lines[0].headingLevel == 0);
     // spans should contain the item text
     bool foundText = false;
     for (const auto& s : lines[0].spans) {
-        if (s.kind == Magpie::Md::Inline::Text && s.text.find("item text") != std::string::npos) {
+        if (s.kind == Trailpack::Md::Inline::Text && s.text.find("item text") != std::string::npos) {
             foundText = true;
         }
     }
@@ -1396,9 +1396,9 @@ static void test_md_bullet()
 
 static void test_md_paragraph()
 {
-    auto lines = Magpie::Md::Parse("just a plain line");
+    auto lines = Trailpack::Md::Parse("just a plain line");
     CHECK(lines.size() == 1);
-    CHECK(lines[0].block == Magpie::Md::Block::Paragraph);
+    CHECK(lines[0].block == Trailpack::Md::Block::Paragraph);
     CHECK(lines[0].headingLevel == 0);
     CHECK(lines[0].spans.size() >= 1);
     // Collect all text
@@ -1409,18 +1409,18 @@ static void test_md_paragraph()
 
 static void test_md_bold()
 {
-    auto lines = Magpie::Md::Parse("a **b** c");
+    auto lines = Trailpack::Md::Parse("a **b** c");
     CHECK(lines.size() == 1);
-    CHECK(lines[0].block == Magpie::Md::Block::Paragraph);
+    CHECK(lines[0].block == Trailpack::Md::Block::Paragraph);
     // Expect spans: Text "a ", Bold "b", Text " c" (possibly adjacent texts merged)
     bool foundBold = false;
     std::string fullText;
     for (const auto& s : lines[0].spans) {
-        if (s.kind == Magpie::Md::Inline::Bold) {
+        if (s.kind == Trailpack::Md::Inline::Bold) {
             CHECK_EQ(s.text, std::string("b"));
             foundBold = true;
         }
-        if (s.kind == Magpie::Md::Inline::Text) {
+        if (s.kind == Trailpack::Md::Inline::Text) {
             fullText += s.text;
         }
     }
@@ -1432,11 +1432,11 @@ static void test_md_bold()
 
 static void test_md_italic()
 {
-    auto lines = Magpie::Md::Parse("*i*");
+    auto lines = Trailpack::Md::Parse("*i*");
     CHECK(lines.size() == 1);
     bool foundItalic = false;
     for (const auto& s : lines[0].spans) {
-        if (s.kind == Magpie::Md::Inline::Italic) {
+        if (s.kind == Trailpack::Md::Inline::Italic) {
             CHECK_EQ(s.text, std::string("i"));
             foundItalic = true;
         }
@@ -1449,21 +1449,21 @@ static void test_md_chip_inline()
     using namespace PieUI::ChatLinks;
     std::string code = EncodeItem(46774);  // e.g. "[&AgF2tgAA]"
     std::string body = "see " + code + " there";
-    auto lines = Magpie::Md::Parse(body);
+    auto lines = Trailpack::Md::Parse(body);
     CHECK(lines.size() == 1);
     // Find chip span with the raw code
     bool foundChip = false;
     bool foundBefore = false;
     bool foundAfter  = false;
     for (const auto& s : lines[0].spans) {
-        if (s.kind == Magpie::Md::Inline::Chip) {
+        if (s.kind == Trailpack::Md::Inline::Chip) {
             CHECK_EQ(s.text, code);
             foundChip = true;
         }
-        if (s.kind == Magpie::Md::Inline::Text && s.text.find("see") != std::string::npos) {
+        if (s.kind == Trailpack::Md::Inline::Text && s.text.find("see") != std::string::npos) {
             foundBefore = true;
         }
-        if (s.kind == Magpie::Md::Inline::Text && s.text.find("there") != std::string::npos) {
+        if (s.kind == Trailpack::Md::Inline::Text && s.text.find("there") != std::string::npos) {
             foundAfter = true;
         }
     }
@@ -1477,13 +1477,13 @@ static void test_md_bold_with_chip()
     using namespace PieUI::ChatLinks;
     std::string code = EncodeItem(1234);
     std::string body = "**bold** " + code + " end";
-    auto lines = Magpie::Md::Parse(body);
+    auto lines = Trailpack::Md::Parse(body);
     CHECK(lines.size() == 1);
     bool foundBold = false;
     bool foundChip = false;
     for (const auto& s : lines[0].spans) {
-        if (s.kind == Magpie::Md::Inline::Bold)  { CHECK_EQ(s.text, std::string("bold")); foundBold = true; }
-        if (s.kind == Magpie::Md::Inline::Chip)  { CHECK_EQ(s.text, code); foundChip = true; }
+        if (s.kind == Trailpack::Md::Inline::Bold)  { CHECK_EQ(s.text, std::string("bold")); foundBold = true; }
+        if (s.kind == Trailpack::Md::Inline::Chip)  { CHECK_EQ(s.text, code); foundChip = true; }
     }
     CHECK(foundBold);
     CHECK(foundChip);
@@ -1491,7 +1491,7 @@ static void test_md_bold_with_chip()
 
 static void test_md_unmatched_star_is_literal()
 {
-    auto lines = Magpie::Md::Parse("hello *world");
+    auto lines = Trailpack::Md::Parse("hello *world");
     CHECK(lines.size() == 1);
     // The unmatched * must appear literally in the output text
     std::string all;
@@ -1502,7 +1502,7 @@ static void test_md_unmatched_star_is_literal()
 
 static void test_md_multiline()
 {
-    auto lines = Magpie::Md::Parse("line one\nline two\nline three");
+    auto lines = Trailpack::Md::Parse("line one\nline two\nline three");
     CHECK(lines.size() == 3);
     // Each line should contain its own text
     std::string t0, t1, t2;
@@ -1516,13 +1516,13 @@ static void test_md_multiline()
 
 static void test_md_heading_with_bold()
 {
-    auto lines = Magpie::Md::Parse("## **title**");
+    auto lines = Trailpack::Md::Parse("## **title**");
     CHECK(lines.size() == 1);
-    CHECK(lines[0].block == Magpie::Md::Block::Heading);
+    CHECK(lines[0].block == Trailpack::Md::Block::Heading);
     CHECK(lines[0].headingLevel == 2);
     bool foundBold = false;
     for (const auto& s : lines[0].spans) {
-        if (s.kind == Magpie::Md::Inline::Bold) { CHECK_EQ(s.text, std::string("title")); foundBold = true; }
+        if (s.kind == Trailpack::Md::Inline::Bold) { CHECK_EQ(s.text, std::string("title")); foundBold = true; }
     }
     CHECK(foundBold);
 }
@@ -1533,7 +1533,7 @@ static void test_chip_item_label()
 {
     using namespace PieUI::ChatLinks;
     std::string link = EncodeItem(46774);
-    Magpie::ChipView v = Magpie::ResolveChip(link);
+    Trailpack::ChipView v = Trailpack::ResolveChip(link);
     CHECK_EQ(v.label, std::string("[Item]"));
     CHECK(v.color != 0);
 }
@@ -1542,7 +1542,7 @@ static void test_chip_waypoint_label()
 {
     using namespace PieUI::ChatLinks;
     std::string link = EncodeMap(900);
-    Magpie::ChipView v = Magpie::ResolveChip(link);
+    Trailpack::ChipView v = Trailpack::ResolveChip(link);
     CHECK_EQ(v.label, std::string("[Waypoint]"));
     CHECK(v.color != 0);
 }
@@ -1551,7 +1551,7 @@ static void test_chip_skill_label()
 {
     using namespace PieUI::ChatLinks;
     std::string link = EncodeSkill(5516);
-    Magpie::ChipView v = Magpie::ResolveChip(link);
+    Trailpack::ChipView v = Trailpack::ResolveChip(link);
     CHECK_EQ(v.label, std::string("[Skill]"));
 }
 
@@ -1559,16 +1559,16 @@ static void test_chip_skin_label()
 {
     using namespace PieUI::ChatLinks;
     std::string link = EncodeSkin(8585);
-    Magpie::ChipView v = Magpie::ResolveChip(link);
+    Trailpack::ChipView v = Trailpack::ResolveChip(link);
     CHECK_EQ(v.label, std::string("[Skin]"));
 }
 
 static void test_chip_garbage_fallback()
 {
     // Garbage input must not crash and must return the safe fallback label.
-    Magpie::ChipView v = Magpie::ResolveChip("not a link");
+    Trailpack::ChipView v = Trailpack::ResolveChip("not a link");
     CHECK_EQ(v.label, std::string("[link]"));
-    Magpie::ChipView v2 = Magpie::ResolveChip("");
+    Trailpack::ChipView v2 = Trailpack::ResolveChip("");
     CHECK_EQ(v2.label, std::string("[link]"));
 }
 
@@ -1576,8 +1576,8 @@ static void test_chip_colours_distinct()
 {
     // Item and Waypoint must have distinct, non-zero colours.
     using namespace PieUI::ChatLinks;
-    Magpie::ChipView item = Magpie::ResolveChip(EncodeItem(1));
-    Magpie::ChipView wp   = Magpie::ResolveChip(EncodeMap(1));
+    Trailpack::ChipView item = Trailpack::ResolveChip(EncodeItem(1));
+    Trailpack::ChipView wp   = Trailpack::ResolveChip(EncodeMap(1));
     CHECK(item.color != 0);
     CHECK(wp.color != 0);
     CHECK(item.color != wp.color);
@@ -1587,9 +1587,9 @@ static void test_chip_non_build_never_returns_build_path()
 {
     // Skill, skin, waypoint must never produce a "[... Build]" label.
     using namespace PieUI::ChatLinks;
-    Magpie::ChipView skill = Magpie::ResolveChip(EncodeSkill(5516));
-    Magpie::ChipView skin  = Magpie::ResolveChip(EncodeSkin(8585));
-    Magpie::ChipView wp    = Magpie::ResolveChip(EncodeMap(900));
+    Trailpack::ChipView skill = Trailpack::ResolveChip(EncodeSkill(5516));
+    Trailpack::ChipView skin  = Trailpack::ResolveChip(EncodeSkin(8585));
+    Trailpack::ChipView wp    = Trailpack::ResolveChip(EncodeMap(900));
     CHECK(skill.label.find("Build") == std::string::npos);
     CHECK(skin.label.find("Build") == std::string::npos);
     CHECK(wp.label.find("Build") == std::string::npos);
@@ -1629,7 +1629,7 @@ static void test_chip_build_roundtrip_via_encode()
     std::string link = EncodeBuild(b);
     CHECK(!link.empty());
     CHECK(DetectType(link) == LINK_BUILD);
-    Magpie::ChipView v = Magpie::ResolveChip(link);
+    Trailpack::ChipView v = Trailpack::ResolveChip(link);
     CHECK_EQ(v.label, std::string("[Mirage Build]"));
     CHECK(v.color != 0);
 }
@@ -1643,7 +1643,7 @@ static void test_chip_build_core_profession_fallback()
     // All spec slots are 0 (core / no spec)
     std::string link = EncodeBuild(b);
     CHECK(!link.empty());
-    Magpie::ChipView v = Magpie::ResolveChip(link);
+    Trailpack::ChipView v = Trailpack::ResolveChip(link);
     CHECK_EQ(v.label, std::string("[Mesmer Build]"));
 }
 
@@ -1652,7 +1652,7 @@ static void test_chip_build_core_profession_fallback()
 static void test_chipcodec_roundtrip_plain()
 {
     std::string s = "hello world";
-    CHECK_EQ(Magpie::CellsToText(Magpie::ParseToCells(s)), s);
+    CHECK_EQ(Trailpack::CellsToText(Trailpack::ParseToCells(s)), s);
 }
 
 static void test_chipcodec_roundtrip_with_chip()
@@ -1661,8 +1661,8 @@ static void test_chipcodec_roundtrip_with_chip()
     std::string code = EncodeItem(19684 /* Copper Ore */, 1);
     CHECK(!code.empty());
     std::string s = "got " + code + " here";
-    auto cells = Magpie::ParseToCells(s);
-    CHECK_EQ(Magpie::CellsToText(cells), s);
+    auto cells = Trailpack::ParseToCells(s);
+    CHECK_EQ(Trailpack::CellsToText(cells), s);
     // The chip is exactly ONE cell, isChip, code == the embedded code.
     int chipCount = 0; std::string chipCode;
     for (const auto& c : cells) if (c.isChip) { ++chipCount; chipCode = c.code; }
@@ -1673,8 +1673,8 @@ static void test_chipcodec_roundtrip_with_chip()
 static void test_chipcodec_roundtrip_multiline()
 {
     std::string s = "line one\nline two\nthird";
-    auto cells = Magpie::ParseToCells(s);
-    CHECK_EQ(Magpie::CellsToText(cells), s);
+    auto cells = Trailpack::ParseToCells(s);
+    CHECK_EQ(Trailpack::CellsToText(cells), s);
     // A '\n' becomes a text cell with cp == '\n'.
     int nlCount = 0;
     for (const auto& c : cells) if (!c.isChip && c.cp == '\n') ++nlCount;
@@ -1687,8 +1687,8 @@ static void test_chipcodec_roundtrip_mixed()
     std::string code = EncodeItem(19684, 1);
     CHECK(!code.empty());
     std::string s = "top " + code + "\nmid line\n" + code + " end";
-    auto cells = Magpie::ParseToCells(s);
-    CHECK_EQ(Magpie::CellsToText(cells), s);
+    auto cells = Trailpack::ParseToCells(s);
+    CHECK_EQ(Trailpack::CellsToText(cells), s);
     int chipCount = 0, nlCount = 0;
     for (const auto& c : cells) {
         if (c.isChip) ++chipCount;
@@ -1703,29 +1703,29 @@ static void test_chipcodec_roundtrip_mixed()
 static void test_iconurl_key_stable()
 {
     // Same URL hashes to the same value every call
-    uint32_t a = Magpie::Icons::UrlKey("https://render.guildwars2.com/file/AB/12.png");
-    uint32_t b = Magpie::Icons::UrlKey("https://render.guildwars2.com/file/AB/12.png");
+    uint32_t a = Trailpack::Icons::UrlKey("https://render.guildwars2.com/file/AB/12.png");
+    uint32_t b = Trailpack::Icons::UrlKey("https://render.guildwars2.com/file/AB/12.png");
     CHECK(a == b);
 }
 
 static void test_iconurl_key_differs()
 {
     // Different URLs produce different hashes
-    uint32_t a = Magpie::Icons::UrlKey("https://render.guildwars2.com/file/AB/12.png");
-    uint32_t b = Magpie::Icons::UrlKey("https://render.guildwars2.com/file/CD/99.png");
+    uint32_t a = Trailpack::Icons::UrlKey("https://render.guildwars2.com/file/AB/12.png");
+    uint32_t b = Trailpack::Icons::UrlKey("https://render.guildwars2.com/file/CD/99.png");
     CHECK(a != b);
 }
 
 static void test_iconurl_key_null_does_not_crash()
 {
     // Null input must not crash; we just check it runs
-    (void)Magpie::Icons::UrlKey(nullptr);
-    (void)Magpie::Icons::UrlKey("");
+    (void)Trailpack::Icons::UrlKey(nullptr);
+    (void)Trailpack::Icons::UrlKey("");
 }
 
 static void test_iconurl_split_full_url()
 {
-    auto s = Magpie::Icons::SplitIconUrl("https://render.guildwars2.com/file/AB/12.png");
+    auto s = Trailpack::Icons::SplitIconUrl("https://render.guildwars2.com/file/AB/12.png");
     CHECK_EQ(s.remote,   std::string("https://render.guildwars2.com"));
     CHECK_EQ(s.endpoint, std::string("/file/AB/12.png"));
 }
@@ -1733,21 +1733,21 @@ static void test_iconurl_split_full_url()
 static void test_iconurl_split_no_path()
 {
     // URL with no path after the host — endpoint should be "/"
-    auto s = Magpie::Icons::SplitIconUrl("https://render.guildwars2.com");
+    auto s = Trailpack::Icons::SplitIconUrl("https://render.guildwars2.com");
     CHECK_EQ(s.endpoint, std::string("/"));
 }
 
 static void test_iconurl_split_malformed()
 {
     // No "://" — whole string goes into remote, endpoint = "/"
-    auto s = Magpie::Icons::SplitIconUrl("not-a-real-url");
+    auto s = Trailpack::Icons::SplitIconUrl("not-a-real-url");
     CHECK_EQ(s.remote,   std::string("not-a-real-url"));
     CHECK_EQ(s.endpoint, std::string("/"));
 }
 
 static void test_iconurl_split_empty_does_not_crash()
 {
-    auto s = Magpie::Icons::SplitIconUrl("");
+    auto s = Trailpack::Icons::SplitIconUrl("");
     CHECK_EQ(s.endpoint, std::string("/"));
 }
 
@@ -1760,7 +1760,7 @@ static uint32_t packRGB(uint8_t r, uint8_t g, uint8_t b) {
 
 static void test_chipcolor_item_rarity_palette()
 {
-    using namespace Magpie;
+    using namespace Trailpack;
     // Exact Pie UI RarityColor values (float->255).
     CHECK(ChipColorForItemRarity(DR_Junk)       == packRGB(171, 171, 171));
     CHECK(ChipColorForItemRarity(DR_Basic)      == packRGB(255, 255, 255));
@@ -1774,7 +1774,7 @@ static void test_chipcolor_item_rarity_palette()
 
 static void test_chipcolor_item_unknown_is_basic()
 {
-    using namespace Magpie;
+    using namespace Trailpack;
     // Unresolved / absent service -> Basic (white), never a tier.
     CHECK(ChipColorForItemRarity(DR_RarityUnknown) == packRGB(255, 255, 255));
     CHECK(ChipColorForItemRarity(DR_RarityUnknown) == ChipColorForItemRarity(DR_Basic));
@@ -1782,7 +1782,7 @@ static void test_chipcolor_item_unknown_is_basic()
 
 static void test_chipcolor_nonitem_types_are_blue()
 {
-    using namespace Magpie;
+    using namespace Trailpack;
     using namespace PieUI::ChatLinks;
     const uint32_t blue = packRGB(120, 200, 255);
     CHECK(ChipColorForType(LINK_MAP)   == blue);   // waypoint
@@ -1793,7 +1793,7 @@ static void test_chipcolor_nonitem_types_are_blue()
 
 static void test_chipcolor_combined_rule()
 {
-    using namespace Magpie;
+    using namespace Trailpack;
     using namespace PieUI::ChatLinks;
     // Item -> rarity colour; waypoint -> blue regardless of the rarity arg.
     CHECK(ChipColor(LINK_ITEM, DR_Exotic) == packRGB(255, 171, 0));
@@ -1808,9 +1808,9 @@ static void test_chipcolor_combined_rule()
 
 static void test_md_task_unchecked()
 {
-    auto lines = Magpie::Md::Parse("- [ ] buy ore");
+    auto lines = Trailpack::Md::Parse("- [ ] buy ore");
     CHECK(lines.size() == 1);
-    CHECK(lines[0].block == Magpie::Md::Block::Task);
+    CHECK(lines[0].block == Trailpack::Md::Block::Task);
     CHECK(!lines[0].checked);
     CHECK(lines[0].spans.size() == 1);
     CHECK_EQ(lines[0].spans[0].text, std::string("buy ore"));
@@ -1818,79 +1818,79 @@ static void test_md_task_unchecked()
 
 static void test_md_task_checked_both_cases()
 {
-    auto lines = Magpie::Md::Parse("- [x] a\n- [X] b\n  - [ ] indented");
+    auto lines = Trailpack::Md::Parse("- [x] a\n- [X] b\n  - [ ] indented");
     CHECK(lines.size() == 3);
-    CHECK(lines[0].block == Magpie::Md::Block::Task && lines[0].checked);
-    CHECK(lines[1].block == Magpie::Md::Block::Task && lines[1].checked);
-    CHECK(lines[2].block == Magpie::Md::Block::Task && !lines[2].checked);
+    CHECK(lines[0].block == Trailpack::Md::Block::Task && lines[0].checked);
+    CHECK(lines[1].block == Trailpack::Md::Block::Task && lines[1].checked);
+    CHECK(lines[2].block == Trailpack::Md::Block::Task && !lines[2].checked);
     CHECK_EQ(lines[2].spans[0].text, std::string("indented"));
 }
 
 static void test_md_task_empty_item_and_non_tasks()
 {
-    auto lines = Magpie::Md::Parse("- [ ]\n- [ ]x\n- [y] no\n- plain\n[ ] bare");
+    auto lines = Trailpack::Md::Parse("- [ ]\n- [ ]x\n- [y] no\n- plain\n[ ] bare");
     CHECK(lines.size() == 5);
-    CHECK(lines[0].block == Magpie::Md::Block::Task);       // marker at end of line
+    CHECK(lines[0].block == Trailpack::Md::Block::Task);       // marker at end of line
     CHECK(lines[0].spans.empty());
-    CHECK(lines[1].block == Magpie::Md::Block::Bullet);     // no space after ']'
-    CHECK(lines[2].block == Magpie::Md::Block::Bullet);     // invalid state char
-    CHECK(lines[3].block == Magpie::Md::Block::Bullet);
-    CHECK(lines[4].block == Magpie::Md::Block::Paragraph);  // GFM needs the dash
+    CHECK(lines[1].block == Trailpack::Md::Block::Bullet);     // no space after ']'
+    CHECK(lines[2].block == Trailpack::Md::Block::Bullet);     // invalid state char
+    CHECK(lines[3].block == Trailpack::Md::Block::Bullet);
+    CHECK(lines[4].block == Trailpack::Md::Block::Paragraph);  // GFM needs the dash
 }
 
 static void test_md_task_with_bold_and_chip()
 {
     const std::string code = PieUI::ChatLinks::EncodeItem(46774);
-    auto lines = Magpie::Md::Parse("- [x] **go** " + code);
+    auto lines = Trailpack::Md::Parse("- [x] **go** " + code);
     CHECK(lines.size() == 1);
-    CHECK(lines[0].block == Magpie::Md::Block::Task && lines[0].checked);
+    CHECK(lines[0].block == Trailpack::Md::Block::Task && lines[0].checked);
     CHECK(lines[0].spans.size() >= 2);
-    CHECK(lines[0].spans[0].kind == Magpie::Md::Inline::Bold);
-    CHECK(lines[0].spans.back().kind == Magpie::Md::Inline::Chip);
+    CHECK(lines[0].spans[0].kind == Trailpack::Md::Inline::Bold);
+    CHECK(lines[0].spans.back().kind == Trailpack::Md::Inline::Chip);
 }
 
 static void test_md_count_tasks()
 {
-    auto tc = Magpie::Md::CountTasks("# List\n- [x] a\n- [ ] b\n- c\n- [X] d");
+    auto tc = Trailpack::Md::CountTasks("# List\n- [x] a\n- [ ] b\n- c\n- [X] d");
     CHECK_EQ(tc.total, 3);
     CHECK_EQ(tc.done, 2);
-    auto none = Magpie::Md::CountTasks("");
+    auto none = Trailpack::Md::CountTasks("");
     CHECK_EQ(none.total, 0);
 }
 
 static void test_md_toggle_task()
 {
     std::string body = "intro\n- [ ] a\n  - [x] b";
-    CHECK(Magpie::Md::ToggleTask(body, 1));
+    CHECK(Trailpack::Md::ToggleTask(body, 1));
     CHECK_EQ(body, std::string("intro\n- [x] a\n  - [x] b"));
-    CHECK(Magpie::Md::ToggleTask(body, 2));
+    CHECK(Trailpack::Md::ToggleTask(body, 2));
     CHECK_EQ(body, std::string("intro\n- [x] a\n  - [ ] b"));
-    CHECK(!Magpie::Md::ToggleTask(body, 0));    // not a task
-    CHECK(!Magpie::Md::ToggleTask(body, 9));    // out of range
-    CHECK(!Magpie::Md::ToggleTask(body, -1));
+    CHECK(!Trailpack::Md::ToggleTask(body, 0));    // not a task
+    CHECK(!Trailpack::Md::ToggleTask(body, 9));    // out of range
+    CHECK(!Trailpack::Md::ToggleTask(body, -1));
     CHECK_EQ(body, std::string("intro\n- [x] a\n  - [ ] b"));
 }
 
 static void test_md_uncheck_all()
 {
     std::string body = "- [x] a\n- [ ] b\n- [X] c\ntext [x]";
-    CHECK_EQ(Magpie::Md::UncheckAllTasks(body), 2);
+    CHECK_EQ(Trailpack::Md::UncheckAllTasks(body), 2);
     CHECK_EQ(body, std::string("- [ ] a\n- [ ] b\n- [ ] c\ntext [x]"));
-    CHECK_EQ(Magpie::Md::UncheckAllTasks(body), 0);
+    CHECK_EQ(Trailpack::Md::UncheckAllTasks(body), 0);
 }
 
 // ── Markdown editing commands ─────────────────────────────────────────────────
 
-static std::string RunEdit(const std::string& text, const Magpie::Md::EditResult& r)
+static std::string RunEdit(const std::string& text, const Trailpack::Md::EditResult& r)
 {
-    Magpie::Md::Cells c = Magpie::Md::ToCells(text);
-    Magpie::Md::ApplyOps(c, r.ops);
-    return Magpie::Md::FromCells(c);
+    Trailpack::Md::Cells c = Trailpack::Md::ToCells(text);
+    Trailpack::Md::ApplyOps(c, r.ops);
+    return Trailpack::Md::FromCells(c);
 }
 
 static void test_edit_wrap_bold_selection()
 {
-    using namespace Magpie::Md;
+    using namespace Trailpack::Md;
     const std::string t = "say hello now";
     auto r = WrapSelection(ToCells(t), 4, 9, "**");
     CHECK(r.handled);
@@ -1907,7 +1907,7 @@ static void test_edit_wrap_bold_selection()
 
 static void test_edit_wrap_empty_selection_inserts_pair()
 {
-    using namespace Magpie::Md;
+    using namespace Trailpack::Md;
     auto r = WrapSelection(ToCells("ab"), 1, 1, "*");
     CHECK_EQ(RunEdit("ab", r), std::string("a**b"));
     CHECK_EQ(r.cursor, 2);
@@ -1915,7 +1915,7 @@ static void test_edit_wrap_empty_selection_inserts_pair()
 
 static void test_edit_italic_does_not_strip_bold()
 {
-    using namespace Magpie::Md;
+    using namespace Trailpack::Md;
     // Inner selection of a bold word: italic must wrap, not treat "**" as its markers.
     const std::string t = "**x**";
     auto r = WrapSelection(ToCells(t), 2, 3, "*");
@@ -1924,7 +1924,7 @@ static void test_edit_italic_does_not_strip_bold()
 
 static void test_edit_toggle_task_prefix()
 {
-    using namespace Magpie::Md;
+    using namespace Trailpack::Md;
     const std::string t = "one\ntwo";
     auto r = ToggleLinePrefix(ToCells(t), 0, 5, LinePrefix::Task);   // touches both lines
     const std::string t2 = RunEdit(t, r);
@@ -1937,7 +1937,7 @@ static void test_edit_toggle_task_prefix()
 
 static void test_edit_bullet_to_task_keeps_indent()
 {
-    using namespace Magpie::Md;
+    using namespace Trailpack::Md;
     const std::string t = "  - item";
     auto r = ToggleLinePrefix(ToCells(t), 5, 5, LinePrefix::Task);
     CHECK_EQ(RunEdit(t, r), std::string("  - [ ] item"));
@@ -1946,7 +1946,7 @@ static void test_edit_bullet_to_task_keeps_indent()
 
 static void test_edit_heading_replaces_list_prefix()
 {
-    using namespace Magpie::Md;
+    using namespace Trailpack::Md;
     const std::string t = "  - [x] Title";
     auto r = ToggleLinePrefix(ToCells(t), 0, 0, LinePrefix::Heading2);
     CHECK_EQ(RunEdit(t, r), std::string("## Title"));
@@ -1957,7 +1957,7 @@ static void test_edit_heading_replaces_list_prefix()
 
 static void test_edit_selection_ending_at_line_start()
 {
-    using namespace Magpie::Md;
+    using namespace Trailpack::Md;
     // Selecting "a\n" (ends at the start of line 2) must only touch line 1.
     const std::string t = "a\nb";
     auto r = ToggleLinePrefix(ToCells(t), 0, 2, LinePrefix::Bullet);
@@ -1966,7 +1966,7 @@ static void test_edit_selection_ending_at_line_start()
 
 static void test_edit_enter_continues_task_list()
 {
-    using namespace Magpie::Md;
+    using namespace Trailpack::Md;
     const std::string t = "  - [x] done";
     auto r = ContinueListOnEnter(ToCells(t), (int)t.size());
     CHECK(r.handled);
@@ -1976,7 +1976,7 @@ static void test_edit_enter_continues_task_list()
 
 static void test_edit_enter_on_empty_item_ends_list()
 {
-    using namespace Magpie::Md;
+    using namespace Trailpack::Md;
     const std::string t = "- a\n- ";
     auto r = ContinueListOnEnter(ToCells(t), (int)t.size());
     CHECK(r.handled);
@@ -1986,14 +1986,14 @@ static void test_edit_enter_on_empty_item_ends_list()
 
 static void test_edit_enter_plain_line_not_handled()
 {
-    using namespace Magpie::Md;
+    using namespace Trailpack::Md;
     CHECK(!ContinueListOnEnter(ToCells("hello"), 5).handled);
     CHECK(!ContinueListOnEnter(ToCells("- item"), 1).handled);   // caret inside the marker
 }
 
 static void test_edit_chip_cell_is_preserved()
 {
-    using namespace Magpie::Md;
+    using namespace Trailpack::Md;
     // A chip is a single placeholder cell; prefix edits must not touch it.
     Cells c = ToCells("x");
     c[0] = 0xFFFC;

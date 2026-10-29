@@ -4,7 +4,7 @@
 
 | Addon | Description |
 |-------|-------------|
-| [Trailpack Memo](trailpack-memo/) | Notepad with markdown, **checklists**, a formatting toolbar, live preview and GW2 chat-link chips. Fork of PieOrCake's [Magpie Memo](https://github.com/PieOrCake/magpie_memo). |
+| [Trailpack Memo](trailpack-memo/) | Notepad with markdown, **checklists**, a formatting toolbar, live preview and GW2 chat-link chips. Event timer chips with live countdowns. |
 
 ## Layout
 

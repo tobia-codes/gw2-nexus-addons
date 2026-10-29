@@ -7,7 +7,7 @@
 #include "Theme.h"
 #include "FontScale.h"
 
-using Magpie::I18n::Tr;
+using Trailpack::I18n::Tr;
 
 namespace Help {
 
@@ -156,7 +156,7 @@ void Render(bool* open, float uiScale)
     // only the background is made opaque and the corner rounding applies.
     Theme::PlainWindowScope plain;
     if (Theme::BeginWindow(title.c_str(), open)) {
-        Magpie::FontScaleScope uiFont(uiScale);
+        Trailpack::FontScaleScope uiFont(uiScale);
         for (size_t i = 0; i < sizeof kSections / sizeof kSections[0]; ++i) {
             ImGui::PushID((int)i);
             if (ImGui::CollapsingHeader(Tr(kSections[i].title), i == 0 ? ImGuiTreeNodeFlags_DefaultOpen : 0)) {

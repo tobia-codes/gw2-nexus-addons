@@ -7,8 +7,7 @@ Rules for AI coding agents working in `trailpack-memo/`. Current state and open 
 
 A Raidcore Nexus addon for Guild Wars 2: a notepad with multiple markdown notes, task-list
 checkboxes, a formatting toolbar, live preview, and inline GW2 chat-link "chips" (icon + name +
-tooltip). It is a **standalone fork** of [PieOrCake/magpie_memo](https://github.com/PieOrCake/magpie_memo)
-and runs **side by side** with Magpie Memo. Shared third-party code (ImGui 1.80, nlohmann/json,
+tooltip), plus event timer chips. Shared third-party code (ImGui 1.80, nlohmann/json,
 `nexus/Nexus.h`) is in `../shared/`.
 
 ## Build & test (run from the repo root)
@@ -24,27 +23,23 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 - **Definition of Done:** DLL builds clean **and** host tests green. In-game behaviour can only be
   verified by the user — say what to test, never claim it works in game.
 
-## Fork identity (must stay distinct from Magpie Memo)
+## Identity
 
 | Thing | Value | Where |
 |---|---|---|
 | Name / window | `Trailpack Memo` | `src/dllmain.cpp` (`WINDOW_NAME`) |
-| Signature | `0x54504D6D` ("TPMm"; Magpie = `0x4D61704D`) | `src/dllmain.cpp` |
+| Signature | `0x54504D6D` ("TPMm") | `src/dllmain.cpp` |
 | DLL | `TrailpackMemo.dll`, export via `TrailpackMemo.def` | `CMakeLists.txt` |
 | Data dir | `addons/TrailpackMemo/` (`notes.json`, `settings.json`) | `Paths_GetAddonDirectory("TrailpackMemo")` |
-| Toggle keybind | `CTRL+SHIFT+T` (Magpie: `CTRL+SHIFT+M`) | `src/dllmain.cpp` |
+| Toggle keybind | `CTRL+SHIFT+T` | `src/dllmain.cpp` |
 | Texture ids | prefix `TPM_ICON_` | `src/IconCache.cpp` |
-| Author | `PieOrCake.7635 & tobia-codes` | `src/dllmain.cpp` |
+| Author | `tobia-codes` | `src/dllmain.cpp` |
 | Localization keys | `TPM_LANG_PROBE` (active-language probe), `KB_TRAILPACK_MEMO_TOGGLE` (keybind name) | `src/dllmain.cpp` |
 | Updates | `UP_None`, `UpdateLink = nullptr` (see PLAN backlog B2) | `src/dllmain.cpp` |
 
-New identifiers that the game or Nexus can see (signature, ids, events, textures, paths) must
-**not** collide with Magpie Memo's.
-
 ## Code rules
 
-- Internal C++ namespace stays **`Magpie`** (deliberately, to ease upstream merges). Mentions of
-  "Magpie Memo" in comments that refer to the upstream addon are correct — leave them.
+- C++ namespace: **`Trailpack`**.
 - **Vendored codec is byte-identical:** `src/chat/ChatLinks.{h,cpp}`, `src/chat/SpecData.h` come
   from Pie UI. Never edit them; a codec bug is fixed upstream and re-vendored.
 - **Pure units stay pure** (no ImGui/Nexus/Win32 includes) so the host-test target builds:
@@ -52,7 +47,7 @@ New identifiers that the game or Nexus can see (signature, ids, events, textures
   `MarkdownEdit`, `ChipCodec`, `ChipResolver`, `ChipColor`, `IconUrl`, `chat/ChatLinks`. Put new
   logic into a pure unit + host test (`tests/host_tests_main.cpp`) where possible.
 - **UI text is translated (English + German):** wrap every user-visible literal in
-  `Magpie::I18n::Tr("English text")` and add the German line to the table in `src/I18n.cpp`
+  `Trailpack::I18n::Tr("English text")` and add the German line to the table in `src/I18n.cpp`
   (same printf specifiers — host-tested). Plurals via `TrN`, popups via `PopupName` (stable
   `###id`), button widths via `ButtonWidth` (German labels are longer).
 - **Rendered characters:** ASCII plus Latin-1 letters (German umlauts/ß — Nexus's own German

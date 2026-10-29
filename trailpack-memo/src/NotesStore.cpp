@@ -7,7 +7,7 @@
 #include <random>
 #include <set>
 
-namespace Magpie {
+namespace Trailpack {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -486,4 +486,4 @@ int NotesStore::ImportJson(const std::string& json)
     return AddImported(items);
 }
 
-} // namespace Magpie
+} // namespace Trailpack

@@ -26,7 +26,7 @@
 #include <unordered_map>
 #include <unordered_set>
 
-namespace Magpie { namespace Decoder {
+namespace Trailpack { namespace Decoder {
 
 namespace {
 
@@ -37,7 +37,7 @@ AddonAPI_t* APIDefs = nullptr;
 // v3 gave existing description[]/facts[] new meaning for items, v4 added recipe
 // links reusing those same fields), so we accept any service at-or-above this
 // minimum and read only the fields we know,
-// treating empty fields as "absent". This keeps Magpie working across future
+// treating empty fields as "absent". This keeps Trailpack Memo working across future
 // additive DR releases instead of going dark the moment apiVersion ticks up.
 // RAISE THIS (and re-vendor the header) only if DR announces a LAYOUT-breaking
 // change. The host tests still pin the vendored header to the current version.
@@ -172,4 +172,4 @@ bool Resolve(uint8_t linkType, uint32_t id, const char* chatCode, DecoderRecord&
     }
 }
 
-}} // namespace Magpie::Decoder
+}} // namespace Trailpack::Decoder

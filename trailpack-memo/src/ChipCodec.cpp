@@ -1,7 +1,7 @@
 #include "ChipCodec.h"
 #include "Events.h"
 
-namespace Magpie {
+namespace Trailpack {
 
 // ---- small UTF-8 <-> codepoint helpers --------------------------------------------------------
 void AppendUtf8(std::string& s, uint32_t cp) {
@@ -71,4 +71,4 @@ std::string CellsToText(const std::vector<ParsedCell>& cells) {
     return out;
 }
 
-} // namespace Magpie
+} // namespace Trailpack

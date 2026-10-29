@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-namespace Magpie {
+namespace Trailpack {
 
 struct Rgba {
     float r = 1.0f, g = 1.0f, b = 1.0f, a = 1.0f;
@@ -93,4 +93,4 @@ struct Settings {
     bool        FromJson(const std::string& json);
 };
 
-} // namespace Magpie
+} // namespace Trailpack

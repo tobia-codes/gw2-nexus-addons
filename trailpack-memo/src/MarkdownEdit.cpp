@@ -2,7 +2,7 @@
 #include "ChipCodec.h"   // AppendUtf8 / DecodeUtf8
 #include <algorithm>
 
-namespace Magpie { namespace Md {
+namespace Trailpack { namespace Md {
 
 namespace {
 
@@ -275,4 +275,4 @@ std::string FromCells(const Cells& cells)
     return out;
 }
 
-}} // namespace Magpie::Md
+}} // namespace Trailpack::Md

@@ -12,7 +12,7 @@
 #include "SafeFile.h"
 
 namespace fs = std::filesystem;
-using Magpie::I18n::Tr;
+using Trailpack::I18n::Tr;
 
 // ── Popups ────────────────────────────────────────────────────────────────
 
@@ -72,13 +72,13 @@ void NotesWindow::loadNotes_()
     if (notesFile_.empty() || !fs::exists(notesFile_, ec)) return;
 
     std::string content;
-    if (Magpie::SafeFile::Read(notesFile_, content) && store_.FromJson(content)) {
+    if (Trailpack::SafeFile::Read(notesFile_, content) && store_.FromJson(content)) {
         // First load of a version-1 file (plain array): keep a copy before it is
         // rewritten in the version-2 format, which older builds can't read.
         const fs::path v1Backup = notesFile_.parent_path() / "notes.v1-backup.json";
         const size_t first = content.find_first_not_of(" \t\r\n");
         if (first != std::string::npos && content[first] == '[' && !fs::exists(v1Backup, ec))
-            Magpie::SafeFile::WriteAtomic(v1Backup, content);
+            Trailpack::SafeFile::WriteAtomic(v1Backup, content);
         // Save at once: loading may have replaced legacy ids, and exported ids must stay
         // stable across sessions.
         Save();
@@ -86,10 +86,10 @@ void NotesWindow::loadNotes_()
     }
 
     // Unreadable: never overwrite it. Move it aside, then fall back to the last backup.
-    const fs::path aside = Magpie::SafeFile::SetAside(notesFile_);
+    const fs::path aside = Trailpack::SafeFile::SetAside(notesFile_);
     const std::string asideName = aside.empty() ? std::string("notes.json") : aside.filename().u8string();
     std::string backup;
-    const bool restored = Magpie::SafeFile::Read(Magpie::SafeFile::BackupPath(notesFile_), backup) &&
+    const bool restored = Trailpack::SafeFile::Read(Trailpack::SafeFile::BackupPath(notesFile_), backup) &&
                           store_.FromJson(backup);
     char msg[512];
     snprintf(msg, sizeof msg,
@@ -109,7 +109,7 @@ void NotesWindow::Save()
 {
     if (notesFile_.empty()) return;
     // Crash-safe: temp file + atomic replace; the previous version stays as notes.json.bak.
-    Magpie::SafeFile::WriteAtomic(notesFile_, store_.ToJson(), /*keepBackup=*/true);
+    Trailpack::SafeFile::WriteAtomic(notesFile_, store_.ToJson(), /*keepBackup=*/true);
 }
 
 void NotesWindow::Shutdown()
@@ -122,7 +122,7 @@ void NotesWindow::Shutdown()
 
 bool NotesWindow::RestoreNotes(const std::string& json)
 {
-    Magpie::NotesStore restored;
+    Trailpack::NotesStore restored;
     if (!restored.FromJson(json)) return false;
     store_ = std::move(restored);
 
@@ -171,7 +171,7 @@ void NotesWindow::advanceSelectionAfterDelete_(const std::string& deletedId)
     selectFirst_();
 }
 
-void NotesWindow::enterEdit_(Magpie::Note* note)
+void NotesWindow::enterEdit_(Trailpack::Note* note)
 {
     if (!note) return;
     bodyEditor_.SetText(note->body);
@@ -181,7 +181,7 @@ void NotesWindow::enterEdit_(Magpie::Note* note)
 
 void NotesWindow::commitEdit_()
 {
-    Magpie::Note* note = selectedId_.empty() ? nullptr : store_.Get(selectedId_);
+    Trailpack::Note* note = selectedId_.empty() ? nullptr : store_.Get(selectedId_);
     if (note) {
         note->body  = bodyEditor_.GetText();
         note->title = titleBuffer_;
@@ -205,7 +205,7 @@ void NotesWindow::resolvePending_()
         pendingCreate_ = false;
         pendingSelectId_.clear();
         // Create the new note, select it, and open in Edit mode.
-        Magpie::Note& n = store_.Create(Tr("Untitled note"), pendingCreateGroupId_);
+        Trailpack::Note& n = store_.Create(Tr("Untitled note"), pendingCreateGroupId_);
         pendingCreateGroupId_.clear();
         selectedId_ = n.id;
         Save();
@@ -224,7 +224,7 @@ void NotesWindow::resolvePending_()
 bool NotesWindow::editIsDirty_()
 {
     if (mode_ != Mode::Edit) return false;
-    const Magpie::Note* cur = store_.Get(selectedId_);
+    const Trailpack::Note* cur = store_.Get(selectedId_);
     return cur != nullptr &&
            (bodyEditor_.GetText() != cur->body || titleBuffer_ != cur->title);
 }
@@ -253,7 +253,7 @@ void NotesWindow::requestCreate_(const std::string& groupId)
         pendingSelectId_.clear();
         requestPopup_(Popup::Unsaved);
     } else {
-        Magpie::Note& n = store_.Create(Tr("Untitled note"), groupId);
+        Trailpack::Note& n = store_.Create(Tr("Untitled note"), groupId);
         selectedId_ = n.id;
         Save();
         enterEdit_(&n);
@@ -334,17 +334,17 @@ void NotesWindow::performDelete_(const std::string& id)
 
 // ── Per-frame caches ────────────────────────────────────────────────────────
 
-const std::vector<Magpie::Md::Line>& NotesWindow::parsed_(ParseCache& cache, const std::string& body)
+const std::vector<Trailpack::Md::Line>& NotesWindow::parsed_(ParseCache& cache, const std::string& body)
 {
     if (!cache.valid || cache.body != body) {
         cache.body  = body;
-        cache.lines = Magpie::Md::Parse(body);
+        cache.lines = Trailpack::Md::Parse(body);
         cache.valid = true;
     }
     return cache.lines;
 }
 
-Magpie::Md::TaskCount NotesWindow::taskCount_(const Magpie::Note& note)
+Trailpack::Md::TaskCount NotesWindow::taskCount_(const Trailpack::Note& note)
 {
     // Drop entries of deleted notes now and then (ids are never reused).
     if (taskCache_.size() > store_.Notes().size() * 2 + 16) taskCache_.clear();
@@ -354,7 +354,7 @@ Magpie::Md::TaskCount NotesWindow::taskCount_(const Magpie::Note& note)
     if (it == taskCache_.end() || it->second.bodyHash != hash) {
         TaskCache entry;
         entry.bodyHash = hash;
-        entry.count    = Magpie::Md::CountTasks(note.body);
+        entry.count    = Trailpack::Md::CountTasks(note.body);
         it = taskCache_.insert_or_assign(note.id, entry).first;
     }
     return it->second.count;

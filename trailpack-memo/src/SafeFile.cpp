@@ -11,7 +11,7 @@
 
 namespace fs = std::filesystem;
 
-namespace Magpie { namespace SafeFile {
+namespace Trailpack { namespace SafeFile {
 
 // Replace `to` with `from` in one step (target may exist).
 static bool ReplaceFile(const fs::path& from, const fs::path& to)
@@ -85,4 +85,4 @@ fs::path SetAside(const fs::path& path)
     return fs::path();
 }
 
-}} // namespace Magpie::SafeFile
+}} // namespace Trailpack::SafeFile

@@ -2,7 +2,7 @@
 #include "chat/ChatLinks.h"   // PieUI::ChatLinks::LINK_ITEM
 #include "DecoderRingApi.h"   // DecoderRarity (DR_*)
 
-namespace Magpie {
+namespace Trailpack {
 
 // IM_COL32(r, g, b, 255) packed (ABGR, alpha 255).
 static constexpr uint32_t Pack(uint8_t r, uint8_t g, uint8_t b) {
@@ -53,4 +53,4 @@ uint32_t ChipColor(uint8_t linkType, uint8_t rarity) {
     return ChipColorForType(linkType);
 }
 
-} // namespace Magpie
+} // namespace Trailpack

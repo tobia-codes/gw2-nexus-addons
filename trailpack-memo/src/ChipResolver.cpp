@@ -5,7 +5,7 @@
 // IM_COL32 layout: packed as (a<<24)|(b<<16)|(g<<8)|r
 // All colours are chosen for readability on a dark UI theme.
 
-namespace Magpie {
+namespace Trailpack {
 
 // Per-type colour palette — named constants for clarity.
 // Format: IM_COL32(r, g, b, 255) == (0xFF << 24) | (b << 16) | (g << 8) | r
@@ -88,4 +88,4 @@ ChipView ResolveChip(const std::string& chatCode)
     return view;
 }
 
-} // namespace Magpie
+} // namespace Trailpack

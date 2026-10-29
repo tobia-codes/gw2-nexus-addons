@@ -12,7 +12,7 @@
 #include "I18n.h"
 #include "events/EventData.h"
 
-namespace Magpie { namespace Events {
+namespace Trailpack { namespace Events {
 
 // The event with this id, or nullptr (unknown id: e.g. removed from the data).
 const EventDef* Find(const std::string& id);
@@ -63,4 +63,4 @@ std::string FormatTime(int64_t seconds, bool active);
 // A plain duration in the current language: "30 min", "2 h", "1 h 30 min" (DE: "30 Min", ...).
 std::string FormatDuration(int64_t seconds);
 
-}} // namespace Magpie::Events
+}} // namespace Trailpack::Events

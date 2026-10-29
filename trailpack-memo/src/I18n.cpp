@@ -4,7 +4,7 @@
 #include <string_view>
 #include <unordered_map>
 
-namespace Magpie { namespace I18n {
+namespace Trailpack { namespace I18n {
 
 static Lang s_Lang = Lang::En;
 
@@ -32,9 +32,8 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "Right-click a note in the list to export just that one.",
       "Alle Notizen in einer Datei speichern.\n"
       "Rechtsklick auf eine Notiz in der Liste exportiert nur diese." },
-    { "Your nest is empty.",               "Dein Nest ist leer." },
-    { "Click 'Create New Note' to start collecting.",
-      "Klicke auf 'Neue Notiz', um mit dem Sammeln zu beginnen." },
+    { "No notes yet.",                     "Noch keine Notizen." },
+    { "Click 'Create New Note' to start.", "Klicke auf 'Neue Notiz', um zu beginnen." },
     { "Bold (Ctrl+B)",                     "Fett (Strg+B)" },
     { "Italic (Ctrl+I)",                   "Kursiv (Strg+I)" },
     { "Heading 1",                         "Überschrift 1" },
@@ -418,4 +417,4 @@ const char* TrN(long long n, const char* one, const char* many)
 
 const std::vector<std::pair<const char*, const char*>>& GermanTable() { return kGerman; }
 
-}} // namespace Magpie::I18n
+}} // namespace Trailpack::I18n
