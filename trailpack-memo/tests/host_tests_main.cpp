@@ -684,6 +684,8 @@ static void test_settings_roundtrip()
     c.showListBorder  = true;
     c.listBorder      = { true, Magpie::Rgba{ 0.0f, 0.0f, 0.7f, 1.0f } };
     c.menuIcon        = { true, Magpie::Rgba{ 0.3f, 0.3f, 0.3f, 1.0f } };
+    c.popupBackground = Magpie::Rgba{ 0.1f, 0.1f, 0.2f, 0.9f };
+    c.popupText       = { true, Magpie::Rgba{ 1.0f, 0.9f, 0.6f, 1.0f } };
     c.border          = Magpie::Rgba{ 0.5f, 0.25f, 1.0f, 1.0f };
     c.groupName       = { true, Magpie::Rgba{ 1.0f, 0.0f, 0.0f, 1.0f } };
     c.noGroup         = { true, Magpie::Rgba{ 0.0f, 0.5f, 0.0f, 1.0f } };
@@ -707,6 +709,7 @@ static void test_settings_roundtrip()
     CHECK(!b.colors.background.set && !b.colors.text.set);   // null stays unset
     CHECK(b.colors.dailyBadgeText.a == 0.5f);
     CHECK(b.colors.menuIcon.set && !b.colors.menuButton.set);
+    CHECK(b.colors.popupBackground.b == 0.2f && b.colors.popupText.set);
 }
 
 static void test_settings_validation()
@@ -716,8 +719,9 @@ static void test_settings_validation()
     CHECK(!s.FromJson("[1,2]"));
     CHECK_EQ(s.uiTextScale, 100);                       // untouched on failure
 
-    // Defaults: no borders.
+    // Defaults: no borders; popups opaque black with Nexus text.
     CHECK(!s.colors.showBorder && !s.colors.showListBorder && !s.colors.showNoteBorder);
+    CHECK(s.colors.popupBackground == (Magpie::Rgba{ 0.0f, 0.0f, 0.0f, 1.0f }) && !s.colors.popupText.set);
 
     // Out-of-range / wrong types: clamped or ignored, everything else keeps defaults.
     CHECK(s.FromJson("{\"text_scale\": 999, \"note_text_scale\": 5, \"show_qa_icon\": \"yes\","
@@ -824,7 +828,10 @@ static void test_event_data()
             CHECK(e.durations[k] > 0);
             if (k > 0) CHECK(e.starts[k] > e.starts[k - 1]);   // ascending
         }
-        if (e.waypoint != nullptr) CHECK(std::string(e.waypoint).rfind("[&B", 0) == 0);
+        CHECK(e.placeCount >= 1 && e.places != nullptr);
+        for (int p = 0; p < e.placeCount; ++p)
+            if (e.places[p].waypoint != nullptr) CHECK(std::string(e.places[p].waypoint).rfind("[&B", 0) == 0);
+        for (int k = 0; k < e.count; ++k) CHECK(e.placeOf[k] < e.placeCount);
     }
 
     // Pinned to the wiki schedule: Tequatl at 00:00, 03:00, 07:00, 11:30, 16:00, 19:00 UTC for
@@ -866,7 +873,9 @@ static void test_events_lookup()
     if (teq == nullptr) return;
     CHECK_EQ(std::string(Name(*teq, Lang::En)), std::string("Tequatl the Sunless"));
     CHECK_EQ(std::string(Name(*teq, Lang::De)), std::string("Tequatl der Sonnenlose"));
-    CHECK_EQ(std::string(Map(*teq, Lang::En)), std::string("Sparkfly Fen"));
+    CHECK_EQ(std::string(MapName(teq->places[0], Lang::En)), std::string("Sparkfly Fen"));
+    CHECK_EQ(Maps(*teq, Lang::De), std::string("Funkenschwärmersumpf"));
+    CHECK_EQ(std::string(WaypointName(teq->places[0], Lang::En)), std::string("Splintered Coast Waypoint"));
     CHECK_EQ(std::string(CategoryName(teq->category, Lang::De)), std::string("Zentraltyria"));
     CHECK_EQ(std::string(CategoryName(255, Lang::En)), std::string(""));
 
@@ -909,16 +918,50 @@ static void test_events_state()
     s = State(*tt, kOct29);
     CHECK(!s.active && s.start == kOct29 + 3600);
 
-    std::vector<int64_t> next = NextStarts(*teq, kOct29 + 3600, 3);
+    std::vector<Occurrence> next = NextOccurrences(*teq, kOct29 + 3600, 3);
     CHECK_EQ(next.size(), (size_t)3);
     if (next.size() == 3) {
-        CHECK_EQ(next[0], kOct29 + 3 * 3600);
-        CHECK_EQ(next[1], kOct29 + 7 * 3600);
-        CHECK_EQ(next[2], kOct29 + 11 * 3600 + 1800);
+        CHECK_EQ(next[0].start, kOct29 + 3 * 3600);
+        CHECK_EQ(next[0].end, kOct29 + 3 * 3600 + 1800);
+        CHECK_EQ(next[1].start, kOct29 + 7 * 3600);
+        CHECK_EQ(next[2].start, kOct29 + 11 * 3600 + 1800);
     }
-    next = NextStarts(*teq, kOct29 + 19 * 3600, 2);   // exactly at the last start of the day
-    CHECK(next.size() == 2 && next[0] == kOct29 + 86400 && next[1] == kOct29 + 86400 + 3 * 3600);
-    CHECK(NextStarts(*teq, kOct29, 0).empty());
+    next = NextOccurrences(*teq, kOct29 + 19 * 3600, 2);   // exactly at the last start of the day
+    CHECK(next.size() == 2 && next[0].start == kOct29 + 86400 && next[1].start == kOct29 + 86400 + 3 * 3600);
+    CHECK(NextOccurrences(*teq, kOct29, 0).empty());
+}
+
+// A rotating event is ONE event with several places: the Ley-Line Anomaly every 2 h from
+// 00:20 UTC for 20 min, in Timberline Falls, Iron Marches, Gendarran Fields in turn. Its place
+// stays the running one until that run has ended, then moves to the next.
+static void test_events_rotating_places()
+{
+    using namespace Magpie::Events;
+    using Magpie::I18n::Lang;
+    const EventDef* lla = Find("ley-line-anomaly");
+    CHECK(lla != nullptr);
+    if (lla == nullptr) return;
+    CHECK_EQ((int)lla->placeCount, 3);
+    CHECK_EQ(Maps(*lla, Lang::En), std::string("Timberline Falls, Iron Marches, Gendarran Fields"));
+    CHECK(Find("ley-line-anomaly-timberline-falls") == nullptr);   // no longer three events
+
+    Status s = State(*lla, kOct29 + 10 * 60);                 // 00:10: next run 00:20, Timberline
+    CHECK(!s.active && s.start == kOct29 + 20 * 60);
+    CHECK_EQ(std::string(MapName(lla->places[s.place], Lang::En)), std::string("Timberline Falls"));
+    s = State(*lla, kOct29 + 39 * 60);                        // 00:39: still running in Timberline
+    CHECK(s.active && std::string(MapName(lla->places[s.place], Lang::En)) == "Timberline Falls");
+    s = State(*lla, kOct29 + 40 * 60);                        // 00:40: ended -> 02:20 Iron Marches
+    CHECK(!s.active && s.start == kOct29 + 2 * 3600 + 20 * 60);
+    CHECK_EQ(std::string(MapName(lla->places[s.place], Lang::En)), std::string("Iron Marches"));
+    CHECK_EQ(std::string(lla->places[s.place].waypoint), std::string("[&BOcBAAA=]"));
+
+    const std::vector<Occurrence> next = NextOccurrences(*lla, kOct29, 3);
+    CHECK(next.size() == 3 && next[0].place != next[1].place && next[1].place != next[2].place);
+
+    // Search finds it through any of its maps, in either language.
+    bool found = false;
+    for (const EventDef* e : Search("eisenmark")) found = found || e == lla;
+    CHECK(found);
 }
 
 #ifndef _WIN32
@@ -945,15 +988,15 @@ static void test_events_ignore_time_zone()
         for (int64_t p : probes) {
             const Status st = State(*teq, p);
             results[z].push_back(st.start);
-            results[z].push_back(NextStarts(*teq, p, 1)[0]);
+            results[z].push_back(NextOccurrences(*teq, p, 1)[0].start);
         }
     }
     if (old != nullptr) setenv("TZ", saved.c_str(), 1); else unsetenv("TZ");
     tzset();
 
     CHECK(results[0] == results[1]);
-    CHECK_EQ(NextStarts(*teq, mar29 + 3600, 1)[0], mar29 + 3 * 3600);   // 03:00 UTC as always
-    CHECK_EQ(NextStarts(*teq, oct25 + 3600, 1)[0], oct25 + 3 * 3600);
+    CHECK_EQ(NextOccurrences(*teq, mar29 + 3600, 1)[0].start, mar29 + 3 * 3600);   // 03:00 UTC as always
+    CHECK_EQ(NextOccurrences(*teq, oct25 + 3600, 1)[0].start, oct25 + 3 * 3600);
 }
 #endif
 
@@ -1935,6 +1978,7 @@ int main()
     test_event_data();
     test_events_lookup();
     test_events_state();
+    test_events_rotating_places();
 #ifndef _WIN32
     test_events_ignore_time_zone();
 #endif

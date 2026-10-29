@@ -80,6 +80,9 @@ private:
     Mode                   mode_        = Mode::View;
     Magpie::ChipTextEdit   bodyEditor_;  // working copy of note body while editing
     std::string            titleBuffer_; // working copy of note title while editing
+    // Event picker (toolbar "Event", EventPicker.h): search text + focus-once flag.
+    std::string            eventQuery_;
+    bool                   eventPickerFocus_ = false;
 
     // ── UI settings ───────────────────────────────────────────────────────
     bool  showPreview_     = false;

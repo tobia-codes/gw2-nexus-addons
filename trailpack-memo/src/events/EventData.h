@@ -3,7 +3,9 @@
 // tools/event_overrides.json and re-run (see plans/EVENTS.md). PURE: no ImGui/Nexus/Win32.
 //
 // Every event repeats daily: `starts` are minutes after 00:00 UTC (0..1439); an occurrence
-// may run past midnight (start + duration > 1440). Names / maps: nullptr German = use English.
+// may run past midnight (start + duration > 1440). An event happens at one or more places
+// (map + waypoint); `placeOf` says where each occurrence is (rotating events like the
+// Ley-Line Anomaly). German texts nullptr = use English.
 
 #include <cstddef>
 #include <cstdint>
@@ -17,20 +19,26 @@ struct CategoryDef {
     const char* nameDe;          // nullptr: expansion name, not translated
 };
 
+struct PlaceDef {
+    const char* mapEn;           // nullptr: none known
+    const char* mapDe;
+    const char* waypoint;        // chat code "[&B...]", nullptr: none
+    const char* waypointNameEn;
+    const char* waypointNameDe;
+};
+
 struct EventDef {
     const char*     id;          // stable English slug, used in {{event:<id>}}
     const char*     nameEn;
     const char*     nameDe;
-    const char*     mapEn;       // nullptr: none known
-    const char*     mapDe;
     uint8_t         category;    // index into kCategories
-    const char*     waypoint;    // chat code "[&B...]", nullptr: none
-    const char*     waypointNameEn;
-    const char*     waypointNameDe;
     const char*     wikiPage;    // English wiki page (may contain "#section")
+    uint8_t         placeCount;  // >= 1
+    const PlaceDef* places;
     uint8_t         count;       // occurrences per day
     const uint16_t* starts;      // minutes after 00:00 UTC, ascending
     const uint16_t* durations;   // minutes, parallel to starts
+    const uint8_t*  placeOf;     // index into places, parallel to starts
 };
 
 extern const CategoryDef kCategories[];

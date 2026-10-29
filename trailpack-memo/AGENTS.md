@@ -61,6 +61,10 @@ New identifiers that the game or Nexus can see (signature, ids, events, textures
 - NotesWindow is split by area (see the header comment in `src/NotesWindow.h`). Open modals only
   via `requestPopup_` / render them with `beginModal_`; never call `ImGui::OpenPopup` for a modal
   from inside a child window. Settings belong in `Settings` (pure, tested), not in new globals.
+- **Popups in the note window** (menus, context menus, tooltips, pickers, modals) use the popup
+  colours: `Theme::PopupTextScope` first inside each `if (ImGui::BeginPopup...(...)) {` (or around
+  `BeginTooltip` / a Combo) and `Theme::Tooltip(...)` instead of `ImGui::SetTooltip`; modals are
+  covered by `renderModals_`. The background comes from `Theme::PushWindowStyle`.
 - New user-visible features also get a line in the in-game guide (`src/HelpWindow.cpp`, plus the
   German text in `I18n.cpp`) and in `README.md`.
 - Match the surrounding style, naming and comment density. Keep `README.md` (addon + root table)

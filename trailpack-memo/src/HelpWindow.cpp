@@ -43,7 +43,7 @@ void TitleBarButton(const char* windowTitle, bool* open)
     ImGui::PopClipRect();
     ImGui::SetCursorScreenPos(cursor);
 
-    if (hovered) ImGui::SetTooltip("%s", Tr("Guide"));
+    if (hovered) Theme::Tooltip("%s", Tr("Guide"));
 }
 
 namespace {
@@ -86,8 +86,8 @@ const Section kSections[] = {
       "- Right-click a chip: copy the chat code or open the wiki.\n"
       "- With Pie UI: left-click a waypoint chip to open the map there." },
     { "Event timers",
-      "Write {{event:<id>}} in a note, e.g. {{event:tequatl-the-sunless}} - it becomes an event "
-      "chip.\n"
+      "While editing, 'Event' in the toolbar picks an event: search by name or map, or browse "
+      "the categories. It becomes an event chip; {{event:<id>}} typed by hand works too.\n"
       "- It shows the time until the next start, or since when the event is running.\n"
       "- Hover it for the next starts in your local time, the duration, map and waypoint.\n"
       "- Left-click copies the waypoint; right-click: copy waypoint or open the wiki.\n"
@@ -104,7 +104,7 @@ const Section kSections[] = {
       "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
       "- Language (Auto follows Nexus), quick access icon.\n"
       "- 'Font options': UI and note text size.\n"
-      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text) and the daily / weekly badges.\n"
+      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text), popups (background, text) and the daily / weekly badges.\n"
       "- 'Colour options' > Theme: Default, Light, Dark or one of your own; 'Save as theme' "
       "stores the current colours under a name. Borders are off by default.\n"
       "- 'Backup': 'Create backup...' saves all notes, groups and settings in one file; "

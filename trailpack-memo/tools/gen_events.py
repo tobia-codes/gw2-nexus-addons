@@ -191,7 +191,8 @@ def main() -> None:
             if cl:
                 en_chat_count[cl] = en_chat_count.get(cl, 0) + 1
 
-    # Collect events.
+    # Collect events: one per segment, or one per meta for "merge" metas (the same event moving
+    # between places, e.g. the Ley-Line Anomaly). Each part = one segment with its place.
     events, wanted = [], set()
     for key, meta in data["events"].items():
         if key in ov["exclude_metas"]:
@@ -205,6 +206,7 @@ def main() -> None:
             for mi, _ in de_by_chat.get(cl, ()):
                 votes[mi] = votes.get(mi, 0) + 1
         meta_de = de_metas[max(votes, key=votes.get)] if votes else None
+        parts = []
         for sk, seg in meta["segments"].items():
             if not seg.get("name") or sk in alias or sk in mo.get("exclude_segments", []):
                 continue
@@ -216,33 +218,45 @@ def main() -> None:
             seg_de = next(iter(de))[1] if len(de) == 1 and en_chat_count.get(cl) == 1 else None
             if cl:
                 wanted.add(poi_id(cl))
-            events.append({"meta": key, "meta_name": meta["name"], "meta_de": meta_de,
-                           "category": meta["category"], "segment": seg["name"], "segment_de": seg_de,
-                           "chat": cl, "wiki": seg.get("link") or seg["name"], "occ": occ, "mo": mo})
+            parts.append({"segment": seg["name"], "segment_de": seg_de, "chat": cl,
+                          "wiki": seg.get("link") or seg["name"], "occ": occ})
+        groups = [parts] if mo.get("merge") and parts else [[p] for p in parts]
+        for g in groups:
+            events.append({"meta_name": meta["name"], "meta_de": meta_de, "category": meta["category"],
+                           "parts": g, "mo": mo})
 
     pois = poi_names(wanted)
 
-    # Names, maps, ids, overrides.
+    # Names, places, ids, overrides.
     out, ids = [], set()
     for ev in events:
-        p = pois.get(poi_id(ev["chat"])) if ev["chat"] else None
-        mo = ev["mo"]
-        values = {"segment": ev["segment"], "segment_de": ev["segment_de"], "meta": ev["meta_name"],
-                  "meta_de": ev["meta_de"], "map": mo.get("map", p["map_en"] if p else ""),
-                  "map_de": mo.get("map_de", p["map_de"] if p else "")}
-        name = fmt(mo.get("name", "{segment}"), values) or ev["segment"]
+        mo, first = ev["mo"], ev["parts"][0]
+        places, occ = [], []
+        for part in ev["parts"]:
+            p = pois.get(poi_id(part["chat"])) if part["chat"] else None
+            place = {"map": mo.get("map", p["map_en"] if p else "") or None,
+                     "map_de": mo.get("map_de", p["map_de"] if p else "") or None,
+                     "waypoint": part["chat"] or None,
+                     "wp": p["en"] if p else None, "wp_de": p["de"] if p and p["de"] else None}
+            if place not in places:
+                places.append(place)
+            occ += [(s, d, places.index(place)) for s, d in part["occ"]]
+        values = {"segment": first["segment"], "segment_de": first["segment_de"],
+                  "meta": ev["meta_name"], "meta_de": ev["meta_de"],
+                  "map": places[0]["map"], "map_de": places[0]["map_de"]}
+        name = fmt(mo.get("name", "{segment}"), values) or first["segment"]
         name_de = fmt(mo.get("name_de", "{segment_de}"), values)
-        rec = {"id": slug(name), "name": name, "name_de": name_de,
-               "map": values["map"] or None, "map_de": values["map_de"] or None,
-               "category": ev["category"], "waypoint": ev["chat"] or None,
-               "wp": p["en"] if p else None, "wp_de": p["de"] if p and p["de"] else None,
-               "wiki": ev["wiki"], "occ": sorted(ev["occ"])}
+        rec = {"id": slug(name), "name": name, "name_de": name_de, "category": ev["category"],
+               "places": places, "wiki": mo.get("wiki", first["wiki"]), "occ": sorted(occ)}
         eo = ov["events"].get(rec["id"], {})
         if eo.get("exclude"):
             continue
-        for k in ("name", "name_de", "map", "map_de", "waypoint"):
+        for k in ("name", "name_de"):
             if k in eo:
                 rec[k] = eo[k]
+        for k in ("map", "map_de", "waypoint"):   # single-place fixes
+            if k in eo:
+                rec["places"][0][k] = eo[k]
         rec["id"] = eo.get("id", rec["id"])
         if rec["id"] in ids:
             sys.exit(f"error: duplicate event id '{rec['id']}' -- set an id in event_overrides.json")
@@ -265,7 +279,9 @@ def write_files(events, categories, cat_de, args) -> None:
 // tools/event_overrides.json and re-run (see plans/EVENTS.md). PURE: no ImGui/Nexus/Win32.
 //
 // Every event repeats daily: `starts` are minutes after 00:00 UTC (0..1439); an occurrence
-// may run past midnight (start + duration > 1440). Names / maps: nullptr German = use English.
+// may run past midnight (start + duration > 1440). An event happens at one or more places
+// (map + waypoint); `placeOf` says where each occurrence is (rotating events like the
+// Ley-Line Anomaly). German texts nullptr = use English.
 
 #include <cstddef>
 #include <cstdint>
@@ -279,20 +295,26 @@ struct CategoryDef {{
     const char* nameDe;          // nullptr: expansion name, not translated
 }};
 
+struct PlaceDef {{
+    const char* mapEn;           // nullptr: none known
+    const char* mapDe;
+    const char* waypoint;        // chat code "[&B...]", nullptr: none
+    const char* waypointNameEn;
+    const char* waypointNameDe;
+}};
+
 struct EventDef {{
     const char*     id;          // stable English slug, used in {{{{event:<id>}}}}
     const char*     nameEn;
     const char*     nameDe;
-    const char*     mapEn;       // nullptr: none known
-    const char*     mapDe;
     uint8_t         category;    // index into kCategories
-    const char*     waypoint;    // chat code "[&B...]", nullptr: none
-    const char*     waypointNameEn;
-    const char*     waypointNameDe;
     const char*     wikiPage;    // English wiki page (may contain "#section")
+    uint8_t         placeCount;  // >= 1
+    const PlaceDef* places;
     uint8_t         count;       // occurrences per day
     const uint16_t* starts;      // minutes after 00:00 UTC, ascending
     const uint16_t* durations;   // minutes, parallel to starts
+    const uint8_t*  placeOf;     // index into places, parallel to starts
 }};
 
 extern const CategoryDef kCategories[];
@@ -306,20 +328,24 @@ extern const size_t      kEventCount;
              f"// Source: {args.en_data}",
              '#include "EventData.h"', "", "namespace Magpie { namespace Events {", ""]
     for i, ev in enumerate(events):
-        starts = ", ".join(str(s) for s, _ in ev["occ"])
-        durs = ", ".join(str(d) for _, d in ev["occ"])
-        lines.append(f"static const uint16_t kS{i}[] = {{ {starts} }};")
-        lines.append(f"static const uint16_t kD{i}[] = {{ {durs} }};")
+        lines.append(f"static const uint16_t kS{i}[] = {{ {', '.join(str(s) for s, _, _ in ev['occ'])} }};")
+        lines.append(f"static const uint16_t kD{i}[] = {{ {', '.join(str(d) for _, d, _ in ev['occ'])} }};")
+        lines.append(f"static const uint8_t  kP{i}[] = {{ {', '.join(str(p) for _, _, p in ev['occ'])} }};")
+        lines.append(f"static const PlaceDef kL{i}[] = {{")
+        for pl in ev["places"]:
+            lines.append(f"    {{ {c_str(pl['map'])}, {c_str(pl['map_de'])}, {c_str(pl['waypoint'])}, "
+                         f"{c_str(pl['wp'])}, {c_str(pl['wp_de'])} }},")
+        lines.append("};")
     lines += ["", "const CategoryDef kCategories[] = {"]
     for c in categories:
         lines.append(f"    {{ {c_str(c)}, {c_str(cat_de.get(c))} }},")
     lines += ["};", "const size_t kCategoryCount = sizeof kCategories / sizeof kCategories[0];", "",
               "const EventDef kEvents[] = {"]
     for i, ev in enumerate(events):
-        lines.append(f"    {{ {c_str(ev['id'])}, {c_str(ev['name'])}, {c_str(ev['name_de'])},")
-        lines.append(f"      {c_str(ev['map'])}, {c_str(ev['map_de'])}, {categories.index(ev['category'])},")
-        lines.append(f"      {c_str(ev['waypoint'])}, {c_str(ev['wp'])}, {c_str(ev['wp_de'])},")
-        lines.append(f"      {c_str(ev['wiki'])}, {len(ev['occ'])}, kS{i}, kD{i} }},")
+        lines.append(f"    {{ {c_str(ev['id'])}, {c_str(ev['name'])}, {c_str(ev['name_de'])}, "
+                     f"{categories.index(ev['category'])},")
+        lines.append(f"      {c_str(ev['wiki'])}, {len(ev['places'])}, kL{i}, "
+                     f"{len(ev['occ'])}, kS{i}, kD{i}, kP{i} }},")
     lines += ["};", "const size_t kEventCount = sizeof kEvents / sizeof kEvents[0];", "",
               "}} // namespace Magpie::Events", ""]
     OUT_H.write_text(header, encoding="utf-8")
@@ -330,9 +356,11 @@ def summary(events, categories) -> None:
     print(f"wrote {OUT_H.relative_to(ROOT)} + {OUT_CPP.name}: {len(events)} events, {len(categories)} categories")
     for c in categories:
         print(f"  {sum(e['category'] == c for e in events):3}  {c}")
-    no_wp = [e["id"] for e in events if not e["waypoint"]]
-    no_wp_name = [e["id"] for e in events if e["waypoint"] and not e["wp"]]
+    multi = [f"{e['id']} ({len(e['places'])})" for e in events if len(e["places"]) > 1]
+    no_wp = [e["id"] for e in events if not any(p["waypoint"] for p in e["places"])]
+    no_wp_name = [e["id"] for e in events if any(p["waypoint"] and not p["wp"] for p in e["places"])]
     no_de = [e["id"] for e in events if not e["name_de"]]
+    print(f"rotating between places ({len(multi)}): {', '.join(multi) or '-'}")
     print(f"without waypoint ({len(no_wp)}): {', '.join(no_wp) or '-'}")
     print(f"waypoint not found in the API ({len(no_wp_name)}): {', '.join(no_wp_name) or '-'}")
     print(f"without German name ({len(no_de)}): {', '.join(no_de) or '-'}")

@@ -226,14 +226,15 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "- Rechtsklick auf einen Chip: Chatcode kopieren oder Wiki öffnen.\n"
       "- Mit Pie UI: Linksklick auf einen Wegpunkt-Chip öffnet dort die Karte." },
     { "Event timers",                      "Event-Timer" },
-    { "Write {{event:<id>}} in a note, e.g. {{event:tequatl-the-sunless}} - it becomes an event "
-      "chip.\n"
+    { "While editing, 'Event' in the toolbar picks an event: search by name or map, or browse "
+      "the categories. It becomes an event chip; {{event:<id>}} typed by hand works too.\n"
       "- It shows the time until the next start, or since when the event is running.\n"
       "- Hover it for the next starts in your local time, the duration, map and waypoint.\n"
       "- Left-click copies the waypoint; right-click: copy waypoint or open the wiki.\n"
       "- While editing, the chip shows the event name only.",
-      "Schreibe {{event:<id>}} in eine Notiz, z. B. {{event:tequatl-the-sunless}} - daraus wird ein "
-      "Event-Chip.\n"
+      "Beim Bearbeiten wählt 'Event' in der Werkzeugleiste ein Event: Suche nach Name oder Karte, "
+      "oder in den Kategorien stöbern. Es wird zum Event-Chip; von Hand geschriebenes "
+      "{{event:<id>}} geht auch.\n"
       "- Er zeigt die Zeit bis zum nächsten Start oder seit wann das Event läuft.\n"
       "- Beim Darüberfahren: nächste Starts in deiner Ortszeit, Dauer, Karte und Wegpunkt.\n"
       "- Linksklick kopiert den Wegpunkt; Rechtsklick: Wegpunkt kopieren oder Wiki öffnen.\n"
@@ -257,7 +258,7 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
       "- Language (Auto follows Nexus), quick access icon.\n"
       "- 'Font options': UI and note text size.\n"
-      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text) and the daily / weekly badges.\n"
+      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text), popups (background, text) and the daily / weekly badges.\n"
       "- 'Colour options' > Theme: Default, Light, Dark or one of your own; 'Save as theme' "
       "stores the current colours under a name. Borders are off by default.\n"
       "- 'Backup': 'Create backup...' saves all notes, groups and settings in one file; "
@@ -266,7 +267,7 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "Nexus-Addon-Optionen > Trailpack Memo, oder Menü-Knopf > 'Einstellungen...':\n"
       "- Sprache (Automatisch folgt Nexus), Schnellzugriff-Icon.\n"
       "- 'Schriftoptionen': UI- und Notiz-Textgröße.\n"
-      "- 'Farboptionen': Fenster (Rahmen an/aus und Farbe, Hintergrund, Text, Menü-Knopf und -Symbol), Notizliste (Rahmen an/aus und Farbe, Hintergrund, Text, Gruppennamen, 'Ohne Gruppe'), Notiz (Rahmen an/aus und Farbe, Hintergrund, Text) und die Täglich-/Wöchentlich-Badges.\n"
+      "- 'Farboptionen': Fenster (Rahmen an/aus und Farbe, Hintergrund, Text, Menü-Knopf und -Symbol), Notizliste (Rahmen an/aus und Farbe, Hintergrund, Text, Gruppennamen, 'Ohne Gruppe'), Notiz (Rahmen an/aus und Farbe, Hintergrund, Text), Popups (Hintergrund, Text) und die Täglich-/Wöchentlich-Badges.\n"
       "- 'Farboptionen' > Theme: Standard, Hell, Dunkel oder ein eigenes; 'Als Theme speichern' "
       "sichert die aktuellen Farben unter einem Namen. Rahmen sind standardmäßig aus.\n"
       "- 'Backup': 'Backup erstellen...' speichert alle Notizen, Gruppen und Einstellungen in einer "
@@ -305,6 +306,7 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Window",                            "Fenster" },
     { "Show border",                       "Rahmen anzeigen" },
     { "Note list",                         "Notizliste" },
+    { "Popups",                            "Popups" },
     { "Daily / weekly badges",             "Täglich-/Wöchentlich-Badges" },
     { "Reset all colours",                 "Alle Farben zurücksetzen" },
     { "Menu button",                       "Menü-Knopf" },
@@ -334,6 +336,10 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "No waypoint known for this event.", "Für dieses Event ist kein Wegpunkt bekannt." },
     { "Waypoint copied",                   "Wegpunkt kopiert" },
     { "Copy waypoint",                     "Wegpunkt kopieren" },
+    { "Event",                             "Event" },
+    { "Insert an event timer",             "Event-Timer einfügen" },
+    { "Search events...",                  "Events suchen..." },
+    { "No events found.",                  "Keine Events gefunden." },
     { "Save as theme",                     "Als Theme speichern" },
     { "Default (Nexus)",                   "Standard (Nexus)" },
     { "Light",                             "Hell" },
