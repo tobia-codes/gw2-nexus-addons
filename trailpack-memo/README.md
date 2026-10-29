@@ -20,6 +20,8 @@
   and notes you already have are skipped: every note carries a unique id that travels with the
   export (notes without one are matched by identical title + text). Dialogs open in
   `addons/TrailpackMemo/exports/`.
+- **Custom colours** for the window border, background and text (colour pickers with alpha in
+  the Nexus addon options, each with a Reset).
 - **Adjustable text size** (70-200 %) in the Nexus addon options; headings and chips scale along.
 - **Lists continue on Enter**: a new `- ` / `- [ ] ` is started automatically; Enter on an empty
   item ends the list.

@@ -401,7 +401,7 @@ void NotesWindow::Render()
                 ImGui::BeginChild("##edit_col", ImVec2(half, 0), false);
                 bodyEditor_.Render("##body_edit",
                                    ImGui::GetContentRegionAvail().x,
-                                   ImGui::GetColorU32(Theme::BORDER_GOLD),
+                                   ImGui::GetColorU32(Theme::Colors().border),
                                    /*minLines=*/6);
                 ImGui::EndChild();
 
@@ -415,7 +415,7 @@ void NotesWindow::Render()
             } else {
                 bodyEditor_.Render("##body_edit",
                                    ImGui::GetContentRegionAvail().x,
-                                   ImGui::GetColorU32(Theme::BORDER_GOLD),
+                                   ImGui::GetColorU32(Theme::Colors().border),
                                    /*minLines=*/6);
             }
         }

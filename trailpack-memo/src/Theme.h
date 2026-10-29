@@ -29,16 +29,23 @@ inline const ImVec4 FRAME_BG_DARK      = { 0.10f, 0.10f, 0.13f, 1.00f };
 // Visually distinct from FRAME_BG_DARK so the user knows they are editing.
 inline const ImVec4 EDIT_BG            = { 0.08f, 0.11f, 0.20f, 1.00f };
 
+// ── User colours (Options pane, persisted in settings.json) ───────────────
+// Border defaults to BORDER_GOLD. Background and text default to Nexus's own style;
+// they only override it once the user picks a colour (has* = true).
+struct UserColors {
+    ImVec4 border        = BORDER_GOLD;
+    bool   hasBackground = false;
+    ImVec4 background    = { 0.0f, 0.0f, 0.0f, 0.0f };
+    bool   hasText       = false;
+    ImVec4 text          = { 0.0f, 0.0f, 0.0f, 0.0f };
+};
+UserColors& Colors();   // the live, mutable set (Theme.cpp)
+
 // ── Scoped helpers ────────────────────────────────────────────────────────
-// Push the gold window border style. Call PopWindowBorder() after ImGui::End().
-inline void PushWindowBorder() {
-    ImGui::PushStyleColor(ImGuiCol_Border, BORDER_GOLD);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, BORDER_SIZE);
-}
-inline void PopWindowBorder() {
-    ImGui::PopStyleColor(1);
-    ImGui::PopStyleVar(1);
-}
+// Push the window border + user colours (border, background, text) for the whole
+// window, its child panes and its modals. Call PopWindowStyle() after ImGui::End().
+void PushWindowStyle();
+void PopWindowStyle();
 
 // Push green action-button colours. Call PopButton() after the button widget.
 inline void PushGreenButton() {

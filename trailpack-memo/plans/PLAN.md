@@ -54,6 +54,9 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   shows a selection modal; duplicates (same id, or same title + body when the file has no valid
   id) are shown locked and never added. Windows file dialogs run on a worker thread
   (`std::async`) and are polled in `Render()`.
+- User colours (border / background / text) in `Theme::Colors()`, pushed for the whole window by
+  `Theme::PushWindowStyle()`; background/text only override Nexus's style once picked
+  (`color_*` in `settings.json`, null = Nexus default).
 - Text-size setting (70-200 %, Nexus options, `text_scale` in `settings.json`) via
   `SetWindowFontScale`; `RenderMarkdown` uses `ImGui::GetFontSize()` so view text follows it.
 

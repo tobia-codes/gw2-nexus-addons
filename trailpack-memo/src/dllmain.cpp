@@ -48,6 +48,21 @@ void AddonOptions();
 static constexpr int kTextScaleMin = 70;
 static constexpr int kTextScaleMax = 200;
 
+// Colours are stored as [r, g, b, a] (0..1). An absent or null background/text
+// entry means "use Nexus's default style".
+static nlohmann::json ColorToJson(const ImVec4& c) { return { c.x, c.y, c.z, c.w }; }
+static bool ColorFromJson(const nlohmann::json& j, ImVec4& out) {
+    if (!j.is_array() || j.size() != 4) return false;
+    float v[4];
+    for (int i = 0; i < 4; ++i) {
+        if (!j[i].is_number()) return false;
+        const float f = j[i].get<float>();
+        v[i] = f < 0.0f ? 0.0f : f > 1.0f ? 1.0f : f;
+    }
+    out = ImVec4(v[0], v[1], v[2], v[3]);
+    return true;
+}
+
 // ── Settings persistence (settings.json in the addon data dir) ────────────
 static std::string SettingsPath() {
     if (!APIDefs) return std::string();
@@ -65,6 +80,10 @@ static void SaveSettings() {
     j["show_qa_icon"] = g_ShowQAIcon;
     j["edit_preview"] = g_Notes.PreviewEnabled();
     j["text_scale"]   = g_TextScalePct;
+    const Theme::UserColors& c = Theme::Colors();
+    j["color_border"]     = ColorToJson(c.border);
+    j["color_background"] = c.hasBackground ? ColorToJson(c.background) : nlohmann::json();
+    j["color_text"]       = c.hasText       ? ColorToJson(c.text)       : nlohmann::json();
     std::ofstream f(path, std::ios::out | std::ios::trunc);
     if (f.is_open()) f << j.dump(2);
 }
@@ -85,6 +104,12 @@ static void LoadSettings() {
         const int pct = j["text_scale"].get<int>();
         g_TextScalePct = pct < kTextScaleMin ? kTextScaleMin : pct > kTextScaleMax ? kTextScaleMax : pct;
     }
+    Theme::UserColors& c = Theme::Colors();
+    if (j.contains("color_border")) ColorFromJson(j["color_border"], c.border);
+    if (j.contains("color_background"))
+        c.hasBackground = ColorFromJson(j["color_background"], c.background);
+    if (j.contains("color_text"))
+        c.hasText = ColorFromJson(j["color_text"], c.text);
 }
 
 // Add/remove the quick-access shortcut, keeping g_QAIconAdded in sync. The icon
@@ -203,7 +228,7 @@ void AddonUnload() {
 void AddonRender() {
     if (!g_WindowVisible) return;
 
-    Theme::PushWindowBorder();
+    Theme::PushWindowStyle();
 
     if (ImGui::Begin(WINDOW_NAME, &g_WindowVisible)) {
         // Scales everything inside the window (child panes inherit it), not the title bar.
@@ -213,7 +238,7 @@ void AddonRender() {
     }
     ImGui::End();
 
-    Theme::PopWindowBorder();
+    Theme::PopWindowStyle();
 }
 
 // ── AddonOptions ──────────────────────────────────────────────────────────
@@ -246,6 +271,47 @@ void AddonOptions() {
     if (ImGui::Button("Reset") && g_TextScalePct != 100) {
         g_TextScalePct = 100;
         SaveSettings();
+    }
+
+    // ── Colours ───────────────────────────────────────────────────────────
+    // Picked live; saved once no picker is being dragged any more (not every frame).
+    static bool s_ColorsDirty = false;
+    Theme::UserColors& c = Theme::Colors();
+    const ImGuiColorEditFlags flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf;
+
+    ImGui::Separator();
+    ImGui::TextUnformatted("Window colours");
+
+    ImGui::PushID("border");
+    if (ImGui::ColorEdit4("Border", &c.border.x, flags)) s_ColorsDirty = true;
+    ImGui::SameLine();
+    if (ImGui::Button("Reset")) { c.border = Theme::BORDER_GOLD; s_ColorsDirty = true; }
+    ImGui::PopID();
+
+    // Background / text show Nexus's current colour until the user picks their own.
+    ImGui::PushID("background");
+    ImVec4 bg = c.hasBackground ? c.background : ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
+    if (ImGui::ColorEdit4("Background", &bg.x, flags)) {
+        c.background = bg; c.hasBackground = true; s_ColorsDirty = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Reset")) { c.hasBackground = false; s_ColorsDirty = true; }
+    ImGui::PopID();
+
+    ImGui::PushID("text");
+    ImVec4 tx = c.hasText ? c.text : ImGui::GetStyle().Colors[ImGuiCol_Text];
+    if (ImGui::ColorEdit4("Text", &tx.x, flags)) {
+        c.text = tx; c.hasText = true; s_ColorsDirty = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button("Reset")) { c.hasText = false; s_ColorsDirty = true; }
+    ImGui::PopID();
+
+    ImGui::TextDisabled("Reset uses the Nexus default (gold for the border).");
+
+    if (s_ColorsDirty && !ImGui::IsAnyItemActive()) {
+        SaveSettings();
+        s_ColorsDirty = false;
     }
 }
 
