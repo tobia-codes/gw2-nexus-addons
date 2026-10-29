@@ -14,7 +14,9 @@ gw2-nexus-addons/
 ├── shared/               # third-party code used by all addons
 │   ├── imgui/            #   Dear ImGui 1.80 (matches Nexus)
 │   └── include/          #   nexus/Nexus.h, nlohmann/json
-└── <addon>/              # one folder per addon (src/, tests/, README, LICENSE)
+├── CLAUDE.md             # repo-wide notes for AI agents
+└── <addon>/              # one folder per addon (src/, tests/, README, LICENSE,
+                          #   AGENTS.md + CLAUDE.md for agents, plans/PLAN.md)
 ```
 
 ## Building
@@ -41,6 +43,8 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host && ctes
 2. Link `gw2_imgui` and `gw2_headers` for the DLL target, `gw2_headers` for host tests.
 3. Add `add_subdirectory(<addon-name>)` to the root `CMakeLists.txt` and a row to the table above.
 4. Give it a unique Nexus signature, data directory, keybind and texture identifiers.
+5. Add `AGENTS.md` (rules for AI agents), `plans/PLAN.md` (state + backlog) and a `CLAUDE.md`
+   containing `@AGENTS.md` and `@plans/PLAN.md`.
 
 ## Licenses
 
