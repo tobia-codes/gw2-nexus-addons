@@ -15,6 +15,7 @@ if(NOT GW2_HOST_TESTS)
         src/Backup.cpp
         src/FileDialog.cpp
         src/events/EventData.cpp
+        src/Events.cpp
         src/NotesWindow.cpp
         src/NotesList.cpp
         src/NotesDetail.cpp
@@ -68,6 +69,7 @@ else()
         src/Settings.cpp
         src/Backup.cpp
         src/events/EventData.cpp
+        src/Events.cpp
         src/Markdown.cpp
         src/MarkdownEdit.cpp
         src/chat/ChatLinks.cpp

@@ -1,0 +1,142 @@
+// Events.cpp — see Events.h.
+#include "Events.h"
+
+#include <cstdio>
+
+namespace Magpie { namespace Events {
+
+using I18n::Lang;
+using I18n::Tr;
+
+static const int64_t kDay = 24 * 60 * 60;
+
+// Floor division (correct for negative values, too).
+static int64_t floorDiv(int64_t a, int64_t b)
+{
+    return a / b - ((a % b != 0) && ((a < 0) != (b < 0)) ? 1 : 0);
+}
+
+const EventDef* Find(const std::string& id)
+{
+    for (size_t i = 0; i < kEventCount; ++i)
+        if (id == kEvents[i].id) return &kEvents[i];
+    return nullptr;
+}
+
+Status State(const EventDef& e, int64_t now)
+{
+    // Every event repeats daily from 00:00 UTC. An occurrence may run past midnight, so the
+    // running one can belong to yesterday; the next start is today's or tomorrow's.
+    const int64_t today = floorDiv(now, kDay) * kDay;
+    Status st;
+    bool haveNext = false;
+    for (int64_t day = today - kDay; day <= today + kDay; day += kDay) {
+        for (int k = 0; k < e.count; ++k) {
+            const int64_t s = day + (int64_t)e.starts[k] * 60;
+            const int64_t end = s + (int64_t)e.durations[k] * 60;
+            if (s <= now && now < end) {
+                st.active = true;
+                st.start  = s;
+                st.end    = end;
+                return st;
+            }
+            if (s > now && !haveNext) {
+                haveNext = true;
+                st.start = s;
+                st.end   = end;
+            }
+        }
+    }
+    return st;
+}
+
+std::vector<int64_t> NextStarts(const EventDef& e, int64_t now, int n)
+{
+    std::vector<int64_t> out;
+    if (e.count == 0 || n <= 0) return out;
+    for (int64_t day = floorDiv(now, kDay) * kDay; (int)out.size() < n; day += kDay) {
+        for (int k = 0; k < e.count && (int)out.size() < n; ++k) {
+            const int64_t s = day + (int64_t)e.starts[k] * 60;
+            if (s > now) out.push_back(s);
+        }
+    }
+    return out;
+}
+
+const char* Name(const EventDef& e, Lang lang)
+{
+    return lang == Lang::De && e.nameDe != nullptr ? e.nameDe : e.nameEn;
+}
+
+const char* Map(const EventDef& e, Lang lang)
+{
+    const char* m = lang == Lang::De && e.mapDe != nullptr ? e.mapDe : e.mapEn;
+    return m != nullptr ? m : "";
+}
+
+const char* CategoryName(uint8_t category, Lang lang)
+{
+    if (category >= kCategoryCount) return "";
+    const CategoryDef& c = kCategories[category];
+    return lang == Lang::De && c.nameDe != nullptr ? c.nameDe : c.nameEn;
+}
+
+// Lower-case for matching: ASCII and the Latin-1 letters as UTF-8 (C3 80..9E -> C3 A0..BE,
+// e.g. "Ä" -> "ä"), so German names match whatever case the user types.
+static std::string folded(const char* s)
+{
+    std::string out;
+    if (s == nullptr) return out;
+    for (const char* p = s; *p != '\0'; ++p) {
+        const unsigned char c = (unsigned char)*p;
+        if (c >= 'A' && c <= 'Z') {
+            out += (char)(c + 32);
+        } else if (c == 0xC3 && p[1] != '\0' && (unsigned char)p[1] >= 0x80 &&
+                   (unsigned char)p[1] <= 0x9E && (unsigned char)p[1] != 0x97) {   // not "×"
+            out += (char)c;
+            out += (char)((unsigned char)p[1] + 0x20);
+            ++p;
+        } else {
+            out += (char)c;
+        }
+    }
+    return out;
+}
+
+std::vector<const EventDef*> Search(const std::string& query)
+{
+    const std::string q = folded(query.c_str());
+    std::vector<const EventDef*> out;
+    for (size_t i = 0; i < kEventCount; ++i) {
+        const EventDef& e = kEvents[i];
+        const char* fields[] = { e.nameEn, e.nameDe, e.mapEn, e.mapDe, e.id };
+        for (const char* f : fields) {
+            if (q.empty() || (f != nullptr && folded(f).find(q) != std::string::npos)) {
+                out.push_back(&e);
+                break;
+            }
+        }
+    }
+    return out;
+}
+
+std::string FormatTime(int64_t seconds, bool active)
+{
+    if (seconds < 0) seconds = 0;
+    char buf[64];
+    const int s = (int)(seconds % 60);
+    const int m = (int)((seconds / 60) % 60);
+    const int h = (int)(seconds / 3600);
+    if (seconds < 60) {
+        snprintf(buf, sizeof buf, active ? Tr("for %d s") : Tr("in %d s"), s);
+    } else if (h == 0) {
+        snprintf(buf, sizeof buf, active ? Tr("for %d min") : Tr("in %d min"), m);
+    } else if (m == 0) {
+        snprintf(buf, sizeof buf, active ? Tr("for %d h") : Tr("in %d h"), h);
+    } else {
+        snprintf(buf, sizeof buf, active ? Tr("for %d h %d min") : Tr("in %d h %d min"), h, m);
+    }
+    return buf;
+}
+
+}} // namespace Magpie::Events

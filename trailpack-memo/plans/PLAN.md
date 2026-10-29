@@ -24,6 +24,8 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 |---|---|---|
 | `dllmain.cpp` | no | Nexus lifecycle, identity, keybind, quick access, options pane; maps `Settings` <-> live state |
 | `Settings.{h,cpp}` | yes | settings.json model with validation/clamping (`g_Settings`); `ColorSet` (all colour options) + built-in Light/Dark, user themes |
+| `Events.{h,cpp}` | yes | Event timers (B5): lookup, UTC schedule maths, search, chip time text |
+| `events/EventData.{h,cpp}` | yes | **Generated** event table (`tools/gen_events.py`) — never edit by hand |
 | `Backup.{h,cpp}` | yes | Backup file format (`trailpack-memo-backup` v1: notes + settings) |
 | `FileDialog.{h,cpp}` | no | Windows open/save dialog (worker thread), JSON filter; used by export/import and backups |
 | `SafeFile.{h,cpp}` | yes | Atomic write (+ `.bak`), read, set aside unreadable files |

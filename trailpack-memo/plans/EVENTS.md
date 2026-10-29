@@ -79,7 +79,7 @@ are per occurrence because they can differ within one event.
 |---|---|---|
 | Generator + overrides | `tools/gen_events.py`, `tools/event_overrides.json` | — (Python 3, stdlib only) |
 | Event table | `src/events/EventData.h` (+ `.cpp` if the table is large) | yes |
-| Lookup, schedule maths, search, time text | `src/Events.{h,cpp}` (`Find(id)`, `State(def, now)` -> active / secondsUntil / secondsSince, `NextStarts(def, now, n)`, `Search(query, lang)`, `FormatEventTime`) | yes |
+| Lookup, schedule maths, search, time text | `src/Events.{h,cpp}` (`Find(id)`, `State(def, now)` -> `Status{active, start, end}`, `NextStarts(def, now, n)`, `Name/Map/CategoryName(…, lang)`, `Search(query)`, `FormatTime(seconds, active)`) | yes |
 | `{{event:id}}` in the markdown parser | `src/Markdown.{h,cpp}` (new span kind `Event`) | yes |
 | Atomic event cell in the editor | `src/ChipCodec.{h,cpp}` (text <-> cells), `src/ChipTextEdit.{h,cpp}` | codec yes |
 | Chip drawing, tooltip, click, menu | new `src/EventChip.{h,cpp}` (modelled on `src/ChipRich.cpp`), called from `src/MarkdownRender.cpp` | no |
@@ -119,15 +119,18 @@ python3 trailpack-memo/tools/gen_events.py \
 Then check the summary, run the host tests, and review the diff of `src/events/`.
 
 ### Stage 2 — Schedule maths (pure, host-tested)
-- [ ] `src/Events.{h,cpp}`: `Find`, `State`, `NextStarts`, `Search` (case-insensitive substring
-      over name / map / id in both languages), `FormatEventTime` (D10 formats, EN + DE).
-- [ ] Host tests: known starts (Tequatl and two more, pinned to wiki values), active window
-      edges (start, start + duration - 1 s, end), cycle wrap at 00:00 UTC, search hits, unknown id.
-- [ ] Daylight saving: all schedule maths in UTC only (`int64_t` Unix seconds, like `Reset.cpp`;
+- [x] `src/Events.{h,cpp}`: `Find`, `State` (active + start/end, or next start), `NextStarts`,
+      `Name` / `Map` / `CategoryName` (DE falls back to EN), `Search` (case-insensitive substring
+      over name / map / id in both languages, umlauts folded), `FormatTime` (D10 formats via
+      `I18n::Tr`, EN + DE).
+- [x] Host tests: known starts (Tequatl, Triple Trouble, Dragon's Stand), active window
+      edges (start, start + duration - 1 s, end), day wrap at 00:00 UTC, an occurrence across
+      midnight, search hits, unknown id, time texts in both languages.
+- [x] Daylight saving: all schedule maths in UTC only (`int64_t` Unix seconds, like `Reset.cpp`;
       no `localtime` / `mktime` / TZ in `Events.cpp`). Host test: the same results with the
       process time zone set to a DST zone (e.g. `TZ=Europe/Berlin`) and to UTC, across both
-      2026 switch dates (29 Mar, 25 Oct).
-- [ ] Add the new files to both CMake targets; list `Events` as a pure unit in `AGENTS.md`.
+      2026 switch dates (29 Mar, 25 Oct). (`test_events_ignore_time_zone`, POSIX hosts only.)
+- [x] Add the new files to both CMake targets; list `Events` as a pure unit in `AGENTS.md`.
 
 ### Stage 3 — Chip in view, preview and editor
 - [ ] Parser: `{{event:<id>}}` -> `Event` span (`Markdown.{h,cpp}`) + host tests.
