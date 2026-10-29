@@ -2,6 +2,7 @@
 #include "chat/ChatLinks.h"
 #include "chat/SpecData.h"
 #include "Markdown.h"
+#include "MarkdownEdit.h"
 #include "ChipResolver.h"
 #include "ChipCodec.h"
 #include "IconUrl.h"
@@ -785,6 +786,205 @@ static void test_chipcolor_combined_rule()
 
 // ── Main ──────────────────────────────────────────────────────────────────────
 
+// ── Task lists ────────────────────────────────────────────────────────────────
+
+static void test_md_task_unchecked()
+{
+    auto lines = Magpie::Md::Parse("- [ ] buy ore");
+    CHECK(lines.size() == 1);
+    CHECK(lines[0].block == Magpie::Md::Block::Task);
+    CHECK(!lines[0].checked);
+    CHECK(lines[0].spans.size() == 1);
+    CHECK_EQ(lines[0].spans[0].text, std::string("buy ore"));
+}
+
+static void test_md_task_checked_both_cases()
+{
+    auto lines = Magpie::Md::Parse("- [x] a\n- [X] b\n  - [ ] indented");
+    CHECK(lines.size() == 3);
+    CHECK(lines[0].block == Magpie::Md::Block::Task && lines[0].checked);
+    CHECK(lines[1].block == Magpie::Md::Block::Task && lines[1].checked);
+    CHECK(lines[2].block == Magpie::Md::Block::Task && !lines[2].checked);
+    CHECK_EQ(lines[2].spans[0].text, std::string("indented"));
+}
+
+static void test_md_task_empty_item_and_non_tasks()
+{
+    auto lines = Magpie::Md::Parse("- [ ]\n- [ ]x\n- [y] no\n- plain\n[ ] bare");
+    CHECK(lines.size() == 5);
+    CHECK(lines[0].block == Magpie::Md::Block::Task);       // marker at end of line
+    CHECK(lines[0].spans.empty());
+    CHECK(lines[1].block == Magpie::Md::Block::Bullet);     // no space after ']'
+    CHECK(lines[2].block == Magpie::Md::Block::Bullet);     // invalid state char
+    CHECK(lines[3].block == Magpie::Md::Block::Bullet);
+    CHECK(lines[4].block == Magpie::Md::Block::Paragraph);  // GFM needs the dash
+}
+
+static void test_md_task_with_bold_and_chip()
+{
+    const std::string code = PieUI::ChatLinks::EncodeItem(46774);
+    auto lines = Magpie::Md::Parse("- [x] **go** " + code);
+    CHECK(lines.size() == 1);
+    CHECK(lines[0].block == Magpie::Md::Block::Task && lines[0].checked);
+    CHECK(lines[0].spans.size() >= 2);
+    CHECK(lines[0].spans[0].kind == Magpie::Md::Inline::Bold);
+    CHECK(lines[0].spans.back().kind == Magpie::Md::Inline::Chip);
+}
+
+static void test_md_count_tasks()
+{
+    auto tc = Magpie::Md::CountTasks("# List\n- [x] a\n- [ ] b\n- c\n- [X] d");
+    CHECK_EQ(tc.total, 3);
+    CHECK_EQ(tc.done, 2);
+    auto none = Magpie::Md::CountTasks("");
+    CHECK_EQ(none.total, 0);
+}
+
+static void test_md_toggle_task()
+{
+    std::string body = "intro\n- [ ] a\n  - [x] b";
+    CHECK(Magpie::Md::ToggleTask(body, 1));
+    CHECK_EQ(body, std::string("intro\n- [x] a\n  - [x] b"));
+    CHECK(Magpie::Md::ToggleTask(body, 2));
+    CHECK_EQ(body, std::string("intro\n- [x] a\n  - [ ] b"));
+    CHECK(!Magpie::Md::ToggleTask(body, 0));    // not a task
+    CHECK(!Magpie::Md::ToggleTask(body, 9));    // out of range
+    CHECK(!Magpie::Md::ToggleTask(body, -1));
+    CHECK_EQ(body, std::string("intro\n- [x] a\n  - [ ] b"));
+}
+
+static void test_md_uncheck_all()
+{
+    std::string body = "- [x] a\n- [ ] b\n- [X] c\ntext [x]";
+    CHECK_EQ(Magpie::Md::UncheckAllTasks(body), 2);
+    CHECK_EQ(body, std::string("- [ ] a\n- [ ] b\n- [ ] c\ntext [x]"));
+    CHECK_EQ(Magpie::Md::UncheckAllTasks(body), 0);
+}
+
+// ── Markdown editing commands ─────────────────────────────────────────────────
+
+static std::string RunEdit(const std::string& text, const Magpie::Md::EditResult& r)
+{
+    Magpie::Md::Cells c = Magpie::Md::ToCells(text);
+    Magpie::Md::ApplyOps(c, r.ops);
+    return Magpie::Md::FromCells(c);
+}
+
+static void test_edit_wrap_bold_selection()
+{
+    using namespace Magpie::Md;
+    const std::string t = "say hello now";
+    auto r = WrapSelection(ToCells(t), 4, 9, "**");
+    CHECK(r.handled);
+    CHECK_EQ(RunEdit(t, r), std::string("say **hello** now"));
+    CHECK_EQ(r.selStart, 6);
+    CHECK_EQ(r.selEnd, 11);
+    // Pressing again with the same (inner) selection removes the markers.
+    const std::string t2 = RunEdit(t, r);
+    auto r2 = WrapSelection(ToCells(t2), r.selStart, r.selEnd, "**");
+    CHECK_EQ(RunEdit(t2, r2), t);
+    CHECK_EQ(r2.selStart, 4);
+    CHECK_EQ(r2.selEnd, 9);
+}
+
+static void test_edit_wrap_empty_selection_inserts_pair()
+{
+    using namespace Magpie::Md;
+    auto r = WrapSelection(ToCells("ab"), 1, 1, "*");
+    CHECK_EQ(RunEdit("ab", r), std::string("a**b"));
+    CHECK_EQ(r.cursor, 2);
+}
+
+static void test_edit_italic_does_not_strip_bold()
+{
+    using namespace Magpie::Md;
+    // Inner selection of a bold word: italic must wrap, not treat "**" as its markers.
+    const std::string t = "**x**";
+    auto r = WrapSelection(ToCells(t), 2, 3, "*");
+    CHECK_EQ(RunEdit(t, r), std::string("***x***"));
+}
+
+static void test_edit_toggle_task_prefix()
+{
+    using namespace Magpie::Md;
+    const std::string t = "one\ntwo";
+    auto r = ToggleLinePrefix(ToCells(t), 0, 5, LinePrefix::Task);   // touches both lines
+    const std::string t2 = RunEdit(t, r);
+    CHECK_EQ(t2, std::string("- [ ] one\n- [ ] two"));
+    // All lines are tasks now -> toggling again removes the prefix (checked ones too).
+    std::string t3 = t2; t3[3] = 'x';
+    auto r2 = ToggleLinePrefix(ToCells(t3), 0, (int)t3.size(), LinePrefix::Task);
+    CHECK_EQ(RunEdit(t3, r2), t);
+}
+
+static void test_edit_bullet_to_task_keeps_indent()
+{
+    using namespace Magpie::Md;
+    const std::string t = "  - item";
+    auto r = ToggleLinePrefix(ToCells(t), 5, 5, LinePrefix::Task);
+    CHECK_EQ(RunEdit(t, r), std::string("  - [ ] item"));
+    CHECK_EQ(r.cursor, 9);   // caret stays on the same letter
+}
+
+static void test_edit_heading_replaces_list_prefix()
+{
+    using namespace Magpie::Md;
+    const std::string t = "  - [x] Title";
+    auto r = ToggleLinePrefix(ToCells(t), 0, 0, LinePrefix::Heading2);
+    CHECK_EQ(RunEdit(t, r), std::string("## Title"));
+    const std::string h1 = "## Title";
+    auto r2 = ToggleLinePrefix(ToCells(h1), 4, 4, LinePrefix::Heading1);
+    CHECK_EQ(RunEdit(h1, r2), std::string("# Title"));
+}
+
+static void test_edit_selection_ending_at_line_start()
+{
+    using namespace Magpie::Md;
+    // Selecting "a\n" (ends at the start of line 2) must only touch line 1.
+    const std::string t = "a\nb";
+    auto r = ToggleLinePrefix(ToCells(t), 0, 2, LinePrefix::Bullet);
+    CHECK_EQ(RunEdit(t, r), std::string("- a\nb"));
+}
+
+static void test_edit_enter_continues_task_list()
+{
+    using namespace Magpie::Md;
+    const std::string t = "  - [x] done";
+    auto r = ContinueListOnEnter(ToCells(t), (int)t.size());
+    CHECK(r.handled);
+    CHECK_EQ(RunEdit(t, r), std::string("  - [x] done\n  - [ ] "));
+    CHECK_EQ(r.cursor, (int)RunEdit(t, r).size());
+}
+
+static void test_edit_enter_on_empty_item_ends_list()
+{
+    using namespace Magpie::Md;
+    const std::string t = "- a\n- ";
+    auto r = ContinueListOnEnter(ToCells(t), (int)t.size());
+    CHECK(r.handled);
+    CHECK_EQ(RunEdit(t, r), std::string("- a\n"));
+    CHECK_EQ(r.cursor, 4);
+}
+
+static void test_edit_enter_plain_line_not_handled()
+{
+    using namespace Magpie::Md;
+    CHECK(!ContinueListOnEnter(ToCells("hello"), 5).handled);
+    CHECK(!ContinueListOnEnter(ToCells("- item"), 1).handled);   // caret inside the marker
+}
+
+static void test_edit_chip_cell_is_preserved()
+{
+    using namespace Magpie::Md;
+    // A chip is a single placeholder cell; prefix edits must not touch it.
+    Cells c = ToCells("x");
+    c[0] = 0xFFFC;
+    auto r = ToggleLinePrefix(c, 1, 1, LinePrefix::Task);
+    ApplyOps(c, r.ops);
+    CHECK(c.size() == 7);
+    CHECK(c.back() == 0xFFFCu);
+}
+
 int main()
 {
     test_create_appears_in_notes();
@@ -848,6 +1048,28 @@ int main()
     test_md_unmatched_star_is_literal();
     test_md_multiline();
     test_md_heading_with_bold();
+
+    // Task lists
+    test_md_task_unchecked();
+    test_md_task_checked_both_cases();
+    test_md_task_empty_item_and_non_tasks();
+    test_md_task_with_bold_and_chip();
+    test_md_count_tasks();
+    test_md_toggle_task();
+    test_md_uncheck_all();
+
+    // Markdown editing commands
+    test_edit_wrap_bold_selection();
+    test_edit_wrap_empty_selection_inserts_pair();
+    test_edit_italic_does_not_strip_bold();
+    test_edit_toggle_task_prefix();
+    test_edit_bullet_to_task_keeps_indent();
+    test_edit_heading_replaces_list_prefix();
+    test_edit_selection_ending_at_line_start();
+    test_edit_enter_continues_task_list();
+    test_edit_enter_on_empty_item_ends_list();
+    test_edit_enter_plain_line_not_handled();
+    test_edit_chip_cell_is_preserved();
 
     // IconUrl pure-helper tests
     test_iconurl_key_stable();

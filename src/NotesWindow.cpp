@@ -1,8 +1,9 @@
-// NotesWindow.cpp — Two-pane notes UI + JSON persistence for Magpie Memo.
+// NotesWindow.cpp — Two-pane notes UI + JSON persistence for Trailpack Memo.
 
 #include "NotesWindow.h"
 
 #include <windows.h>
+#include <cstdio>
 #include <filesystem>
 #include <fstream>
 #include <sstream>
@@ -11,6 +12,7 @@
 #include "Theme.h"
 #include "Markdown.h"
 #include "MarkdownRender.h"
+#include "MarkdownEdit.h"
 
 namespace fs = std::filesystem;
 
@@ -20,7 +22,7 @@ void NotesWindow::Init(AddonAPI_t* api)
 {
     api_ = api;
 
-    const char* dir = api->Paths_GetAddonDirectory("MagpieMemo");
+    const char* dir = api->Paths_GetAddonDirectory("TrailpackMemo");
     if (dir && dir[0] != '\0') {
         fs::path addonDir(dir);
         std::error_code ec;
@@ -260,9 +262,35 @@ void NotesWindow::Render()
     std::string clickedId;
     for (const auto& note : notes) {
         bool selected = (note.id == selectedId_);
-        if (ImGui::Selectable(note.title.c_str(), selected)) {
+        // Title drawn manually (clipped) so a task-progress count can sit right-aligned
+        // without long titles running over it. PushID keeps duplicate titles distinct.
+        ImGui::PushID(note.id.c_str());
+        const ImVec2 rowPos = ImGui::GetCursorScreenPos();
+        if (ImGui::Selectable("##note_row", selected)) {
             clickedId = note.id;
         }
+        ImGui::PopID();
+
+        const float rowRight = ImGui::GetItemRectMax().x;
+        const float rowH     = ImGui::GetItemRectSize().y;
+        ImDrawList* dl = ImGui::GetWindowDrawList();
+
+        char progress[24] = "";
+        float progressW = 0.0f;
+        const Magpie::Md::TaskCount tc = Magpie::Md::CountTasks(note.body);
+        if (tc.total > 0) {
+            snprintf(progress, sizeof progress, "%d/%d", tc.done, tc.total);
+            progressW = ImGui::CalcTextSize(progress).x;
+            const ImU32 col = (tc.done == tc.total)
+                ? ImGui::GetColorU32(Theme::BTN_GREEN_ACTIVE)
+                : ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            dl->AddText(ImVec2(rowRight - progressW, rowPos.y), col, progress);
+        }
+
+        const float titleRight = rowRight - (progressW > 0.0f ? progressW + 6.0f : 0.0f);
+        dl->PushClipRect(rowPos, ImVec2(titleRight, rowPos.y + rowH), true);
+        dl->AddText(rowPos, ImGui::GetColorU32(ImGuiCol_Text), note.title.c_str());
+        dl->PopClipRect();
     }
 
     ImGui::EndChild();
@@ -332,12 +360,34 @@ void NotesWindow::Render()
 
             ImGui::Spacing();
 
+            renderEditToolbar_();
+
             // Editable body — chat codes render as atomic chip cells;
             // markdown syntax stays as raw text (edit = source view).
-            bodyEditor_.Render("##body_edit",
-                               ImGui::GetContentRegionAvail().x,
-                               ImGui::GetColorU32(Theme::BORDER_GOLD),
-                               /*minLines=*/6);
+            if (showPreview_) {
+                // Source on the left, live rendered preview on the right.
+                const float half = (ImGui::GetContentRegionAvail().x -
+                                    ImGui::GetStyle().ItemSpacing.x) * 0.5f;
+                ImGui::BeginChild("##edit_col", ImVec2(half, 0), false);
+                bodyEditor_.Render("##body_edit",
+                                   ImGui::GetContentRegionAvail().x,
+                                   ImGui::GetColorU32(Theme::BORDER_GOLD),
+                                   /*minLines=*/6);
+                ImGui::EndChild();
+
+                ImGui::SameLine();
+
+                ImGui::BeginChild("##preview_col", ImVec2(0, 0), true);
+                const std::vector<Magpie::Md::Line> lines =
+                    Magpie::Md::Parse(bodyEditor_.GetText());
+                Magpie::RenderMarkdown(lines, fontBig_(), ImGui::GetContentRegionAvail().x);
+                ImGui::EndChild();
+            } else {
+                bodyEditor_.Render("##body_edit",
+                                   ImGui::GetContentRegionAvail().x,
+                                   ImGui::GetColorU32(Theme::BORDER_GOLD),
+                                   /*minLines=*/6);
+            }
         }
     } else {
         // ── View mode ──────────────────────────────────────────────────────
@@ -367,19 +417,7 @@ void NotesWindow::Render()
         ImGui::Separator();
 
         if (note != nullptr) {
-            // Rendered markdown preview inside a scrollable child so long
-            // notes scroll. EDIT mode shows the raw source; VIEW shows this.
-            ImFont* fontBig = nullptr;
-            if (api_ != nullptr) {
-                auto* nl = static_cast<NexusLinkData_t*>(
-                    api_->DataLink_Get(DL_NEXUS_LINK));
-                if (nl != nullptr) fontBig = static_cast<ImFont*>(nl->FontBig);
-            }
-
-            ImGui::BeginChild("##view_body", ImVec2(0, 0), false);
-            const std::vector<Magpie::Md::Line> lines = Magpie::Md::Parse(note->body);
-            Magpie::RenderMarkdown(lines, fontBig, ImGui::GetContentRegionAvail().x);
-            ImGui::EndChild();
+            renderViewBody_(note);
         }
     }
 
@@ -391,6 +429,90 @@ void NotesWindow::Render()
         pendingDeleteId_ = deleteClickedId;
         ImGui::OpenPopup("Confirm Delete");
     }
+}
+
+// ── Markdown helpers ────────────────────────────────────────────────────────
+
+ImFont* NotesWindow::fontBig_() const
+{
+    if (api_ == nullptr) return nullptr;
+    auto* nl = static_cast<NexusLinkData_t*>(api_->DataLink_Get(DL_NEXUS_LINK));
+    return nl != nullptr ? static_cast<ImFont*>(nl->FontBig) : nullptr;
+}
+
+void NotesWindow::renderEditToolbar_()
+{
+    using namespace Magpie::Md;
+
+    // Labels stay ASCII: Nexus's font has no symbol glyphs.
+    auto toolButton = [](const char* label, const char* tip) {
+        const bool pressed = ImGui::Button(label);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tip);
+        ImGui::SameLine();
+        return pressed;
+    };
+
+    // Selection is read before the buttons: clicking one blurs the editor but
+    // stb keeps the selection, and ApplyEdit refocuses it.
+    int selA = 0, selB = 0;
+    bodyEditor_.GetSelection(selA, selB);
+
+    EditResult r;
+    if (toolButton(" B ",     "Bold (Ctrl+B)"))
+        r = WrapSelection(bodyEditor_.Codepoints(), selA, selB, "**");
+    if (toolButton(" I ",     "Italic (Ctrl+I)"))
+        r = WrapSelection(bodyEditor_.Codepoints(), selA, selB, "*");
+    if (toolButton("H1",      "Heading 1"))
+        r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Heading1);
+    if (toolButton("H2",      "Heading 2"))
+        r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Heading2);
+    if (toolButton("- List",  "Bullet list"))
+        r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Bullet);
+    if (toolButton("[ ] Task", "Checkbox (task list)"))
+        r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Task);
+    bodyEditor_.ApplyEdit(r);
+
+    // Preview toggle, right-aligned on the same row.
+    const char* previewLabel = "Preview";
+    const float boxW = ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x +
+                       ImGui::CalcTextSize(previewLabel).x;
+    const float avail = ImGui::GetContentRegionAvail().x;
+    if (avail > boxW) ImGui::SameLine(ImGui::GetCursorPosX() + avail - boxW);
+    else              ImGui::NewLine();
+    if (ImGui::Checkbox(previewLabel, &showPreview_)) settingsChanged_ = true;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show a live preview beside the editor");
+}
+
+void NotesWindow::renderViewBody_(Magpie::Note* note)
+{
+    // Rendered markdown inside a scrollable child so long notes scroll.
+    // EDIT mode shows the raw source; VIEW shows this.
+    ImGui::BeginChild("##view_body", ImVec2(0, 0), false);
+
+    const std::vector<Magpie::Md::Line> lines = Magpie::Md::Parse(note->body);
+    const int clickedTask = Magpie::RenderMarkdown(lines, fontBig_(),
+                                                   ImGui::GetContentRegionAvail().x,
+                                                   /*interactiveTasks=*/true);
+    if (clickedTask >= 0 && Magpie::Md::ToggleTask(note->body, clickedTask)) {
+        Save();
+    }
+
+    // Right-click on the body (but not on a chip, which opens its own menu
+    // during RenderMarkdown) -> note context menu.
+    if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right) &&
+        !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId)) {
+        ImGui::OpenPopup("##view_ctx");
+    }
+    if (ImGui::BeginPopup("##view_ctx")) {
+        const Magpie::Md::TaskCount tc = Magpie::Md::CountTasks(note->body);
+        if (ImGui::MenuItem("Uncheck all tasks", nullptr, false, tc.done > 0)) {
+            Magpie::Md::UncheckAllTasks(note->body);
+            Save();
+        }
+        ImGui::EndPopup();
+    }
+
+    ImGui::EndChild();
 }
 
 // ── Delete confirmation ─────────────────────────────────────────────────────

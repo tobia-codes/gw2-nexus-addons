@@ -63,6 +63,27 @@ std::vector<std::string> SplitWords(const std::string& s)
     return out;
 }
 
+// Draw a task checkbox (box + check mark) with its top-left at `pos`. Drawn
+// with primitives, not glyphs: Nexus's font has no ballot-box characters.
+void DrawCheckbox(ImDrawList* dl, const ImVec2& pos, float size, bool checked, bool hovered)
+{
+    const ImVec2 pMax(pos.x + size, pos.y + size);
+    const ImU32 frame = ImGui::GetColorU32(hovered ? ImGuiCol_FrameBgHovered : ImGuiCol_FrameBg);
+    const ImU32 border = ImGui::GetColorU32(ImGuiCol_Border);
+    dl->AddRectFilled(pos, pMax, frame, 2.0f);
+    dl->AddRect(pos, pMax, hovered ? ImGui::GetColorU32(ImGuiCol_CheckMark) : border, 2.0f);
+    if (checked) {
+        const ImU32 mark = ImGui::GetColorU32(ImGuiCol_CheckMark);
+        const float pad = size * 0.22f;
+        const float th  = size > 12.0f ? 2.0f : 1.5f;
+        const ImVec2 a(pos.x + pad,               pos.y + size * 0.52f);
+        const ImVec2 b(pos.x + size * 0.42f,      pMax.y - pad);
+        const ImVec2 c(pMax.x - pad,              pos.y + pad);
+        dl->AddLine(a, b, mark, th);
+        dl->AddLine(b, c, mark, th);
+    }
+}
+
 // Draw a word with the given font/size/colour at pos. style: 0=plain,
 // 1=bold, 2=italic. Returns nothing; caller advances the pen by measured width.
 void DrawWord(ImDrawList* dl, ImFont* font, float fontSize,
@@ -92,13 +113,16 @@ void DrawWord(ImDrawList* dl, ImFont* font, float fontSize,
 
 } // namespace
 
-void RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wrapWidth)
+int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wrapWidth,
+                   bool interactiveTasks)
 {
     if (wrapWidth <= 0.0f) wrapWidth = 1.0f;
 
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const ImVec2 origin = ImGui::GetCursorScreenPos();
     const ImU32 textCol = ImGui::GetColorU32(ImGuiCol_Text);
+    const ImU32 doneCol = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+    int clickedTask = -1;
 
     const float rightEdge = origin.x + wrapWidth;
 
@@ -110,7 +134,8 @@ void RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float w
     // Running per-chip id so each chip's right-click popup has a unique scope.
     int chipUid = 0;
 
-    for (const Md::Line& line : lines) {
+    for (int lineIdx = 0; lineIdx < (int)lines.size(); ++lineIdx) {
+        const Md::Line& line = lines[lineIdx];
         // Choose active font.
         ImFont* font = ImGui::GetFont();
         if (line.block == Md::Block::Heading && fontBig != nullptr) {
@@ -130,6 +155,33 @@ void RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float w
             dl->AddText(font, fontSize, ImVec2(penX, penY), textCol, marker);
             penX += mSize.x;
             startX += mSize.x;  // continuation lines hang under the text
+        }
+
+        // Checked tasks: dimmed text with a strike-through.
+        const bool done = (line.block == Md::Block::Task && line.checked);
+        const ImU32 lineCol = done ? doneCol : textCol;
+
+        if (line.block == Md::Block::Task) {
+            const float box = fontSize * 0.85f;
+            const ImVec2 bMin(penX + 1.0f, penY + (fontSize - box) * 0.5f);
+            const ImVec2 bMax(bMin.x + box, bMin.y + box);
+            bool hovered = false;
+            if (interactiveTasks) {
+                // Generous hit area: the full line height around the box. Only when
+                // this window is the hovered one (never through a popup).
+                hovered = ImGui::IsWindowHovered() &&
+                          ImGui::IsMouseHoveringRect(ImVec2(bMin.x - 2.0f, penY),
+                                                     ImVec2(bMax.x + 4.0f, penY + lineHeight));
+                if (hovered) {
+                    ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+                    if (ImGui::IsMouseClicked(ImGuiMouseButton_Left))
+                        clickedTask = lineIdx;
+                }
+            }
+            DrawCheckbox(dl, bMin, box, line.checked, hovered);
+            const float adv = box + fontSize * 0.45f;
+            penX += adv;
+            startX += adv;      // continuation lines hang under the text
         }
 
         // Lay out spans.
@@ -165,8 +217,13 @@ void RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float w
                     penY += lineHeight;
                 }
 
-                DrawWord(dl, font, fontSize, ImVec2(penX, penY), textCol,
+                DrawWord(dl, font, fontSize, ImVec2(penX, penY), lineCol,
                          word.c_str(), style);
+                if (done) {
+                    // Strike-through including the inter-word space, so it reads as one line.
+                    const float y = penY + fontSize * 0.55f;
+                    dl->AddLine(ImVec2(penX, y), ImVec2(penX + wordW, y), lineCol, 1.0f);
+                }
                 penX += wordW;
             }
         }
@@ -181,6 +238,7 @@ void RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float w
     // Reserve vertical space so ImGui scrolling/layout accounts for our draws.
     const float h = (maxPenY + lastLineHeight) - origin.y;
     ImGui::Dummy(ImVec2(wrapWidth, h));
+    return clickedTask;
 }
 
 } // namespace Magpie

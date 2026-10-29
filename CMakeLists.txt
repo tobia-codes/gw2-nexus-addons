@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.20)
 
-option(MAGPIE_HOST_TESTS "Build native host test executable (disables MinGW cross-compile)" OFF)
+option(TRAILPACK_HOST_TESTS "Build native host test executable (disables MinGW cross-compile)" OFF)
 
-if(NOT MAGPIE_HOST_TESTS)
+if(NOT TRAILPACK_HOST_TESTS)
     # Cross-compilation setup for Windows on Linux (must be before project())
     set(CMAKE_SYSTEM_NAME Windows)
     set(CMAKE_C_COMPILER x86_64-w64-mingw32-gcc)
@@ -10,7 +10,7 @@ if(NOT MAGPIE_HOST_TESTS)
     set(CMAKE_RC_COMPILER x86_64-w64-mingw32-windres)
 endif()
 
-project(MagpieMemo)
+project(TrailpackMemo)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -19,7 +19,7 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release)
 endif()
 
-if(NOT MAGPIE_HOST_TESTS)
+if(NOT TRAILPACK_HOST_TESTS)
     # ── DLL target (MinGW cross-compile) ─────────────────────────────────────
 
     set(CMAKE_CXX_FLAGS_RELEASE "-Os -DNDEBUG")
@@ -51,6 +51,7 @@ if(NOT MAGPIE_HOST_TESTS)
         src/NotesWindow.cpp
         src/Markdown.cpp
         src/MarkdownRender.cpp
+        src/MarkdownEdit.cpp
         src/chat/ChatLinks.cpp
         src/ChipResolver.cpp
         src/ChipColor.cpp
@@ -64,17 +65,17 @@ if(NOT MAGPIE_HOST_TESTS)
         ${IMGUI_SOURCES}
     )
 
-    add_library(MagpieMemo SHARED ${SOURCES})
-    set_target_properties(MagpieMemo PROPERTIES SUFFIX ".dll" PREFIX "")
+    add_library(TrailpackMemo SHARED ${SOURCES})
+    set_target_properties(TrailpackMemo PROPERTIES SUFFIX ".dll" PREFIX "")
 
-    target_link_libraries(MagpieMemo gdi32 wininet shell32 comdlg32)
-    target_link_options(MagpieMemo PRIVATE
-        -Wl,--out-implib,MagpieMemo.lib
+    target_link_libraries(TrailpackMemo gdi32 wininet shell32 comdlg32)
+    target_link_options(TrailpackMemo PRIVATE
+        -Wl,--out-implib,TrailpackMemo.lib
         -Wl,--strip-all
     )
-    target_sources(MagpieMemo PRIVATE ${CMAKE_SOURCE_DIR}/MagpieMemo.def)
+    target_sources(TrailpackMemo PRIVATE ${CMAKE_SOURCE_DIR}/TrailpackMemo.def)
 
-    set_target_properties(MagpieMemo PROPERTIES
+    set_target_properties(TrailpackMemo PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
         LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
     )
@@ -87,6 +88,7 @@ else()
         tests/host_tests_main.cpp
         src/NotesStore.cpp
         src/Markdown.cpp
+        src/MarkdownEdit.cpp
         src/chat/ChatLinks.cpp
         src/ChipResolver.cpp
         src/ChipColor.cpp
@@ -94,15 +96,15 @@ else()
         src/IconUrl.cpp
     )
 
-    add_executable(magpie_host_tests ${HOST_TEST_SOURCES})
+    add_executable(trailpack_host_tests ${HOST_TEST_SOURCES})
 
-    target_include_directories(magpie_host_tests PRIVATE
+    target_include_directories(trailpack_host_tests PRIVATE
         ${CMAKE_SOURCE_DIR}/include
         ${CMAKE_SOURCE_DIR}/src
         ${CMAKE_SOURCE_DIR}/public
     )
 
-    set_target_properties(magpie_host_tests PROPERTIES
+    set_target_properties(trailpack_host_tests PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
     )
 

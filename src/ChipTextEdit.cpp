@@ -194,6 +194,47 @@ void ChipTextEdit::SetText(const std::string& utf8) {
     s.select_start = s.select_end = s.cursor;
 }
 
+Md::Cells ChipTextEdit::Codepoints() const {
+    Md::Cells out; out.reserve(cells.size());
+    for (const auto& c : cells) out.push_back(c.isChip ? 0xFFFCu : c.cp);
+    return out;
+}
+
+void ChipTextEdit::GetSelection(int& selStart, int& selEnd) const {
+    const int n = (int)cells.size();
+    if (!m_stb) { selStart = selEnd = n; return; }
+    const auto& s = *static_cast<const STB_TexteditState*>(m_stb);
+    if (s.select_start != s.select_end) {
+        selStart = ClampI(std::min(s.select_start, s.select_end), 0, n);
+        selEnd   = ClampI(std::max(s.select_start, s.select_end), 0, n);
+    } else {
+        selStart = selEnd = ClampI(s.cursor, 0, n);
+    }
+}
+
+void ChipTextEdit::ApplyEdit(const Md::EditResult& r) {
+    if (!r.handled) return;
+    STB_TexteditState& s = St(this);
+    // Back-to-front so earlier positions stay valid. Ops only touch plain text (never chips), so
+    // stb's own undo records can capture them (it reads GETCHAR before the delete).
+    for (auto it = r.ops.rbegin(); it != r.ops.rend(); ++it) {
+        const int pos = ClampI(it->pos, 0, (int)cells.size());
+        const int del = ClampI(it->del, 0, (int)cells.size() - pos);
+        stb_text_makeundo_replace(this, &s, pos, del, (int)it->ins.size());
+        ChipTE_DeleteChars(this, pos, del);
+        if (!it->ins.empty()) {
+            std::vector<int> chars(it->ins.begin(), it->ins.end());
+            ChipTE_InsertChars(this, pos, chars.data(), (int)chars.size());
+        }
+    }
+    const int n = (int)cells.size();
+    s.select_start   = ClampI(r.selStart, 0, n);
+    s.select_end     = ClampI(r.selEnd, 0, n);
+    s.cursor         = ClampI(r.cursor, 0, n);
+    s.has_preferred_x = 0;
+    focusNext = true;
+}
+
 // ---- row / position geometry ------------------------------------------------------------------
 // Number of rows = newline cells + 1.
 static int RowCount(const std::vector<ChipCell>& cells) {
@@ -304,8 +345,23 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
                 changed = true;
             }
         }
-        // MULTI-LINE: Enter INSERTS a newline (it does NOT submit).
-        if (K(ImGuiKey_Enter) || K(ImGuiKey_KeyPadEnter)) { stb_textedit_key(this, &s, '\n'); changed = true; }
+        // MULTI-LINE: Enter INSERTS a newline (it does NOT submit). On a list line it continues
+        // the list instead (or ends it on an empty item).
+        if (K(ImGuiKey_Enter) || K(ImGuiKey_KeyPadEnter)) {
+            Md::EditResult lr;
+            if (continueLists && s.select_start == s.select_end)
+                lr = Md::ContinueListOnEnter(Codepoints(), s.cursor);
+            if (lr.handled) ApplyEdit(lr);
+            else            stb_textedit_key(this, &s, '\n');
+            changed = true;
+        }
+        // Emphasis shortcuts. ImGuiKey has no letter entries for B/I in this ImGui version, so
+        // test the raw virtual-key codes (Win32 VK == ASCII uppercase).
+        if (io.KeyCtrl && !io.KeyShift && (ImGui::IsKeyPressed('B') || ImGui::IsKeyPressed('I'))) {
+            int a, b; GetSelection(a, b);
+            ApplyEdit(Md::WrapSelection(Codepoints(), a, b, ImGui::IsKeyPressed('B') ? "**" : "*"));
+            changed = true;
+        }
         if (K(ImGuiKey_Escape)) focused = false;
 
         Measure(cells);   // input may have changed cells; re-measure for the draw below

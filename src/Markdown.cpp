@@ -103,6 +103,28 @@ static std::vector<Span> ParseInline(const std::string& content)
 }
 
 // ---------------------------------------------------------------------------
+// Task marker detection on one source line: optional leading spaces, "- [",
+// one of ' ' / 'x' / 'X', "]", then a space or end of line (GFM rules).
+// Returns the offset of the state character inside the brackets, or npos.
+// `checked` / `textStart` (offset of the item text) are optional outputs.
+// ---------------------------------------------------------------------------
+static std::size_t TaskMarker(const std::string& src, bool* checked = nullptr,
+                              std::size_t* textStart = nullptr)
+{
+    std::size_t i = 0;
+    while (i < src.size() && src[i] == ' ') ++i;
+    if (src.compare(i, 3, "- [") != 0 || i + 4 >= src.size()) return std::string::npos;
+    const char state = src[i + 3];
+    if ((state != ' ' && state != 'x' && state != 'X') || src[i + 4] != ']')
+        return std::string::npos;
+    const std::size_t after = i + 5;
+    if (after < src.size() && src[after] != ' ') return std::string::npos;
+    if (checked)   *checked   = (state != ' ');
+    if (textStart) *textStart = (after < src.size()) ? after + 1 : after;
+    return i + 3;
+}
+
+// ---------------------------------------------------------------------------
 // Parse a single source line into a Line (block type + inline spans).
 // ---------------------------------------------------------------------------
 static Line ParseLine(const std::string& src)
@@ -121,6 +143,18 @@ static Line ParseLine(const std::string& src)
             return line;
         }
         // '#' not followed by space — fall through to paragraph
+    }
+
+    // --- Task detection: "- [ ] " / "- [x] " (checked before plain bullets) ---
+    {
+        bool checked = false;
+        std::size_t textStart = 0;
+        if (TaskMarker(src, &checked, &textStart) != std::string::npos) {
+            line.block   = Block::Task;
+            line.checked = checked;
+            line.spans   = ParseInline(src.substr(textStart));
+            return line;
+        }
     }
 
     // --- Bullet detection: optional leading spaces, then "- " ---
@@ -161,6 +195,61 @@ std::vector<Line> Parse(const std::string& body)
     // A trailing newline produces a final empty Paragraph line — that's
     // consistent (the caller can skip empty lines during rendering).
     return result;
+}
+
+// Call fn(lineStart, lineEnd) for every source line of body (same split as Parse).
+template <typename Fn>
+static void ForEachLine(const std::string& body, Fn fn)
+{
+    std::size_t start = 0;
+    while (start <= body.size()) {
+        std::size_t end = body.find('\n', start);
+        if (end == std::string::npos) end = body.size();
+        fn(start, end);
+        start = end + 1;
+    }
+}
+
+TaskCount CountTasks(const std::string& body)
+{
+    TaskCount tc;
+    ForEachLine(body, [&](std::size_t a, std::size_t b) {
+        bool checked = false;
+        if (TaskMarker(body.substr(a, b - a), &checked) != std::string::npos) {
+            ++tc.total;
+            if (checked) ++tc.done;
+        }
+    });
+    return tc;
+}
+
+bool ToggleTask(std::string& body, int lineIndex)
+{
+    if (lineIndex < 0) return false;
+    int idx = 0;
+    bool toggled = false;
+    ForEachLine(body, [&](std::size_t a, std::size_t b) {
+        if (idx++ != lineIndex || toggled) return;
+        const std::size_t m = TaskMarker(body.substr(a, b - a));
+        if (m == std::string::npos) return;
+        char& state = body[a + m];
+        state = (state == ' ') ? 'x' : ' ';
+        toggled = true;
+    });
+    return toggled;
+}
+
+int UncheckAllTasks(std::string& body)
+{
+    int changed = 0;
+    ForEachLine(body, [&](std::size_t a, std::size_t b) {
+        const std::size_t m = TaskMarker(body.substr(a, b - a));
+        if (m != std::string::npos && body[a + m] != ' ') {
+            body[a + m] = ' ';
+            ++changed;
+        }
+    });
+    return changed;
 }
 
 }} // namespace Magpie::Md

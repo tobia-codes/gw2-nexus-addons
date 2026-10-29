@@ -1,4 +1,5 @@
-// dllmain.cpp — Magpie Memo Nexus addon lifecycle.
+// dllmain.cpp — Trailpack Memo Nexus addon lifecycle.
+// Fork of PieOrCake's Magpie Memo (MIT) with task-list checkboxes and a markdown toolbar.
 // Stage 2: two-pane notes shell + JSON persistence.
 
 #include <windows.h>
@@ -18,14 +19,16 @@
 #include "EmbeddedIcon.h"   // MAGPIE_ICON[] + MAGPIE_ICON_size (generated from icon.png)
 
 // ── Quick-access identifiers ──────────────────────────────────────────────
-#define QA_ID    "QA_MAGPIE_MEMO"
-#define TEX_ICON "TEX_MAGPIE_MEMO_ICON"
+#define QA_ID    "QA_TRAILPACK_MEMO"
+#define TEX_ICON "TEX_TRAILPACK_MEMO_ICON"
+#define KB_TOGGLE "KB_TRAILPACK_MEMO_TOGGLE"
+#define WINDOW_NAME "Trailpack Memo"
 
 // ── Version constants ─────────────────────────────────────────────────────
-#define V_MAJOR    0
-#define V_MINOR    9
-#define V_BUILD    3
-#define V_REVISION 1
+#define V_MAJOR    1
+#define V_MINOR    0
+#define V_BUILD    0
+#define V_REVISION 0
 
 // ── Globals ───────────────────────────────────────────────────────────────
 AddonAPI_t*      APIDefs         = nullptr;
@@ -44,7 +47,7 @@ void AddonOptions();
 // ── Settings persistence (settings.json in the addon data dir) ────────────
 static std::string SettingsPath() {
     if (!APIDefs) return std::string();
-    const char* dir = APIDefs->Paths_GetAddonDirectory("MagpieMemo");
+    const char* dir = APIDefs->Paths_GetAddonDirectory("TrailpackMemo");
     if (!dir || !*dir) return std::string();
     std::error_code ec;
     std::filesystem::create_directories(dir, ec);
@@ -56,6 +59,7 @@ static void SaveSettings() {
     if (path.empty()) return;
     nlohmann::json j;
     j["show_qa_icon"] = g_ShowQAIcon;
+    j["edit_preview"] = g_Notes.PreviewEnabled();
     std::ofstream f(path, std::ios::out | std::ios::trunc);
     if (f.is_open()) f << j.dump(2);
 }
@@ -70,13 +74,15 @@ static void LoadSettings() {
     catch (...) { return; }   // malformed: keep defaults
     if (j.contains("show_qa_icon") && j["show_qa_icon"].is_boolean())
         g_ShowQAIcon = j["show_qa_icon"].get<bool>();
+    if (j.contains("edit_preview") && j["edit_preview"].is_boolean())
+        g_Notes.SetPreviewEnabled(j["edit_preview"].get<bool>());
 }
 
 // Add/remove the quick-access shortcut, keeping g_QAIconAdded in sync. The icon
 // texture is loaded once at AddonLoad regardless; these only toggle the shortcut.
 static void AddQAIcon() {
     if (!APIDefs || g_QAIconAdded) return;
-    APIDefs->QuickAccess_Add(QA_ID, TEX_ICON, TEX_ICON, "KB_MAGPIE_MEMO_TOGGLE", "Magpie Memo");
+    APIDefs->QuickAccess_Add(QA_ID, TEX_ICON, TEX_ICON, KB_TOGGLE, WINDOW_NAME);
     g_QAIconAdded = true;
 }
 static void RemoveQAIcon() {
@@ -95,20 +101,21 @@ BOOL APIENTRY DllMain(HMODULE /*hModule*/, DWORD /*ul_reason*/, LPVOID /*lpReser
 
 // ── GetAddonDef (exported) ────────────────────────────────────────────────
 extern "C" __declspec(dllexport) AddonDefinition_t* GetAddonDef() {
-    AddonDef.Signature        = 0x4D61704D;          // "MapM" — distinct from Alter Ego 0xA17E3E90
+    AddonDef.Signature        = 0x54504D6D;          // "TPMm" — distinct from Magpie Memo 0x4D61704D
     AddonDef.APIVersion       = NEXUS_API_VERSION;
-    AddonDef.Name             = "Magpie Memo";
+    AddonDef.Name             = WINDOW_NAME;
     AddonDef.Version.Major    = V_MAJOR;
     AddonDef.Version.Minor    = V_MINOR;
     AddonDef.Version.Build    = V_BUILD;
     AddonDef.Version.Revision = V_REVISION;
-    AddonDef.Author           = "PieOrCake.7635";
-    AddonDef.Description      = "Notepad with markdown and rich chips. Recommended: Decoder Ring.";
+    AddonDef.Author           = "PieOrCake.7635 & tobia-codes";
+    AddonDef.Description      = "Notepad with markdown, checklists and rich chips. Based on Magpie Memo. Recommended: Decoder Ring.";
     AddonDef.Load             = AddonLoad;
     AddonDef.Unload           = AddonUnload;
     AddonDef.Flags            = AF_None;
-    AddonDef.Provider         = UP_GitHub;
-    AddonDef.UpdateLink       = "https://github.com/PieOrCake/magpie_memo";
+    // No auto-update source yet: pointing at upstream would "update" this fork back to Magpie Memo.
+    AddonDef.Provider         = UP_None;
+    AddonDef.UpdateLink       = nullptr;
 
     return &AddonDef;
 }
@@ -131,11 +138,11 @@ void AddonLoad(AddonAPI_t* aApi) {
     APIDefs->GUI_Register(RT_Render, AddonRender);
     APIDefs->GUI_Register(RT_OptionsRender, AddonOptions);
 
-    // Register toggle keybind (default CTRL+SHIFT+M).
-    APIDefs->InputBinds_RegisterWithString("KB_MAGPIE_MEMO_TOGGLE", ProcessKeybind, "CTRL+SHIFT+M");
+    // Register toggle keybind (default CTRL+SHIFT+T; Magpie Memo keeps CTRL+SHIFT+M).
+    APIDefs->InputBinds_RegisterWithString(KB_TOGGLE, ProcessKeybind, "CTRL+SHIFT+T");
 
     // Close window on Escape.
-    APIDefs->GUI_RegisterCloseOnEscape("Magpie Memo", &g_WindowVisible);
+    APIDefs->GUI_RegisterCloseOnEscape(WINDOW_NAME, &g_WindowVisible);
 
     // Initialise notes store (loads from disk).
     g_Notes.Init(APIDefs);
@@ -155,7 +162,7 @@ void AddonLoad(AddonAPI_t* aApi) {
     APIDefs->Textures_LoadFromMemory(TEX_ICON, (void*)MAGPIE_ICON, MAGPIE_ICON_size, nullptr);
     if (g_ShowQAIcon) AddQAIcon();
 
-    APIDefs->Log(LOGL_INFO, "MagpieMemo", "Magpie Memo loaded.");
+    APIDefs->Log(LOGL_INFO, "TrailpackMemo", "Trailpack Memo loaded.");
 }
 
 // ── AddonUnload ───────────────────────────────────────────────────────────
@@ -175,8 +182,8 @@ void AddonUnload() {
     // Remove the quick-access shortcut if it was registered.
     RemoveQAIcon();
 
-    APIDefs->GUI_DeregisterCloseOnEscape("Magpie Memo");
-    APIDefs->InputBinds_Deregister("KB_MAGPIE_MEMO_TOGGLE");
+    APIDefs->GUI_DeregisterCloseOnEscape(WINDOW_NAME);
+    APIDefs->InputBinds_Deregister(KB_TOGGLE);
     APIDefs->GUI_Deregister(AddonOptions);
     APIDefs->GUI_Deregister(AddonRender);
 
@@ -189,8 +196,9 @@ void AddonRender() {
 
     Theme::PushWindowBorder();
 
-    if (ImGui::Begin("Magpie Memo", &g_WindowVisible)) {
+    if (ImGui::Begin(WINDOW_NAME, &g_WindowVisible)) {
         g_Notes.Render();
+        if (g_Notes.ConsumeSettingsChanged()) SaveSettings();
     }
     ImGui::End();
 
@@ -225,7 +233,7 @@ void AddonOptions() {
 void ProcessKeybind(const char* aIdentifier, bool aIsRelease) {
     if (aIsRelease) return;
 
-    if (strcmp(aIdentifier, "KB_MAGPIE_MEMO_TOGGLE") == 0) {
+    if (strcmp(aIdentifier, KB_TOGGLE) == 0) {
         g_WindowVisible = !g_WindowVisible;
     }
 }

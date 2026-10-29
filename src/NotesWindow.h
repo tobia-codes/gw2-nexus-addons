@@ -1,5 +1,5 @@
 #pragma once
-// NotesWindow.h — Two-pane notes UI + JSON persistence for Magpie Memo.
+// NotesWindow.h — Two-pane notes UI + JSON persistence for Trailpack Memo.
 
 #include <string>
 #include <filesystem>
@@ -13,6 +13,12 @@ public:
     void Render();
     void Save();
     void Shutdown();
+
+    // Side-by-side live preview while editing (persisted by dllmain's settings.json).
+    bool PreviewEnabled() const     { return showPreview_; }
+    void SetPreviewEnabled(bool on) { showPreview_ = on; }
+    // True once after the user changed a persisted UI setting (caller saves settings).
+    bool ConsumeSettingsChanged()   { bool c = settingsChanged_; settingsChanged_ = false; return c; }
 
 private:
     // ── Mode ──────────────────────────────────────────────────────────────
@@ -28,6 +34,10 @@ private:
     Mode                   mode_        = Mode::View;
     Magpie::ChipTextEdit   bodyEditor_;  // working copy of note body while editing
     std::string            titleBuffer_; // working copy of note title while editing
+
+    // ── UI settings ───────────────────────────────────────────────────────
+    bool showPreview_     = false;
+    bool settingsChanged_ = false;
 
     // ── Dirty-guard pending navigation ────────────────────────────────────
     // When a navigation is requested while dirty we stash it here and open
@@ -67,4 +77,13 @@ private:
 
     // Perform the actual deletion of `id` (handles edit-mode + selection).
     void performDelete_(const std::string& id);
+
+    // Nexus's FontBig (for headings), or null.
+    ImFont* fontBig_() const;
+
+    // Markdown toolbar row above the body editor (B / I / H1 / H2 / list / task + Preview).
+    void renderEditToolbar_();
+
+    // View-mode body: rendered markdown with clickable task checkboxes + context menu.
+    void renderViewBody_(Magpie::Note* note);
 };

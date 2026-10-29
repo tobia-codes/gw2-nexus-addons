@@ -22,7 +22,7 @@ enum class LoadState { Loading, Ready, Failed };
 struct Entry {
     LoadState   state      = LoadState::Loading;
     Texture_t*  texture    = nullptr;
-    std::string identifier; // "MM_ICON_" + hex(key) — kept alive for Nexus
+    std::string identifier; // "TPM_ICON_" + hex(key) — kept alive for Nexus
 };
 
 std::mutex                                s_mutex;
@@ -68,7 +68,7 @@ static void OnTextureLoaded(const char* identifier, Texture_t* texture)
 static void KickLoad(uint32_t key, const char* url)
 {
     char buf[32];
-    std::snprintf(buf, sizeof(buf), "MM_ICON_%08X", key);
+    std::snprintf(buf, sizeof(buf), "TPM_ICON_%08X", key);
     std::string identifier(buf);
 
     {

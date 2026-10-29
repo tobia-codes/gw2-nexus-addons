@@ -1,5 +1,5 @@
 #pragma once
-// Theme.h — Magpie Memo accent palette + RAII push/pop helpers.
+// Theme.h — Trailpack Memo accent palette (inherited from Magpie Memo) + RAII push/pop helpers.
 // Inherits Nexus's default ImGui style; applies the PieOrCake suite's
 // consistent accent colours per-widget (no global ApplyTheme call needed).
 

@@ -1,4 +1,27 @@
-# Magpie Memo
+# Trailpack Memo
+
+> Fork of [Magpie Memo](https://github.com/PieOrCake/magpie_memo) by PieOrCake (MIT), extended with
+> **task-list checkboxes**, a **markdown toolbar** and a **live preview** while editing. Runs side by
+> side with Magpie Memo (own signature, data folder, keybind and textures).
+
+## What's new in Trailpack Memo
+
+- **Checkboxes** with GitHub syntax: `- [ ] todo` / `- [x] done` (indentation allowed).
+  - Click a box in view mode to tick it -- saved immediately.
+  - Checked items are dimmed and struck through.
+  - The note list shows progress (`3/7`, green when complete).
+  - Right-click a note body -> **Uncheck all tasks** (handy for daily/weekly routines).
+- **Markdown toolbar** in edit mode: **B**, *I*, H1, H2, bullet list, task -- works on the
+  selection or the current line(s), and toggles off when applied again. `Ctrl+B` / `Ctrl+I` too.
+- **Live preview** beside the editor (`Preview` checkbox, remembered across sessions).
+- **Lists continue on Enter**: a new `- ` / `- [ ] ` is started automatically; Enter on an empty
+  item ends the list.
+
+Default toggle hotkey: `CTRL+SHIFT+T`. Data lives in `addons/TrailpackMemo/`.
+
+---
+
+*Original Magpie Memo description:*
 
 A notepad addon for Guild Wars 2 (Raidcore Nexus). Keep multiple notes of markdown text with Guild Wars 2 chat links embedded inline as rich "chips" — icon, name, and tooltip — right where you wrote them. Named for the bird that collects shiny things.
 
@@ -29,18 +52,20 @@ If an LLM creating software upsets you, then perhaps this repo isn't for you. Mo
 
 ## Install
 
-Build produces `MagpieMemo.dll`. Copy it into your Guild Wars 2 `addons` folder. Toggle the window with the quick-access shortcut or `CTRL+SHIFT+M`.
+Build produces `TrailpackMemo.dll`. Copy it into your Guild Wars 2 `addons` folder. Toggle the window with the quick-access shortcut or `CTRL+SHIFT+T`.
 
 ## Building
 
 Cross-compiled to a Windows DLL from Linux with MinGW:
 
 ```
-cmake -S . -B build && cmake --build build      # -> build/MagpieMemo.dll
+cmake -S . -B build && cmake --build build      # -> build/TrailpackMemo.dll
 ```
 
-Host-side unit tests for the pure logic (note model, markdown parser, codec, chip round-trip, icon-URL helpers):
+Toolchain on Debian/Ubuntu/WSL: `sudo apt install mingw-w64 cmake g++ make`.
+
+Host-side unit tests for the pure logic (note model, markdown parser, task lists, editing commands, codec, chip round-trip, icon-URL helpers):
 
 ```
-cmake -S . -B build-host -DMAGPIE_HOST_TESTS=ON && cmake --build build-host && ./build-host/magpie_host_tests
+cmake -S . -B build-host -DTRAILPACK_HOST_TESTS=ON && cmake --build build-host && ./build-host/trailpack_host_tests
 ```

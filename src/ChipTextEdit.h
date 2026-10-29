@@ -2,6 +2,7 @@
 #include "imgui.h"
 #include <string>
 #include <vector>
+#include "MarkdownEdit.h"
 
 // A MULTI-LINE text editor that embeds chat-link "chips" as ATOMIC, inline elements -- matching the
 // vanilla GW2 chatbox: the caret moves over a chip as one unit, one backspace/delete adjacent to it
@@ -63,6 +64,15 @@ struct ChipTextEdit {
     void        Clear();
     void        Focus()       { focusNext = true; }
     bool        IsFocused() const { return focused; }
+
+    // ── Markdown editing (toolbar / shortcuts) ──────────────────────────────
+    // Text as one codepoint per cell; a chip cell is reported as U+FFFC.
+    Md::Cells   Codepoints() const;
+    void        GetSelection(int& selStart, int& selEnd) const;
+    // Apply a markdown command result (records undo, sets the new selection, refocuses).
+    void        ApplyEdit(const Md::EditResult& r);
+    // Enter on a "- " / "- [ ] " line continues the list (empty item ends it).
+    bool        continueLists = true;
 };
 
 } // namespace Magpie
