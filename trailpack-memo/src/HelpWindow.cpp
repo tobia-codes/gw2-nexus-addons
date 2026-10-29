@@ -97,7 +97,7 @@ const Section kSections[] = {
       "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
       "- Language (Auto follows Nexus), quick access icon.\n"
       "- 'Font options': UI and note text size.\n"
-      "- 'Colour options': window (border on/off and colour, background, text), note list (background, text, group names, 'No group'), note (background, text) and the daily / weekly badges.\n"
+      "- 'Colour options': window (border on/off and colour, background, text), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text) and the daily / weekly badges.\n"
       "- Drag the divider between list and note to change the list width." },
     { "Your data",
       "Notes are saved in addons/TrailpackMemo/notes.json; the previous version is kept as "

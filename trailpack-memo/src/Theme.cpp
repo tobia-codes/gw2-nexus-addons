@@ -26,6 +26,16 @@ void PushWindowStyle() {
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, s_Colors.showBorder ? BORDER_SIZE : 0.0f);
 }
 
+void PushPaneBorder(bool show, bool hasColor, const ImVec4& color) {
+    ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, show ? 1.0f : 0.0f);
+    ImGui::PushStyleColor(ImGuiCol_Border, hasColor ? color : s_Colors.border);
+}
+
+void PopPaneBorder() {
+    ImGui::PopStyleColor(1);
+    ImGui::PopStyleVar(1);
+}
+
 void PopWindowStyle() {
     ImGui::PopStyleColor(s_PushedColors);
     ImGui::PopStyleVar(1);

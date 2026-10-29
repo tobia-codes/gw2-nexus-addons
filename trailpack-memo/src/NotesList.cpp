@@ -53,7 +53,9 @@ float NotesWindow::renderListColumn_()
     const Theme::UserColors& uc = Theme::Colors();
     Theme::PushDarkFrameBg();
     if (uc.hasListBg) ImGui::PushStyleColor(ImGuiCol_ChildBg, uc.listBg);
+    Theme::PushListBorder();
     ImGui::BeginChild("##notes_list", ImVec2(leftWidth, -buttonRowH), true);
+    Theme::PopPaneBorder();
     if (uc.hasListBg) ImGui::PopStyleColor();
     Theme::PopFrameBg();
 
