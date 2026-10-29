@@ -679,6 +679,7 @@ static void test_settings_roundtrip()
     c.showBorder      = true;
     c.showListBorder  = true;
     c.listBorder      = { true, Magpie::Rgba{ 0.0f, 0.0f, 0.7f, 1.0f } };
+    c.menuIcon        = { true, Magpie::Rgba{ 0.3f, 0.3f, 0.3f, 1.0f } };
     c.border          = Magpie::Rgba{ 0.5f, 0.25f, 1.0f, 1.0f };
     c.groupName       = { true, Magpie::Rgba{ 1.0f, 0.0f, 0.0f, 1.0f } };
     c.noGroup         = { true, Magpie::Rgba{ 0.0f, 0.5f, 0.0f, 1.0f } };
@@ -701,6 +702,7 @@ static void test_settings_roundtrip()
     CHECK(b.colors.showBorder && b.colors.showListBorder && !b.colors.showNoteBorder);
     CHECK(!b.colors.background.set && !b.colors.text.set);   // null stays unset
     CHECK(b.colors.dailyBadgeText.a == 0.5f);
+    CHECK(b.colors.menuIcon.set && !b.colors.menuButton.set);
 }
 
 static void test_settings_validation()

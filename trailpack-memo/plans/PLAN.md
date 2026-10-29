@@ -127,6 +127,10 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   Backup (Settings > Backup, dllmain): `Backup::Make/Parse`; restore validates notes + settings
   first, asks inline, then `NotesWindow::RestoreNotes` + settings from defaults. Default folder
   `addons/TrailpackMemo/backups/`.
+  Menu button: `color_menu_button` / `color_menu_icon` (hover/pressed = `FieldBg` shades).
+  Panes (list, note, preview) always have inner padding: `PushPaneBorder` also pushes
+  WindowPadding, and they are begun with `Theme::kPaneFlags` (AlwaysUseWindowPadding) because
+  ImGui drops the padding of border-less children.
   "No group" label: `color_no_group` (null = Nexus disabled text), `NotesUi::NoGroupColor`.
   Options layout: label | swatch | Reset in fixed columns, subheadings Window / Note list /
   badges (2x2 table with preview), "Reset all colours" resets `Theme::UserColors`.

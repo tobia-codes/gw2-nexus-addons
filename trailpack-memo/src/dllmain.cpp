@@ -124,6 +124,10 @@ static void ApplyColors(const Magpie::ColorSet& s) {
     c.showNoteBorder  = s.showNoteBorder;
     c.hasNoteBorder   = s.noteBorder.set;
     c.noteBorder      = ToImVec4(s.noteBorder.color);
+    c.hasMenuButton   = s.menuButton.set;
+    c.menuButton      = ToImVec4(s.menuButton.color);
+    c.hasMenuIcon     = s.menuIcon.set;
+    c.menuIcon        = ToImVec4(s.menuIcon.color);
     c.dailyBadge      = ToImVec4(s.dailyBadge);
     c.dailyBadgeText  = ToImVec4(s.dailyBadgeText);
     c.weeklyBadge     = ToImVec4(s.weeklyBadge);
@@ -147,6 +151,8 @@ static Magpie::ColorSet CollectColors() {
     s.listBorder      = { c.hasListBorder, ToRgba(c.listBorder) };
     s.showNoteBorder  = c.showNoteBorder;
     s.noteBorder      = { c.hasNoteBorder, ToRgba(c.noteBorder) };
+    s.menuButton      = { c.hasMenuButton, ToRgba(c.menuButton) };
+    s.menuIcon        = { c.hasMenuIcon,   ToRgba(c.menuIcon) };
     s.dailyBadge      = ToRgba(c.dailyBadge);
     s.dailyBadgeText  = ToRgba(c.dailyBadgeText);
     s.weeklyBadge     = ToRgba(c.weeklyBadge);
@@ -524,7 +530,7 @@ static void RenderOptions() {
         // Column positions: right of the widest label (badge rows: preview + name).
         float labelW = 0.0f;
         for (const char* l : { Tr("Theme"), Tr("Save as theme"), Tr("Border"), Tr("Background"), Tr("Text"),
-                               Tr("Group names"), Tr("No group") })
+                               Tr("Group names"), Tr("No group"), Tr("Menu button"), Tr("Menu icon") })
             labelW = std::max(labelW, ImGui::CalcTextSize(l).x);
         for (Magpie::NoteType t : { Magpie::NoteType::Daily, Magpie::NoteType::Weekly })
             labelW = std::max(labelW, badgeW + style.ItemSpacing.x + ImGui::CalcTextSize(NotesUi::TypeName(t)).x);
@@ -643,6 +649,9 @@ static void RenderOptions() {
         // Background / text show Nexus's current colour until the user picks their own.
         optionalRow("background", Tr("Background"), c.hasBackground, c.background, style.Colors[ImGuiCol_WindowBg]);
         optionalRow("text",       Tr("Text"),       c.hasText,       c.text,       style.Colors[ImGuiCol_Text]);
+        // Menu button next to "Create New Note" (opens Import / Export / Settings...).
+        optionalRow("menu_button", Tr("Menu button"), c.hasMenuButton, c.menuButton, style.Colors[ImGuiCol_Button]);
+        optionalRow("menu_icon",   Tr("Menu icon"),   c.hasMenuIcon,   c.menuIcon,   style.Colors[ImGuiCol_Text]);
         ImGui::Unindent();
 
         // List / note panes: Nexus's child background and the window text until picked.

@@ -24,6 +24,8 @@ ImVec4      NoGroupColor();
 ImVec4      ListTextColor();
 // Note pane text (user-set, else the current text colour).
 ImVec4      NoteTextColor();
+// Lines of the menu button (user-set, else the current text colour).
+ImVec4      MenuIconColor();
 // Secondary text derived from a text colour (counts, done tasks, hints): same hue, less
 // opaque, so it keeps its contrast on any background.
 ImVec4      Dimmed(ImVec4 c);

@@ -42,6 +42,7 @@ bool ColorSet::operator==(const ColorSet& o) const
            noteBackground == o.noteBackground && noteText == o.noteText &&
            showListBorder == o.showListBorder && showNoteBorder == o.showNoteBorder &&
            listBorder == o.listBorder && noteBorder == o.noteBorder &&
+           menuButton == o.menuButton && menuIcon == o.menuIcon &&
            dailyBadge == o.dailyBadge && dailyBadgeText == o.dailyBadgeText &&
            weeklyBadge == o.weeklyBadge && weeklyBadgeText == o.weeklyBadgeText;
 }
@@ -59,6 +60,8 @@ ColorSet ColorSet::Light()
     c.listText       = { true, Rgba{ 0.05f, 0.05f, 0.07f, 1.0f } };
     c.noteBackground = { true, Rgba{ 0.98f, 0.98f, 0.98f, 1.0f } };
     c.noteText       = { true, Rgba{ 0.05f, 0.05f, 0.07f, 1.0f } };
+    c.menuButton     = { true, Rgba{ 0.58f, 0.59f, 0.64f, 1.0f } };
+    c.menuIcon       = { true, Rgba{ 0.05f, 0.05f, 0.07f, 1.0f } };
     return c;
 }
 
@@ -93,6 +96,8 @@ static void colorsToJson(const ColorSet& c, nlohmann::json& j)
     j["show_note_border"]        = c.showNoteBorder;
     j["color_list_border"]       = optional(c.listBorder);
     j["color_note_border"]       = optional(c.noteBorder);
+    j["color_menu_button"]       = optional(c.menuButton);
+    j["color_menu_icon"]         = optional(c.menuIcon);
     j["color_daily_badge"]       = colorJson(c.dailyBadge);
     j["color_daily_badge_text"]  = colorJson(c.dailyBadgeText);
     j["color_weekly_badge"]      = colorJson(c.weeklyBadge);
@@ -125,6 +130,8 @@ static void colorsFromJson(const nlohmann::json& j, ColorSet& c)
     boolean("show_note_border", c.showNoteBorder);
     optional("color_list_border", c.listBorder);
     optional("color_note_border", c.noteBorder);
+    optional("color_menu_button", c.menuButton);
+    optional("color_menu_icon", c.menuIcon);
     color("color_daily_badge", c.dailyBadge);
     color("color_daily_badge_text", c.dailyBadgeText);
     color("color_weekly_badge", c.weeklyBadge);

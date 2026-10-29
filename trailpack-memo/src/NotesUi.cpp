@@ -54,6 +54,12 @@ ImVec4 NoteTextColor()
     return c.hasNoteText ? c.noteText : ImGui::GetStyle().Colors[ImGuiCol_Text];
 }
 
+ImVec4 MenuIconColor()
+{
+    const Theme::UserColors& c = Theme::Colors();
+    return c.hasMenuIcon ? c.menuIcon : ImGui::GetStyle().Colors[ImGuiCol_Text];
+}
+
 ImVec4 Dimmed(ImVec4 c)
 {
     c.w *= 0.6f;
