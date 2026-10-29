@@ -18,6 +18,7 @@
 #include "FontScale.h"
 #include "SafeFile.h"
 #include "Settings.h"
+#include "HelpWindow.h"
 #include "IconCache.h"
 #include "EmbeddedIcon.h"   // MAGPIE_ICON[] + MAGPIE_ICON_size (generated from icon.png)
 
@@ -38,6 +39,7 @@
 AddonAPI_t*      APIDefs         = nullptr;
 bool             g_WindowVisible = false;
 bool             g_QAIconAdded   = false;  // tracks whether the shortcut is currently registered
+bool             g_HelpVisible   = false;  // the guide window ("?" in the title bar)
 Magpie::Settings g_Settings;               // settings.json (see Settings.h); colours, preview
                                            // and list width live in Theme / g_Notes meanwhile
 NotesWindow      g_Notes;
@@ -248,7 +250,7 @@ void AddonUnload() {
 
 // ── AddonRender ───────────────────────────────────────────────────────────
 void AddonRender() {
-    if (!g_WindowVisible) return;
+    if (!g_WindowVisible && !g_HelpVisible) return;
     ApplyLanguage();   // Auto follows a Nexus language switch without a restart
 
     // Fonts for sharp scaling, read outside any window (see FontScale.h).
@@ -257,18 +259,22 @@ void AddonRender() {
         Magpie::SetFontBase(ImGui::GetFont(), nl != nullptr ? static_cast<ImFont*>(nl->FontBig) : nullptr);
     }
 
-    Theme::PushWindowStyle();
-
-    if (ImGui::Begin(WINDOW_NAME, &g_WindowVisible)) {
-        // UI text size for everything inside the window (not the title bar).
-        Magpie::FontScaleScope uiFont(g_Settings.uiTextScale / 100.0f);
-        g_Notes.SetNoteTextScale(g_Settings.noteTextScale / 100.0f);
-        g_Notes.Render();
-        if (g_Notes.ConsumeSettingsChanged()) SaveSettings();
+    if (g_WindowVisible) {
+        Theme::PushWindowStyle();
+        const bool open = ImGui::Begin(WINDOW_NAME, &g_WindowVisible);
+        Help::TitleBarButton(WINDOW_NAME, &g_HelpVisible);   // "?" next to the title
+        if (open) {
+            // UI text size for everything inside the window (not the title bar).
+            Magpie::FontScaleScope uiFont(g_Settings.uiTextScale / 100.0f);
+            g_Notes.SetNoteTextScale(g_Settings.noteTextScale / 100.0f);
+            g_Notes.Render();
+            if (g_Notes.ConsumeSettingsChanged()) SaveSettings();
+        }
+        ImGui::End();
+        Theme::PopWindowStyle();
     }
-    ImGui::End();
 
-    Theme::PopWindowStyle();
+    Help::Render(&g_HelpVisible, g_Settings.uiTextScale / 100.0f);
 }
 
 // ── AddonOptions ──────────────────────────────────────────────────────────

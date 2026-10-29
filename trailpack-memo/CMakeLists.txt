@@ -18,6 +18,7 @@ if(NOT GW2_HOST_TESTS)
         src/NotesModals.cpp
         src/NotesImportExport.cpp
         src/NotesUi.cpp
+        src/HelpWindow.cpp
         src/Markdown.cpp
         src/MarkdownRender.cpp
         src/MarkdownEdit.cpp

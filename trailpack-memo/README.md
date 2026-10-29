@@ -18,6 +18,8 @@
   titles show in full on hover.
 - **Delete several notes at once**: menu button -> *Delete notes...*, tick notes (a group's box
   ticks all its notes, *Select all* / *None*), then confirm.
+- **In-game guide**: the *?* next to the window title opens a short guide to every feature
+  (English / German).
 - **Daily / weekly lists**: give a note the type *Daily* or *Weekly* (right-click -> *Type*, or the
   selector next to the title while editing). Its checkboxes are unchecked automatically after the
   GW2 reset (daily 00:00 UTC, weekly Monday 07:30 UTC) -- also if the game was closed over the

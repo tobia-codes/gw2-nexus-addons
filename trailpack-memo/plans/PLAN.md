@@ -30,6 +30,7 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 | `NotesDetail.cpp` | no | Right pane: view / edit modes, toolbar, rendered body |
 | `NotesModals.cpp` | no | Confirmations, group name / colour / delete, bulk delete, notice |
 | `NotesImportExport.cpp` | no | File dialogs (worker thread), export, import selection |
+| `HelpWindow.{h,cpp}` | no | "?" title-bar button + guide window (sections translated via `Tr`; update it with new features) |
 | `NotesUi.{h,cpp}` | no | Shared UI helpers (button width, type badge / colour / countdown) |
 | `NotesStore.{h,cpp}` | yes | Note + group model, CRUD, notes.json round-trip, export/import |
 | `Markdown.{h,cpp}` | yes | Line parser (Paragraph/Heading/Bullet/Task; Text/Bold/Italic/Chip spans); task count/toggle/uncheck-all |

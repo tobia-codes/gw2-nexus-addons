@@ -162,6 +162,100 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Copy chat code",                    "Chatcode kopieren" },
     { "Open in wiki",                      "Im Wiki öffnen" },
 
+    // ── Guide (HelpWindow) ────────────────────────────────────────────────
+    { "Guide",                             "Anleitung" },
+    { "Getting started",                   "Erste Schritte" },
+    { "Trailpack Memo keeps notes and checklists next to the game.\n"
+      "- Open / close the window with CTRL+SHIFT+T or the quick-access icon.\n"
+      "- Click 'Create New Note', type a title and text, then 'Save'.\n"
+      "- Click a note in the list to show it, 'Edit' (or right-click > 'Edit') to change it.",
+      "Trailpack Memo hält Notizen und Checklisten direkt im Spiel bereit.\n"
+      "- Fenster öffnen / schließen mit STRG+UMSCHALT+T oder dem Schnellzugriff-Icon.\n"
+      "- Auf 'Neue Notiz' klicken, Titel und Text eingeben, dann 'Speichern'.\n"
+      "- Eine Notiz in der Liste anklicken zeigt sie an, 'Bearbeiten' (oder Rechtsklick > "
+      "'Bearbeiten') ändert sie." },
+    { "Writing notes",                     "Notizen schreiben" },
+    { "Notes use simple markdown; the edit view shows the raw text.\n"
+      "- **bold**, *italic*, # Heading, - bullet list\n"
+      "- Toolbar buttons insert or remove these for the selection; CTRL+B / CTRL+I too.\n"
+      "- Enter in a list continues it; Enter on an empty item ends it.\n"
+      "- 'Preview' shows the rendered note beside the editor.",
+      "Notizen nutzen einfaches Markdown; beim Bearbeiten siehst du den Rohtext.\n"
+      "- **fett**, *kursiv*, # Überschrift, - Aufzählung\n"
+      "- Die Toolbar-Buttons fügen das für die Auswahl ein oder entfernen es; auch STRG+B / STRG+I.\n"
+      "- Enter in einer Liste setzt sie fort; Enter auf einem leeren Punkt beendet sie.\n"
+      "- 'Vorschau' zeigt die fertige Notiz neben dem Editor." },
+    { "Checklists",                        "Checklisten" },
+    { "- A line '- [ ] task' becomes a checkbox; '- [x] task' is ticked.\n"
+      "- Click a box in the note view to tick it - saved immediately.\n"
+      "- The list shows progress (3/7, green when complete).\n"
+      "- Right-click the note > 'Uncheck all tasks' to start over.",
+      "- Eine Zeile '- [ ] Aufgabe' wird zur Checkbox; '- [x] Aufgabe' ist abgehakt.\n"
+      "- In der Ansicht ein Kästchen anklicken hakt es ab - sofort gespeichert.\n"
+      "- Die Liste zeigt den Fortschritt (3/7, grün wenn fertig).\n"
+      "- Rechtsklick auf die Notiz > 'Alle Haken entfernen' fängt von vorne an." },
+    { "Daily and weekly lists",            "Tägliche und wöchentliche Listen" },
+    { "Give a note a type: right-click > 'Type', or the selector next to the title while editing.\n"
+      "- Daily: all boxes are unticked after the daily reset (00:00 UTC).\n"
+      "- Weekly: after the weekly reset (Monday 07:30 UTC).\n"
+      "- A coloured D / W badge marks them; hover it for the time to the next reset.\n"
+      "- Missed resets (game closed) are caught up when the window is opened.",
+      "Gib einer Notiz einen Typ: Rechtsklick > 'Typ' oder die Auswahl neben dem Titel beim Bearbeiten.\n"
+      "- Täglich: alle Haken werden nach dem täglichen Reset entfernt (00:00 UTC).\n"
+      "- Wöchentlich: nach dem wöchentlichen Reset (Montag 07:30 UTC).\n"
+      "- Ein farbiges T / W markiert sie; darüberfahren zeigt die Zeit bis zum nächsten Reset.\n"
+      "- Verpasste Resets (Spiel war zu) werden beim Öffnen des Fensters nachgeholt." },
+    { "Groups",                            "Gruppen" },
+    { "- Menu button (next to 'Create New Note') > 'New group...'.\n"
+      "- Click a group to fold / unfold it. Drag notes onto it, or right-click a note > "
+      "'Move to group'.\n"
+      "- Right-click a group: new note in it, rename, colour, export, delete (its notes are kept).",
+      "- Menü-Button (neben 'Neue Notiz') > 'Neue Gruppe...'.\n"
+      "- Eine Gruppe anklicken klappt sie auf / zu. Notizen darauf ziehen oder Rechtsklick auf "
+      "eine Notiz > 'In Gruppe verschieben'.\n"
+      "- Rechtsklick auf eine Gruppe: neue Notiz darin, umbenennen, Farbe, exportieren, löschen "
+      "(ihre Notizen bleiben erhalten)." },
+    { "Chat links",                        "Chat-Links" },
+    { "Paste GW2 chat links ([&...]) into a note - they become chips.\n"
+      "- With the Decoder Ring addon: icon, name and a detailed tooltip.\n"
+      "- Right-click a chip: copy the chat code or open the wiki.\n"
+      "- With Pie UI: left-click a waypoint chip to open the map there.",
+      "Füge GW2-Chat-Links ([&...]) in eine Notiz ein - sie werden zu Chips.\n"
+      "- Mit dem Addon Decoder Ring: Icon, Name und ausführlicher Tooltip.\n"
+      "- Rechtsklick auf einen Chip: Chatcode kopieren oder Wiki öffnen.\n"
+      "- Mit Pie UI: Linksklick auf einen Wegpunkt-Chip öffnet dort die Karte." },
+    { "Import, export and deleting",       "Import, Export und Löschen" },
+    { "All in the menu button and the right-click menus.\n"
+      "- 'Export all...' saves every note and group to one file; right-click a note or group "
+      "to export just that.\n"
+      "- 'Import...' lists the notes in a file to pick from. Notes you already have are skipped; "
+      "a changed version can be applied with 'Update'.\n"
+      "- 'Delete notes...' deletes several notes at once; right-click > 'Delete note...' "
+      "deletes one.",
+      "Alles im Menü-Button und in den Rechtsklick-Menüs.\n"
+      "- 'Alle exportieren...' speichert alle Notizen und Gruppen in eine Datei; Rechtsklick auf "
+      "eine Notiz oder Gruppe exportiert nur diese.\n"
+      "- 'Importieren...' listet die Notizen einer Datei zur Auswahl. Vorhandene Notizen werden "
+      "übersprungen; eine geänderte Version lässt sich mit 'Aktualisieren' übernehmen.\n"
+      "- 'Notizen löschen...' löscht mehrere Notizen auf einmal; Rechtsklick > 'Notiz löschen...' "
+      "löscht eine." },
+    { "Settings",                          "Einstellungen" },
+    { "Nexus addon options > Trailpack Memo:\n"
+      "- Language (Auto follows Nexus), UI and note text size.\n"
+      "- Colours for border, background, text and group names.\n"
+      "- Drag the divider between list and note to change the list width.",
+      "Nexus-Addon-Optionen > Trailpack Memo:\n"
+      "- Sprache (Automatisch folgt Nexus), UI- und Notiz-Textgröße.\n"
+      "- Farben für Rahmen, Hintergrund, Text und Gruppennamen.\n"
+      "- Den Trenner zwischen Liste und Notiz ziehen ändert die Breite der Liste." },
+    { "Your data",                         "Deine Daten" },
+    { "Notes are saved in addons/TrailpackMemo/notes.json; the previous version is kept as "
+      "notes.json.bak. A damaged file is never overwritten - it is kept aside and the backup "
+      "is loaded instead.",
+      "Notizen werden in addons/TrailpackMemo/notes.json gespeichert; die vorherige Version "
+      "bleibt als notes.json.bak erhalten. Eine beschädigte Datei wird nie überschrieben - sie "
+      "wird aufbewahrt und stattdessen die Sicherung geladen." },
+
     // ── Options (dllmain) ─────────────────────────────────────────────────
     { "Toggle Trailpack Memo",             "Trailpack Memo ein-/ausblenden" },
     { "Decoder Ring: connected -- chips show full names and icons.",
