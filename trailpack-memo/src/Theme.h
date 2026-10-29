@@ -13,13 +13,14 @@ inline const ImVec4 BORDER_GOLD        = { 0.90f, 0.75f, 0.25f, 0.90f };
 constexpr float     BORDER_SIZE        = 2.0f;
 
 // ── Green action-button set ───────────────────────────────────────────────
-inline const ImVec4 BTN_GREEN          = { 0.18f, 0.45f, 0.18f, 0.90f };
-inline const ImVec4 BTN_GREEN_HOVERED  = { 0.25f, 0.60f, 0.25f, 0.95f };
+// Buttons are opaque: nothing behind them (e.g. a long title) may show through.
+inline const ImVec4 BTN_GREEN          = { 0.18f, 0.45f, 0.18f, 1.00f };
+inline const ImVec4 BTN_GREEN_HOVERED  = { 0.25f, 0.60f, 0.25f, 1.00f };
 inline const ImVec4 BTN_GREEN_ACTIVE   = { 0.30f, 0.70f, 0.30f, 1.00f };
 
 // ── Amber secondary-button set ────────────────────────────────────────────
-inline const ImVec4 BTN_AMBER          = { 0.22f, 0.20f, 0.12f, 0.80f };
-inline const ImVec4 BTN_AMBER_HOVERED  = { 0.35f, 0.30f, 0.14f, 0.90f };
+inline const ImVec4 BTN_AMBER          = { 0.22f, 0.20f, 0.12f, 1.00f };
+inline const ImVec4 BTN_AMBER_HOVERED  = { 0.35f, 0.30f, 0.14f, 1.00f };
 inline const ImVec4 BTN_AMBER_ACTIVE   = { 0.45f, 0.38f, 0.16f, 1.00f };
 
 // ── Dark frame background ─────────────────────────────────────────────────

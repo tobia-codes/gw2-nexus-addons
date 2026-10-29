@@ -177,6 +177,8 @@ private:
     // Left column (list, "Create New Note", menu button); returns its width.
     float renderListColumn_();
     void  renderSplitter_(float listWidth);
+    void  requestNewGroup_();     // "New group..." (menu button, list context menu)
+    void  requestBulkDelete_();   // "Delete notes..." (menu button, list context menu)
     // One note row (selectable, badge, progress, context menu, drag source).
     void  renderNoteRow_(const Magpie::Note& note, float indent);
     // A group header (collapse toggle, count, context menu, drop target); true if expanded.

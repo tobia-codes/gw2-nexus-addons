@@ -70,7 +70,12 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   opened at the end of `Render()`; new modals add a `Popup` value + title in `PopupTitle`.
   Child windows report clicks via the `*RequestId_` fields, handled in `handleRequests_()`.
 - Note list width: splitter between list and note (drag, double-click resets to 200 px),
-  `list_width` in `settings.json`, clamped only when drawn. Clipped titles show a tooltip.
+  `list_width` in `settings.json`, clamped only when drawn. Long titles / group names are cut
+  with "..." (`NotesUi::Ellipsize`, also the view-mode title) and shown in full in a tooltip.
+  List rows (`RowSelectable` in `NotesList.cpp`): own rounded highlight (window rounding), inner
+  padding, gap between rows and groups. Right-click on empty list space: new note / new group /
+  delete notes. Buttons are opaque (Nexus's translucent ones are blended in `PushWindowStyle`);
+  the edit toolbar wraps in a narrow pane.
 - Note types Note/Daily/Weekly (`Note::type`, `Note::resetStamp` = last reset applied, both in
   notes.json + export). `Reset.{h,cpp}` (pure): last/next daily (00:00 UTC) and weekly
   (Mon 07:30 UTC) resets -- Nexus has no reset API. `NotesStore::ApplyResets(now, skipId)` runs

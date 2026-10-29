@@ -207,11 +207,13 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "- Ein farbiges T / W markiert sie; darüberfahren zeigt die Zeit bis zum nächsten Reset.\n"
       "- Verpasste Resets (Spiel war zu) werden beim Öffnen des Fensters nachgeholt." },
     { "Groups",                            "Gruppen" },
-    { "- Menu button (next to 'Create New Note') > 'New group...'.\n"
+    { "- Menu button (next to 'Create New Note') > 'New group...', or right-click an empty spot "
+      "in the list (also: new note, delete notes).\n"
       "- Click a group to fold / unfold it. Drag notes onto it, or right-click a note > "
       "'Move to group'.\n"
       "- Right-click a group: new note in it, rename, colour, export, delete (its notes are kept).",
-      "- Menü-Button (neben 'Neue Notiz') > 'Neue Gruppe...'.\n"
+      "- Menü-Button (neben 'Neue Notiz') > 'Neue Gruppe...' oder Rechtsklick auf eine leere "
+      "Stelle in der Liste (dort auch: neue Notiz, Notizen löschen).\n"
       "- Eine Gruppe anklicken klappt sie auf / zu. Notizen darauf ziehen oder Rechtsklick auf "
       "eine Notiz > 'In Gruppe verschieben'.\n"
       "- Rechtsklick auf eine Gruppe: neue Notiz darin, umbenennen, Farbe, exportieren, löschen "
