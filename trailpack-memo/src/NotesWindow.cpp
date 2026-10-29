@@ -599,8 +599,8 @@ void NotesWindow::Render()
                 ImGui::SameLine();
 
                 ImGui::BeginChild("##preview_col", ImVec2(0, 0), true);
-                const std::vector<Magpie::Md::Line> lines =
-                    Magpie::Md::Parse(bodyEditor_.GetText());
+                const std::vector<Magpie::Md::Line>& lines =
+                    parsed_(previewParse_, bodyEditor_.GetText());
                 {
                     Magpie::FontScaleScope noteFont(noteTextScale_);
                     Magpie::RenderMarkdown(lines, fontBig_(), ImGui::GetContentRegionAvail().x);
@@ -671,6 +671,34 @@ void NotesWindow::Render()
     }
 }
 
+// ── Per-frame caches ────────────────────────────────────────────────────────
+
+const std::vector<Magpie::Md::Line>& NotesWindow::parsed_(ParseCache& cache, const std::string& body)
+{
+    if (!cache.valid || cache.body != body) {
+        cache.body  = body;
+        cache.lines = Magpie::Md::Parse(body);
+        cache.valid = true;
+    }
+    return cache.lines;
+}
+
+Magpie::Md::TaskCount NotesWindow::taskCount_(const Magpie::Note& note)
+{
+    // Drop entries of deleted notes now and then (ids are never reused).
+    if (taskCache_.size() > store_.Notes().size() * 2 + 16) taskCache_.clear();
+
+    const size_t hash = std::hash<std::string>{}(note.body);
+    auto it = taskCache_.find(note.id);
+    if (it == taskCache_.end() || it->second.bodyHash != hash) {
+        TaskCache entry;
+        entry.bodyHash = hash;
+        entry.count    = Magpie::Md::CountTasks(note.body);
+        it = taskCache_.insert_or_assign(note.id, entry).first;
+    }
+    return it->second.count;
+}
+
 // ── Markdown helpers ────────────────────────────────────────────────────────
 
 ImFont* NotesWindow::fontBig_() const
@@ -729,7 +757,7 @@ void NotesWindow::renderViewBody_(Magpie::Note* note)
     // EDIT mode shows the raw source; VIEW shows this.
     ImGui::BeginChild("##view_body", ImVec2(0, 0), false);
 
-    const std::vector<Magpie::Md::Line> lines = Magpie::Md::Parse(note->body);
+    const std::vector<Magpie::Md::Line>& lines = parsed_(viewParse_, note->body);
     int clickedTask = -1;
     {
         Magpie::FontScaleScope noteFont(noteTextScale_);
@@ -1205,7 +1233,7 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent, std::st
     ImDrawList* dl = ImGui::GetWindowDrawList();
     char progress[24] = "";
     float progressW = 0.0f;
-    const Magpie::Md::TaskCount tc = Magpie::Md::CountTasks(note.body);
+    const Magpie::Md::TaskCount tc = taskCount_(note);
     if (tc.total > 0) {
         snprintf(progress, sizeof progress, "%d/%d", tc.done, tc.total);
         progressW = ImGui::CalcTextSize(progress).x;

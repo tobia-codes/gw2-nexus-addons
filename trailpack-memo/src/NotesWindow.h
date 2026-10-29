@@ -4,9 +4,12 @@
 #include <string>
 #include <filesystem>
 #include <future>
+#include <unordered_map>
+#include <vector>
 #include "nexus/Nexus.h"
 #include "NotesStore.h"
 #include "ChipTextEdit.h"
+#include "Markdown.h"
 
 class NotesWindow {
 public:
@@ -100,6 +103,21 @@ private:
     // ── Delete several notes ("Delete notes..." modal) ────────────────────
     std::vector<std::string> bulkSelected_;      // ids ticked in the modal
     bool                     bulkConfirm_ = false;  // second step: "really delete?"
+
+    // ── Per-frame caches ──────────────────────────────────────────────────
+    // Markdown parse of a body, redone only when the text changed (view / preview).
+    struct ParseCache {
+        bool                          valid = false;
+        std::string                   body;
+        std::vector<Magpie::Md::Line> lines;
+    };
+    ParseCache viewParse_, previewParse_;
+    // Task progress per note id, keyed by a hash of the body.
+    struct TaskCache { size_t bodyHash = 0; Magpie::Md::TaskCount count; };
+    std::unordered_map<std::string, TaskCache> taskCache_;
+
+    const std::vector<Magpie::Md::Line>& parsed_(ParseCache& cache, const std::string& body);
+    Magpie::Md::TaskCount taskCount_(const Magpie::Note& note);
 
     // ── Private helpers ───────────────────────────────────────────────────
     void selectFirst_();

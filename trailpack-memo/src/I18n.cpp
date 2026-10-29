@@ -1,8 +1,7 @@
 // I18n.cpp — English -> German UI string table.
 #include "I18n.h"
 
-#include <cstring>
-#include <string>
+#include <string_view>
 #include <unordered_map>
 
 namespace Magpie { namespace I18n {
@@ -188,10 +187,12 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "Zurücksetzen nutzt den Nexus-Standard (Gold für den Rahmen)." },
 };
 
-static const std::unordered_map<std::string, const char*>& GermanMap()
+// Keys view the static English literals in kGerman: lookups hash the text but never
+// allocate (Tr runs many times per frame).
+static const std::unordered_map<std::string_view, const char*>& GermanMap()
 {
-    static const std::unordered_map<std::string, const char*> map = [] {
-        std::unordered_map<std::string, const char*> m;
+    static const std::unordered_map<std::string_view, const char*> map = [] {
+        std::unordered_map<std::string_view, const char*> m;
         for (const auto& e : kGerman) m.emplace(e.first, e.second);
         return m;
     }();
@@ -205,7 +206,7 @@ const char* Tr(const char* en)
 {
     if (en == nullptr || s_Lang == Lang::En) return en;
     const auto& map = GermanMap();
-    const auto it = map.find(en);
+    const auto it = map.find(std::string_view(en));
     return it != map.end() ? it->second : en;
 }
 
