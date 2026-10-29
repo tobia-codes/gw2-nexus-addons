@@ -181,6 +181,12 @@ release of one repo, but the monorepo will hold several addon DLLs.
       `git subtree`-style or manual diff of `src/` against upstream at a given commit), keeping our
       identity and fork features. Record the last synced upstream commit here (currently `aa02219`).
 
+### B5 — Event timers in notes (next big feature)
+**Why:** world bosses and map metas follow fixed UTC schedules; notes should show them as chips
+with a live countdown and copy the waypoint on click.
+- [ ] Work the stages in [`EVENTS.md`](EVENTS.md) (decisions D1-D14 are agreed — ask before
+      changing them). One feature branch + PR per stage.
+
 ### Ideas (not scheduled — only on user request)
 - Search/filter in the note list; note reordering (drag or up/down).
 - Export/import a single note as plain `.md` (JSON export/import exists).
@@ -191,3 +197,4 @@ release of one repo, but the monorepo will hold several addon DLLs.
 ## Changelog of this plan
 - 2026-10-29 — Rewritten from the upstream implementation plan for the Trailpack Memo fork in the
   monorepo; rules moved to `AGENTS.md`; B3 done.
+- 2026-10-29 — B5 (event timers) planned with the user; details in `EVENTS.md`.
