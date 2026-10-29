@@ -34,6 +34,9 @@ inline const ImVec4 BADGE_DAILY        = { 0.90f, 0.62f, 0.20f, 1.00f };   // am
 inline const ImVec4 BADGE_WEEKLY       = { 0.40f, 0.60f, 0.95f, 1.00f };   // blue
 inline const ImVec4 BADGE_TEXT         = { 0.08f, 0.08f, 0.08f, 1.00f };
 
+// ── Popups (menus, tooltips, modals): opaque black for maximum contrast ───
+inline const ImVec4 POPUP_BG           = { 0.00f, 0.00f, 0.00f, 1.00f };
+
 // ── Event chips (B5; made configurable in stage 6) ────────────────────────
 inline const ImVec4 EVENT_UPCOMING     = { 0.30f, 0.80f, 0.80f, 1.00f };   // teal
 inline const ImVec4 EVENT_ACTIVE       = { 0.40f, 0.85f, 0.35f, 1.00f };   // green
@@ -82,6 +85,11 @@ struct UserColors {
     ImVec4 menuButton     = { 0.0f, 0.0f, 0.0f, 0.0f };
     bool   hasMenuIcon    = false;
     ImVec4 menuIcon       = { 0.0f, 0.0f, 0.0f, 0.0f };
+    // Popups of the addon windows (menus, tooltips, pickers, modals): background (pushed with
+    // the window style) and text (unset: Nexus text; applied by PopupTextScope / Tooltip).
+    ImVec4 popupBg        = POPUP_BG;
+    bool   hasPopupText   = false;
+    ImVec4 popupText      = { 0.0f, 0.0f, 0.0f, 0.0f };
 };
 UserColors& Colors();   // the live, mutable set (Theme.cpp)
 
@@ -103,6 +111,12 @@ inline void PushNoteBorder() { const UserColors& c = Colors(); PushPaneBorder(c.
 // pane, slightly lighter on a dark one, opaque (the editor on a custom note background).
 ImVec4 FieldBg(const ImVec4& bg);
 
+// Popup text colour (user-set, else Nexus's own text colour, even if the window has its own).
+ImVec4 PopupText();
+
+// SetTooltip in the popup text colour.
+void Tooltip(const char* fmt, ...);
+
 // Push ImGuiCol_Text for a scope when `set` (e.g. note text); no-op otherwise.
 struct TextColorScope {
     bool pushed;
@@ -110,6 +124,12 @@ struct TextColorScope {
     ~TextColorScope() { if (pushed) ImGui::PopStyleColor(); }
     TextColorScope(const TextColorScope&) = delete;
     TextColorScope& operator=(const TextColorScope&) = delete;
+};
+
+// The popup text colour for a scope: put it first inside `if (ImGui::BeginPopup...(...)) {`
+// (or around BeginTooltip / a Combo) so menus and tooltips get it, not the window.
+struct PopupTextScope : TextColorScope {
+    PopupTextScope() : TextColorScope(true, PopupText()) {}
 };
 
 // ── Scoped helpers ────────────────────────────────────────────────────────

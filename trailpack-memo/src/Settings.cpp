@@ -43,6 +43,7 @@ bool ColorSet::operator==(const ColorSet& o) const
            showListBorder == o.showListBorder && showNoteBorder == o.showNoteBorder &&
            listBorder == o.listBorder && noteBorder == o.noteBorder &&
            menuButton == o.menuButton && menuIcon == o.menuIcon &&
+           popupBackground == o.popupBackground && popupText == o.popupText &&
            dailyBadge == o.dailyBadge && dailyBadgeText == o.dailyBadgeText &&
            weeklyBadge == o.weeklyBadge && weeklyBadgeText == o.weeklyBadgeText;
 }
@@ -98,6 +99,8 @@ static void colorsToJson(const ColorSet& c, nlohmann::json& j)
     j["color_note_border"]       = optional(c.noteBorder);
     j["color_menu_button"]       = optional(c.menuButton);
     j["color_menu_icon"]         = optional(c.menuIcon);
+    j["color_popup_background"]  = colorJson(c.popupBackground);
+    j["color_popup_text"]        = optional(c.popupText);
     j["color_daily_badge"]       = colorJson(c.dailyBadge);
     j["color_daily_badge_text"]  = colorJson(c.dailyBadgeText);
     j["color_weekly_badge"]      = colorJson(c.weeklyBadge);
@@ -132,6 +135,8 @@ static void colorsFromJson(const nlohmann::json& j, ColorSet& c)
     optional("color_note_border", c.noteBorder);
     optional("color_menu_button", c.menuButton);
     optional("color_menu_icon", c.menuIcon);
+    color("color_popup_background", c.popupBackground);
+    optional("color_popup_text", c.popupText);
     color("color_daily_badge", c.dailyBadge);
     color("color_daily_badge_text", c.dailyBadgeText);
     color("color_weekly_badge", c.weeklyBadge);

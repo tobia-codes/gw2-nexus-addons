@@ -133,6 +133,11 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   Panes (list, note, preview) always have inner padding: `PushPaneBorder` also pushes
   WindowPadding, and they are begun with `Theme::kPaneFlags` (AlwaysUseWindowPadding) because
   ImGui drops the padding of border-less children.
+  Popups (menus, tooltips, event picker, modals) of the note window: `color_popup_background`
+  (default opaque black, pushed as ImGuiCol_PopupBg by `PushWindowStyle`) and `color_popup_text`
+  (null = Nexus text): `Theme::PopupTextScope` first inside each `BeginPopup` block / around
+  `BeginTooltip` and Combos, `Theme::Tooltip` instead of `ImGui::SetTooltip`, all modals via
+  `renderModals_`. New popups must do the same.
   "No group" label: `color_no_group` (null = Nexus disabled text), `NotesUi::NoGroupColor`.
   Options layout: label | swatch | Reset in fixed columns, subheadings Window / Note list /
   badges (2x2 table with preview), "Reset all colours" resets `Theme::UserColors`.

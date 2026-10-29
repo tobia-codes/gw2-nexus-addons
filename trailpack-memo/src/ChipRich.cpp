@@ -29,7 +29,7 @@
 #include "IconCache.h"               // Magpie::Icons::RequestUrl / Get
 #include "chat/ChatLinks.h"          // SegmentLine -> (linkType, id)
 #include "I18n.h"                    // Tr
-#include "Theme.h"                   // WindowText (popups ignore the note text colour)
+#include "Theme.h"                   // PopupTextScope (popups ignore the note text colour)
 
 namespace Magpie {
 
@@ -391,7 +391,7 @@ float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& p
     if (hovering) {
         // Tooltip (suppress while the context menu is open to avoid overlap).
         if (!ImGui::IsPopupOpen(pid)) {
-            Theme::TextColorScope popupText(true, Theme::WindowText());
+            Theme::PopupTextScope popupText;
             ImGui::BeginTooltip();
             if (st.warm) {
                 TooltipWarm(st.rec, code);
@@ -419,7 +419,7 @@ float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& p
 
     // Context menu — both actions use the raw stored code, so they work with NO
     // Decoder Ring present. Begun every frame in this window scope.
-    Theme::TextColorScope popupText(true, Theme::WindowText());
+    Theme::PopupTextScope popupText;
     if (ImGui::BeginPopup(pid)) {
         if (ImGui::MenuItem(Magpie::I18n::Tr("Copy chat code"))) ImGui::SetClipboardText(code.c_str());
         if (ImGui::MenuItem(Magpie::I18n::Tr("Open in wiki")))   OpenWiki(code);

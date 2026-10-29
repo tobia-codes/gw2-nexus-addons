@@ -33,6 +33,7 @@ are static, so start times are computed locally from UTC — like the daily / we
 | D12 | Click | Left click copies the waypoint chat code and shows "Waypoint copied" at the mouse for ~1.5 s. Right click: menu "Copy waypoint" / "Open in wiki". No Pie UI action for events. |
 | D13 | Colours | New "Events" section in Colour options: "Upcoming" (default teal) and "Active" (default green). Part of `ColorSet`, so themes and backups include them. |
 | D14 | Delivery | Six stages below, each its own feature branch + PR, each buildable, host-tested and checkable in game on its own. |
+| D15 | Rotating events | An event that moves between places on a fixed rotation (Ley-Line Anomaly, Fractal Incursion, Dragon Bash Hologram Stampede) is ONE event with several places, not one per place. Chip, tooltip and left-click use the place of the running occurrence, and switch to the next place only after that run has ended. The tooltip names the map of each listed start. (User, 2026-10-29.) |
 
 ## Data model (as generated in stage 1)
 
@@ -46,20 +47,24 @@ constexpr int kDayMinutes = 1440;
 
 struct CategoryDef { const char* nameEn; const char* nameDe; };   // nameDe nullptr: expansion name
 
+struct PlaceDef {                    // where an occurrence happens
+    const char* mapEn;  const char* mapDe;      // nullptr = none known / use English
+    const char* waypoint;                       // chat code "[&B...]", nullptr = none
+    const char* waypointNameEn; const char* waypointNameDe;
+};
+
 struct EventDef {
     const char*     id;              // stable English slug, used in {{event:<id>}}
     const char*     nameEn;
     const char*     nameDe;          // nullptr = use nameEn
-    const char*     mapEn;           // nullptr = none known
-    const char*     mapDe;
     uint8_t         category;        // index into kCategories
-    const char*     waypoint;        // chat code "[&B...]", nullptr = none
-    const char*     waypointNameEn;
-    const char*     waypointNameDe;
     const char*     wikiPage;        // English wiki page (may contain "#section")
+    uint8_t         placeCount;      // >= 1; > 1 for rotating events (D15)
+    const PlaceDef* places;
     uint8_t         count;           // occurrences per day
     const uint16_t* starts;          // minutes after 00:00 UTC, ascending
     const uint16_t* durations;       // minutes, parallel to starts
+    const uint8_t*  placeOf;         // index into places, parallel to starts
 };
 
 extern const CategoryDef kCategories[]; extern const size_t kCategoryCount;
@@ -71,7 +76,7 @@ extern const EventDef    kEvents[];     extern const size_t kEventCount;
 Every event repeats **daily** (the wiki widget restarts its sequence at 00:00 UTC), so a plain
 list of start minutes per day fits every event; no cycle field is needed. An occurrence may run
 past midnight (`start + duration > 1440`, e.g. Dragon's Stand at 23:30 for 120 min). Durations
-are per occurrence because they can differ within one event.
+are per occurrence because they can differ within one event; so is the place (D15).
 
 ## Code map (where things go)
 
@@ -148,9 +153,16 @@ Then check the summary, run the host tests, and review the diff of `src/events/`
       click, menu.
 
 ### Stage 4 — Picker in the edit toolbar
-- [ ] "Event" toolbar button, picker with search + collapsible categories, no countdown (D8).
-- [ ] Insert at the cursor via `bodyEditor_.ApplyEdit`; refocus the editor afterwards.
-- [ ] Category names: wiki order, expansion names unchanged, generic names translated (D5).
+- [x] "Event" toolbar button, picker with search + collapsible categories, no countdown (D8):
+      `src/EventPicker.{h,cpp}` (`EventPicker::Render(query, focusSearch)` -> picked id; Enter
+      takes the first hit, Escape closes). Popup `##event_picker` in the detail child's scope.
+- [x] Insert at the caret with `bodyEditor_.InsertChip(Events::Token(id))` (`ApplyEdit` only
+      handles text cells); refocus the editor afterwards.
+- [x] Category names: wiki order, expansion names unchanged, generic names translated (D5) --
+      from the generated data (`Events::CategoryName`).
+- [x] Rotating events (D15, from the user test): generator `"merge": true` per meta in the
+      overrides -> one event with `places` + `placeOf`; `Events::State` / `NextOccurrences`
+      carry the place; `Maps` lists all maps (picker), `Search` matches any map. 93 events now.
 - [ ] User test: search "teq", collapse / expand, insert into an empty and a long note.
 
 ### Stage 5 — `/e ` suggestions in the editor
@@ -197,3 +209,7 @@ Then check the summary, run the host tests, and review the diff of `src/events/`
   time; festivals only run during their festival.
 - (Stage 1) The model is daily lists of starts + durations (see Data model); no event needed
   more.
+- (Stage 4, user test) The Ley-Line Anomaly showed as three events. Rotating events are now
+  merged (D15): 93 events; ids `ley-line-anomaly`, `fractal-incursion`,
+  `dragon-bash-hologram-stampede` replace the per-place ids from stage 1 (an old per-place token
+  shows as "unknown event").

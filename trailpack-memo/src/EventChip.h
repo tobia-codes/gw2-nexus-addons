@@ -4,6 +4,7 @@
 // View / preview: "<name> - in 23 Min" or "<name> - seit 4 Min" (live), a tooltip with the
 // next starts in local time, left click copies the waypoint chat code ("Waypoint copied" at
 // the mouse), right click offers Copy waypoint / Open in wiki. The editor shows the name only.
+// Rotating events (several places) use the place of the running occurrence, else the next.
 // Unknown ids render as a grey "Unknown event (<id>)" chip. Schedule maths: Events.h.
 
 #include "imgui.h"

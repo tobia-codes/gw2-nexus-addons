@@ -128,6 +128,9 @@ static void ApplyColors(const Magpie::ColorSet& s) {
     c.menuButton      = ToImVec4(s.menuButton.color);
     c.hasMenuIcon     = s.menuIcon.set;
     c.menuIcon        = ToImVec4(s.menuIcon.color);
+    c.popupBg         = ToImVec4(s.popupBackground);
+    c.hasPopupText    = s.popupText.set;
+    c.popupText       = ToImVec4(s.popupText.color);
     c.dailyBadge      = ToImVec4(s.dailyBadge);
     c.dailyBadgeText  = ToImVec4(s.dailyBadgeText);
     c.weeklyBadge     = ToImVec4(s.weeklyBadge);
@@ -153,6 +156,8 @@ static Magpie::ColorSet CollectColors() {
     s.noteBorder      = { c.hasNoteBorder, ToRgba(c.noteBorder) };
     s.menuButton      = { c.hasMenuButton, ToRgba(c.menuButton) };
     s.menuIcon        = { c.hasMenuIcon,   ToRgba(c.menuIcon) };
+    s.popupBackground = ToRgba(c.popupBg);
+    s.popupText       = { c.hasPopupText,  ToRgba(c.popupText) };
     s.dailyBadge      = ToRgba(c.dailyBadge);
     s.dailyBadgeText  = ToRgba(c.dailyBadgeText);
     s.weeklyBadge     = ToRgba(c.weeklyBadge);
@@ -699,6 +704,19 @@ static void RenderOptions() {
         optionalRow("note_border", Tr("Border"),   c.hasNoteBorder, c.noteBorder, c.border);
         optionalRow("note_bg",   Tr("Background"), c.hasNoteBg,   c.noteBg,   paneBg);
         optionalRow("note_text", Tr("Text"),       c.hasNoteText, c.noteText, paneText);
+        ImGui::Unindent();
+
+        // Popups of the note window (menus, tooltips, the event picker, dialogs): opaque black
+        // and Nexus's text colour by default, for maximum contrast over anything behind them.
+        heading(Tr("Popups"));
+        ImGui::Indent();
+        ImGui::PushID("popup_bg");
+        label(Tr("Background"));
+        if (ImGui::ColorEdit4("##c", &c.popupBg.x, flags)) s_ColorsDirty = true;
+        ImGui::SameLine();
+        if (ImGui::Button(Tr("Reset"))) { c.popupBg = Theme::POPUP_BG; s_ColorsDirty = true; }
+        ImGui::PopID();
+        optionalRow("popup_text", Tr("Text"), c.hasPopupText, c.popupText, style.Colors[ImGuiCol_Text]);
         ImGui::Unindent();
 
         // Daily / weekly badges: preview + name | background | letter | Reset (both).

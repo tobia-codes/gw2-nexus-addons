@@ -6,206 +6,570 @@ namespace Magpie { namespace Events {
 
 static const uint16_t kS0[] = { 0, 180, 360, 540, 720, 900, 1080, 1260 };
 static const uint16_t kD0[] = { 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP0[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL0[] = {
+    { "Bloodtide Coast", "Blutstrom-Küste", "[&BKgBAAA=]", "Laughing Gull Waypoint", "Wegmarke Lachmöwe" },
+};
 static const uint16_t kS1[] = { 15, 135, 255, 375, 495, 615, 735, 855, 975, 1095, 1215, 1335 };
 static const uint16_t kD1[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP1[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL1[] = {
+    { "Wayfarer Foothills", "Wanderer-Hügel", "[&BMIDAAA=]", "Krennak's Homestead Waypoint", "Wegmarke Krennaks Gehöft" },
+};
 static const uint16_t kS2[] = { 30, 210, 390, 570, 750, 930, 1110, 1290 };
 static const uint16_t kD2[] = { 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP2[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL2[] = {
+    { "Mount Maelstrom", "Mahlstromgipfel", "[&BM0CAAA=]", "Maelstrom's Waypoint", "Wegmarke Mahlstrom" },
+};
 static const uint16_t kS3[] = { 45, 165, 285, 405, 525, 645, 765, 885, 1005, 1125, 1245, 1365 };
 static const uint16_t kD3[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP3[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL3[] = {
+    { "Metrica Province", "Provinz Metrica", "[&BEcAAAA=]", "Muridian Waypoint", "Wegmarke Muridianisches Hochland" },
+};
 static const uint16_t kS4[] = { 60, 240, 420, 600, 780, 960, 1140, 1320 };
 static const uint16_t kD4[] = { 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP4[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL4[] = {
+    { "Blazeridge Steppes", "Flammenkamm-Steppe", "[&BE4DAAA=]", "Lowland Burns Waypoint", "Wegmarke Tiefland-Brand" },
+};
 static const uint16_t kS5[] = { 75, 195, 315, 435, 555, 675, 795, 915, 1035, 1155, 1275, 1395 };
 static const uint16_t kD5[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP5[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL5[] = {
+    { "Caledon Forest", "Caledon-Wald", "[&BEEFAAA=]", "Twilight Arbor Waypoint", "Wegmarke Zwielichtgarten" },
+};
 static const uint16_t kS6[] = { 90, 270, 450, 630, 810, 990, 1170, 1350 };
 static const uint16_t kD6[] = { 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP6[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL6[] = {
+    { "Harathi Hinterlands", "Harathi-Hinterland", "[&BLAAAAA=]", "Junction Camp Waypoint", "Wegmarke Knotenpunkt-Lager" },
+};
 static const uint16_t kS7[] = { 105, 225, 345, 465, 585, 705, 825, 945, 1065, 1185, 1305, 1425 };
 static const uint16_t kD7[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP7[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL7[] = {
+    { "Queensdale", "Königintal", "[&BPcAAAA=]", "Swamplost Haven Waypoint", "Wegmarke Sumpf-Freistatt" },
+};
 static const uint16_t kS8[] = { 150, 330, 510, 690, 870, 1050, 1230, 1410 };
 static const uint16_t kD8[] = { 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP8[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL8[] = {
+    { "Frostgorge Sound", "Eisklamm-Sund", "[&BHoCAAA=]", "Earthshake Waypoint", "Wegmarke Erdbeben" },
+};
 static const uint16_t kS9[] = { 120, 300, 480, 660, 840, 1020, 1200, 1380 };
 static const uint16_t kD9[] = { 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP9[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL9[] = {
+    { "Mount Maelstrom", "Mahlstromgipfel", "[&BNQCAAA=]", "Old Sledge Site Waypoint", "Wegmarke Alter Hammergrund" },
+};
 static const uint16_t kS10[] = { 60, 240, 480, 750, 1020, 1200 };
 static const uint16_t kD10[] = { 30, 30, 30, 30, 30, 30 };
+static const uint8_t  kP10[] = { 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL10[] = {
+    { "Bloodtide Coast", "Blutstrom-Küste", "[&BKoBAAA=]", "Firthside Vigil Waypoint", "Wegmarke Wachsame der Fördenmündung" },
+};
 static const uint16_t kS11[] = { 120, 360, 630, 900, 1080, 1380 };
 static const uint16_t kD11[] = { 30, 30, 30, 30, 30, 30 };
+static const uint8_t  kP11[] = { 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL11[] = {
+    { "Southsun Cove", "Südlicht-Bucht", "[&BNUGAAA=]", "Pearl Islet Waypoint", "Wegmarke Perlen-Inselchen" },
+};
 static const uint16_t kS12[] = { 0, 180, 420, 690, 960, 1140 };
 static const uint16_t kD12[] = { 30, 30, 30, 30, 30, 30 };
-static const uint16_t kS13[] = { 20, 380, 740, 1100 };
-static const uint16_t kD13[] = { 20, 20, 20, 20 };
-static const uint16_t kS14[] = { 140, 500, 860, 1220 };
-static const uint16_t kD14[] = { 20, 20, 20, 20 };
-static const uint16_t kS15[] = { 260, 620, 980, 1340 };
-static const uint16_t kD15[] = { 20, 20, 20, 20 };
-static const uint16_t kS16[] = { 30, 90, 150, 210, 270, 330, 390, 450, 510, 570, 630, 690, 750, 810, 870, 930, 990, 1050, 1110, 1170, 1230, 1290, 1350, 1410 };
+static const uint8_t  kP12[] = { 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL12[] = {
+    { "Sparkfly Fen", "Funkenschwärmersumpf", "[&BNABAAA=]", "Splintered Coast Waypoint", "Wegmarke Splitterküste" },
+};
+static const uint16_t kS13[] = { 20, 140, 260, 380, 500, 620, 740, 860, 980, 1100, 1220, 1340 };
+static const uint16_t kD13[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP13[] = { 0, 1, 2, 0, 1, 2, 0, 1, 2, 0, 1, 2 };
+static const PlaceDef kL13[] = {
+    { "Timberline Falls", "Baumgrenzen-Fälle", "[&BEwCAAA=]", "Valance Tutory Waypoint", "Wegmarke Vorsprunghut" },
+    { "Iron Marches", "Eisenmark", "[&BOcBAAA=]", "Village of Scalecatch Waypoint", "Wegmarke Dorf Schuppenfang" },
+    { "Gendarran Fields", "Gendarran-Felder", "[&BOQAAAA=]", "Provern Shore Waypoint", "Wegmarke Provern-Ufer" },
+};
+static const uint16_t kS14[] = { 30, 90, 150, 210, 270, 330, 390, 450, 510, 570, 630, 690, 750, 810, 870, 930, 990, 1050, 1110, 1170, 1230, 1290, 1350, 1410 };
+static const uint16_t kD14[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP14[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL14[] = {
+    { nullptr, nullptr, nullptr, nullptr, nullptr },
+};
+static const uint16_t kS15[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
+static const uint16_t kD15[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP15[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL15[] = {
+    { nullptr, nullptr, "[&BOQAAAA=]", "Provern Shore Waypoint", "Wegmarke Provern-Ufer" },
+};
+static const uint16_t kS16[] = { 0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960, 1020, 1080, 1140, 1200, 1260, 1320, 1380 };
 static const uint16_t kD16[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS17[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
-static const uint16_t kD17[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS18[] = { 60, 300, 540, 780, 1020, 1260 };
-static const uint16_t kD18[] = { 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS19[] = { 120, 360, 600, 840, 1080, 1320 };
-static const uint16_t kD19[] = { 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS20[] = { 180, 420, 660, 900, 1140, 1380 };
-static const uint16_t kD20[] = { 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS21[] = { 0, 240, 480, 720, 960, 1200 };
-static const uint16_t kD21[] = { 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS22[] = { 720 };
+static const uint8_t  kP16[] = { 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2 };
+static const PlaceDef kL16[] = {
+    { "Diessa Plateau", "Diessa-Plateau", "[&BN0AAAA=]", "Nageling Waypoint", "Wegmarke Nageling" },
+    { "Brisban Wildlands", "Brisban-Wildnis", "[&BHUAAAA=]", "Mrot Boru Waypoint", "Wegmarke Mrot Boru" },
+    { "Snowden Drifts", "Schneekuhlenhöhen", "[&BLQAAAA=]", "Lornar's Waypoint", "Wegmarke Lornar" },
+    { "Kessex Hills", "Kessex-Hügel", "[&BBIAAAA=]", "Cereboth Waypoint", "Wegmarke Cereboth" },
+};
+static const uint16_t kS17[] = { 720 };
+static const uint16_t kD17[] = { 60 };
+static const uint8_t  kP17[] = { 0 };
+static const PlaceDef kL17[] = {
+    { "PvP", "PvP", nullptr, nullptr, nullptr },
+};
+static const uint16_t kS18[] = { 900 };
+static const uint16_t kD18[] = { 60 };
+static const uint8_t  kP18[] = { 0 };
+static const PlaceDef kL18[] = {
+    { "PvP", "PvP", nullptr, nullptr, nullptr },
+};
+static const uint16_t kS19[] = { 1080 };
+static const uint16_t kD19[] = { 60 };
+static const uint8_t  kP19[] = { 0 };
+static const PlaceDef kL19[] = {
+    { "PvP", "PvP", nullptr, nullptr, nullptr },
+};
+static const uint16_t kS20[] = { 1260 };
+static const uint16_t kD20[] = { 60 };
+static const uint8_t  kP20[] = { 0 };
+static const PlaceDef kL20[] = {
+    { "PvP", "PvP", nullptr, nullptr, nullptr },
+};
+static const uint16_t kS21[] = { 1260 };
+static const uint16_t kD21[] = { 60 };
+static const uint8_t  kP21[] = { 0 };
+static const PlaceDef kL21[] = {
+    { "PvP", "PvP", nullptr, nullptr, nullptr },
+};
+static const uint16_t kS22[] = { 0 };
 static const uint16_t kD22[] = { 60 };
-static const uint16_t kS23[] = { 900 };
+static const uint8_t  kP22[] = { 0 };
+static const PlaceDef kL22[] = {
+    { "PvP", "PvP", nullptr, nullptr, nullptr },
+};
+static const uint16_t kS23[] = { 180 };
 static const uint16_t kD23[] = { 60 };
-static const uint16_t kS24[] = { 1080 };
+static const uint8_t  kP23[] = { 0 };
+static const PlaceDef kL23[] = {
+    { "PvP", "PvP", nullptr, nullptr, nullptr },
+};
+static const uint16_t kS24[] = { 540 };
 static const uint16_t kD24[] = { 60 };
-static const uint16_t kS25[] = { 1260 };
-static const uint16_t kD25[] = { 60 };
-static const uint16_t kS26[] = { 1260 };
-static const uint16_t kD26[] = { 60 };
-static const uint16_t kS27[] = { 0 };
-static const uint16_t kD27[] = { 60 };
-static const uint16_t kS28[] = { 180 };
-static const uint16_t kD28[] = { 60 };
-static const uint16_t kS29[] = { 540 };
-static const uint16_t kD29[] = { 60 };
-static const uint16_t kS30[] = { 0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960, 1020, 1080, 1140, 1200, 1260, 1320, 1380 };
-static const uint16_t kD30[] = { 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40 };
-static const uint16_t kS31[] = { 40, 100, 160, 220, 280, 340, 400, 460, 520, 580, 640, 700, 760, 820, 880, 940, 1000, 1060, 1120, 1180, 1240, 1300, 1360, 1420 };
-static const uint16_t kD31[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static const uint16_t kS32[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
-static const uint16_t kD32[] = { 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75 };
-static const uint16_t kS33[] = { 105, 225, 345, 465, 585, 705, 825, 945, 1065, 1185, 1305, 1425 };
-static const uint16_t kD33[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
-static const uint16_t kS34[] = { 10, 130, 250, 370, 490, 610, 730, 850, 970, 1090, 1210, 1330 };
+static const uint8_t  kP24[] = { 0 };
+static const PlaceDef kL24[] = {
+    { "PvP", "PvP", nullptr, nullptr, nullptr },
+};
+static const uint16_t kS25[] = { 0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960, 1020, 1080, 1140, 1200, 1260, 1320, 1380 };
+static const uint16_t kD25[] = { 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40 };
+static const uint8_t  kP25[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL25[] = {
+    { "Dry Top", nullptr, nullptr, nullptr, nullptr },
+};
+static const uint16_t kS26[] = { 40, 100, 160, 220, 280, 340, 400, 460, 520, 580, 640, 700, 760, 820, 880, 940, 1000, 1060, 1120, 1180, 1240, 1300, 1360, 1420 };
+static const uint16_t kD26[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP26[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL26[] = {
+    { "Dry Top", "Trockenkuppe", "[&BIAHAAA=]", "Dry Top Entry Waypoint", "Wegmarke Trockenkuppenzugang" },
+};
+static const uint16_t kS27[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
+static const uint16_t kD27[] = { 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75 };
+static const uint8_t  kP27[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL27[] = {
+    { "Verdant Brink", nullptr, nullptr, nullptr, nullptr },
+};
+static const uint16_t kS28[] = { 105, 225, 345, 465, 585, 705, 825, 945, 1065, 1185, 1305, 1425 };
+static const uint16_t kD28[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
+static const uint8_t  kP28[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL28[] = {
+    { "Verdant Brink", nullptr, nullptr, nullptr, nullptr },
+};
+static const uint16_t kS29[] = { 10, 130, 250, 370, 490, 610, 730, 850, 970, 1090, 1210, 1330 };
+static const uint16_t kD29[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP29[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL29[] = {
+    { "Verdant Brink", "Grasgrüne Schwelle", "[&BAgIAAA=]", "Pact Encampment Waypoint", "Wegmarke Pakt-Lager" },
+};
+static const uint16_t kS30[] = { 90, 210, 330, 450, 570, 690, 810, 930, 1050, 1170, 1290, 1410 };
+static const uint16_t kD30[] = { 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75 };
+static const uint8_t  kP30[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL30[] = {
+    { "Auric Basin", "Güldener Talkessel", "[&BN0HAAA=]", "Northwatch Waypoint", "Wegmarke Nordwacht" },
+};
+static const uint16_t kS31[] = { 45, 165, 285, 405, 525, 645, 765, 885, 1005, 1125, 1245, 1365 };
+static const uint16_t kD31[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP31[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL31[] = {
+    { "Auric Basin", "Güldener Talkessel", "[&BGwIAAA=]", "Eastwatch Waypoint", "Wegmarke Ostwacht" },
+};
+static const uint16_t kS32[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
+static const uint16_t kD32[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP32[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL32[] = {
+    { "Auric Basin", "Güldener Talkessel", "[&BAIIAAA=]", "Southwatch Waypoint", "Wegmarke Südwacht" },
+};
+static const uint16_t kS33[] = { 50, 170, 290, 410, 530, 650, 770, 890, 1010, 1130, 1250, 1370 };
+static const uint16_t kD33[] = { 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95 };
+static const uint8_t  kP33[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL33[] = {
+    { "Tangled Depths", nullptr, nullptr, nullptr, nullptr },
+};
+static const uint16_t kS34[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
 static const uint16_t kD34[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP34[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL34[] = {
+    { "Tangled Depths", "Verschlungene Tiefen", "[&BPUHAAA=]", "Ley-Line Confluence Waypoint", "Wegmarke Zusammenfluss der Ley-Linien" },
+};
 static const uint16_t kS35[] = { 90, 210, 330, 450, 570, 690, 810, 930, 1050, 1170, 1290, 1410 };
-static const uint16_t kD35[] = { 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75, 75 };
-static const uint16_t kS36[] = { 45, 165, 285, 405, 525, 645, 765, 885, 1005, 1125, 1245, 1365 };
-static const uint16_t kD36[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS37[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
-static const uint16_t kD37[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static const uint16_t kS38[] = { 50, 170, 290, 410, 530, 650, 770, 890, 1010, 1130, 1250, 1370 };
-static const uint16_t kD38[] = { 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95, 95 };
-static const uint16_t kS39[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
-static const uint16_t kD39[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static const uint16_t kS40[] = { 90, 210, 330, 450, 570, 690, 810, 930, 1050, 1170, 1290, 1410 };
-static const uint16_t kD40[] = { 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120 };
+static const uint16_t kD35[] = { 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120, 120 };
+static const uint8_t  kP35[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL35[] = {
+    { "Dragon's Stand", "Widerstand des Drachen", "[&BBAIAAA=]", "Pact Base Camp Waypoint", "Wegmarke Basislager des Pakts" },
+};
+static const uint16_t kS36[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
+static const uint16_t kD36[] = { 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45 };
+static const uint8_t  kP36[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL36[] = {
+    { "Lake Doric", "Doric-See", "[&BK0JAAA=]", "Doric's Landing Waypoint", "Wegmarke Doric-Anlegestelle" },
+};
+static const uint16_t kS37[] = { 105, 225, 345, 465, 585, 705, 825, 945, 1065, 1185, 1305, 1425 };
+static const uint16_t kD37[] = { 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45 };
+static const uint8_t  kP37[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL37[] = {
+    { "Lake Doric", "Doric-See", "[&BLQJAAA=]", "Lakeside Bazaar Waypoint", "Wegmarke Seeufer-Basar" },
+};
+static const uint16_t kS38[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
+static const uint16_t kD38[] = { 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30 };
+static const uint8_t  kP38[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL38[] = {
+    { "Lake Doric", "Doric-See", "[&BK8JAAA=]", "Red Leaf Retreat Waypoint", "Wegmarke Rotblatt-Rückzug" },
+};
+static const uint16_t kS39[] = { 5, 125, 245, 365, 485, 605, 725, 845, 965, 1085, 1205, 1325 };
+static const uint16_t kD39[] = { 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16 };
+static const uint8_t  kP39[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL39[] = {
+    { "Crystal Oasis", "Kristalloase", "[&BLsKAAA=]", "Amnoon Waypoint", "Wegmarke Amnoon" },
+};
+static const uint16_t kS40[] = { 21, 141, 261, 381, 501, 621, 741, 861, 981, 1101, 1221, 1341 };
+static const uint16_t kD40[] = { 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9 };
+static const uint8_t  kP40[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL40[] = {
+    { "Crystal Oasis", "Kristalloase", "[&BLsKAAA=]", "Amnoon Waypoint", "Wegmarke Amnoon" },
+};
 static const uint16_t kS41[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
-static const uint16_t kD41[] = { 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45 };
-static const uint16_t kS42[] = { 105, 225, 345, 465, 585, 705, 825, 945, 1065, 1185, 1305, 1425 };
-static const uint16_t kD42[] = { 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45, 45 };
-static const uint16_t kS43[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
-static const uint16_t kD43[] = { 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30 };
-static const uint16_t kS44[] = { 5, 125, 245, 365, 485, 605, 725, 845, 965, 1085, 1205, 1325 };
-static const uint16_t kD44[] = { 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16, 16 };
-static const uint16_t kS45[] = { 21, 141, 261, 381, 501, 621, 741, 861, 981, 1101, 1221, 1341 };
-static const uint16_t kD45[] = { 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9, 9 };
-static const uint16_t kS46[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
-static const uint16_t kD46[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static const uint16_t kS47[] = { 90, 210, 330, 450, 570, 690, 810, 930, 1050, 1170, 1290, 1410 };
-static const uint16_t kD47[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
-static const uint16_t kS48[] = { 115, 235, 355, 475, 595, 715, 835, 955, 1075, 1195, 1315, 1435 };
-static const uint16_t kD48[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint16_t kD41[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP41[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL41[] = {
+    { "Desert Highlands", "Wüsten-Hochland", "[&BGsKAAA=]", "Makali Outpost Waypoint", "Wegmarke Makali-Außenposten" },
+};
+static const uint16_t kS42[] = { 90, 210, 330, 450, 570, 690, 810, 930, 1050, 1170, 1290, 1410 };
+static const uint16_t kD42[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
+static const uint8_t  kP42[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL42[] = {
+    { "Elon Riverlands", "Elon-Flusslande", "[&BFMKAAA=]", "Augury's Shadow Waypoint", "Wegmarke Schatten der Weissagung" },
+};
+static const uint16_t kS43[] = { 115, 235, 355, 475, 595, 715, 835, 955, 1075, 1195, 1315, 1435 };
+static const uint16_t kD43[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP43[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL43[] = {
+    { "Elon Riverlands", "Elon-Flusslande", "[&BFMKAAA=]", "Augury's Shadow Waypoint", "Wegmarke Schatten der Weissagung" },
+};
+static const uint16_t kS44[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
+static const uint16_t kD44[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP44[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL44[] = {
+    { "The Desolation", "Das Ödland", "[&BKMKAAA=]", "The Darklands Waypoint", "Wegmarke Dunkellande" },
+};
+static const uint16_t kS45[] = { 30, 90, 150, 210, 270, 330, 390, 450, 510, 570, 630, 690, 750, 810, 870, 930, 990, 1050, 1110, 1170, 1230, 1290, 1350, 1410 };
+static const uint16_t kD45[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP45[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL45[] = {
+    { "The Desolation", "Das Ödland", "[&BMEKAAA=]", "Lair of the Forgotten Waypoint", "Wegmarke Höhle der Vergessenen" },
+};
+static const uint16_t kS46[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
+static const uint16_t kD46[] = { 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30 };
+static const uint8_t  kP46[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL46[] = {
+    { "Domain of Vabbi", "Domäne Vaabi", "[&BHQKAAA=]", "Market Ruins Waypoint", "Wegmarke Marktruinen" },
+};
+static const uint16_t kS47[] = { 0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960, 1020, 1080, 1140, 1200, 1260, 1320, 1380 };
+static const uint16_t kD47[] = { 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30 };
+static const uint8_t  kP47[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL47[] = {
+    { "Domain of Vabbi", "Domäne Vaabi", "[&BO0KAAA=]", "Vehjin Palace Waypoint", "Wegmarke Vehjin-Palast" },
+};
+static const uint16_t kS48[] = { 105, 225, 345, 465, 585, 705, 825, 945, 1065, 1185, 1305, 1425 };
+static const uint16_t kD48[] = { 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30 };
+static const uint8_t  kP48[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL48[] = {
+    { "Domain of Istan", "Domäne Istan", "[&BAkLAAA=]", "Chalon Docks Waypoint", "Wegmarke Chalon-Docks" },
+};
 static const uint16_t kS49[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
-static const uint16_t kD49[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static const uint16_t kS50[] = { 30, 90, 150, 210, 270, 330, 390, 450, 510, 570, 630, 690, 750, 810, 870, 930, 990, 1050, 1110, 1170, 1230, 1290, 1350, 1410 };
-static const uint16_t kD50[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static const uint16_t kS51[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
-static const uint16_t kD51[] = { 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30 };
-static const uint16_t kS52[] = { 0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960, 1020, 1080, 1140, 1200, 1260, 1320, 1380 };
-static const uint16_t kD52[] = { 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30 };
-static const uint16_t kS53[] = { 105, 225, 345, 465, 585, 705, 825, 945, 1065, 1185, 1305, 1425 };
-static const uint16_t kD53[] = { 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30 };
-static const uint16_t kS54[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
-static const uint16_t kD54[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS55[] = { 75, 195, 315, 435, 555, 675, 795, 915, 1035, 1155, 1275, 1395 };
-static const uint16_t kD55[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS56[] = { 105, 225, 345, 465, 585, 705, 825, 945, 1065, 1185, 1305, 1425 };
-static const uint16_t kD56[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static const uint16_t kS57[] = { 45, 165, 285, 405, 525, 645, 765, 885, 1005, 1125, 1245, 1365 };
-static const uint16_t kD57[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS58[] = { 10, 130, 250, 370, 490, 610, 730, 850, 970, 1090, 1210, 1330 };
+static const uint16_t kD49[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP49[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL49[] = {
+    { "Jahai Bluffs", "Jahai-Klippen", "[&BIMLAAA=]", "Soul's Vendetta Waypoint", "Wegmarke \"Rache der Seele\"" },
+};
+static const uint16_t kS50[] = { 75, 195, 315, 435, 555, 675, 795, 915, 1035, 1155, 1275, 1395 };
+static const uint16_t kD50[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP50[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL50[] = {
+    { "Jahai Bluffs", "Jahai-Klippen", "[&BJMLAAA=]", "Venta Pass Waypoint", "Wegmarke Venta-Pass" },
+};
+static const uint16_t kS51[] = { 105, 225, 345, 465, 585, 705, 825, 945, 1065, 1185, 1305, 1425 };
+static const uint16_t kD51[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP51[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL51[] = {
+    { "Thunderhead Peaks", "Donnerkopf-Gipfel", "[&BLsLAAA=]", "History's End Waypoint", "Wegmarke Ende der Geschichte" },
+};
+static const uint16_t kS52[] = { 45, 165, 285, 405, 525, 645, 765, 885, 1005, 1125, 1245, 1365 };
+static const uint16_t kD52[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP52[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL52[] = {
+    { "Thunderhead Peaks", "Donnerkopf-Gipfel", "[&BKYLAAA=]", "Revolution's Heart Waypoint", "Wegmarke Herz der Revolution" },
+};
+static const uint16_t kS53[] = { 10, 130, 250, 370, 490, 610, 730, 850, 970, 1090, 1210, 1330 };
+static const uint16_t kD53[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP53[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL53[] = {
+    { "Grothmar Valley", "Grothmar-Tal", "[&BA4MAAA=]", "Dalada Forest Waypoint", "Wegmarke Dalada-Wald" },
+};
+static const uint16_t kS54[] = { 38, 158, 278, 398, 518, 638, 758, 878, 998, 1118, 1238, 1358 };
+static const uint16_t kD54[] = { 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22 };
+static const uint8_t  kP54[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL54[] = {
+    { "Grothmar Valley", "Grothmar-Tal", "[&BA4MAAA=]", "Dalada Forest Waypoint", "Wegmarke Dalada-Wald" },
+};
+static const uint16_t kS55[] = { 65, 185, 305, 425, 545, 665, 785, 905, 1025, 1145, 1265, 1385 };
+static const uint16_t kD55[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP55[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL55[] = {
+    { "Grothmar Valley", "Grothmar-Tal", "[&BPgLAAA=]", "Wardowns Waypoint", "Wegmarke Kriegshügel" },
+};
+static const uint16_t kS56[] = { 100, 220, 340, 460, 580, 700, 820, 940, 1060, 1180, 1300, 1420 };
+static const uint16_t kD56[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP56[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL56[] = {
+    { "Grothmar Valley", "Grothmar-Tal", "[&BPgLAAA=]", "Wardowns Waypoint", "Wegmarke Kriegshügel" },
+};
+static const uint16_t kS57[] = { 65, 185, 305, 425, 545, 665, 785, 905, 1025, 1145, 1265, 1385 };
+static const uint16_t kD57[] = { 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35 };
+static const uint8_t  kP57[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL57[] = {
+    { "Bjora Marches", "Bjora-Sümpfe", "[&BDkMAAA=]", "Still Waters Speaking Waypoint", "Wegmarke Sprechen Stiller Wasser" },
+};
+static const uint16_t kS58[] = { 105, 225, 345, 465, 585, 705, 825, 945, 1065, 1185, 1305, 1425 };
 static const uint16_t kD58[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS59[] = { 38, 158, 278, 398, 518, 638, 758, 878, 998, 1118, 1238, 1358 };
-static const uint16_t kD59[] = { 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22, 22 };
-static const uint16_t kS60[] = { 65, 185, 305, 425, 545, 665, 785, 905, 1025, 1145, 1265, 1385 };
-static const uint16_t kD60[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static const uint16_t kS61[] = { 100, 220, 340, 460, 580, 700, 820, 940, 1060, 1180, 1300, 1420 };
-static const uint16_t kD61[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS62[] = { 65, 185, 305, 425, 545, 665, 785, 905, 1025, 1145, 1265, 1385 };
-static const uint16_t kD62[] = { 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35 };
-static const uint16_t kS63[] = { 105, 225, 345, 465, 585, 705, 825, 945, 1065, 1185, 1305, 1425 };
-static const uint16_t kD63[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS64[] = { 0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320 };
-static const uint16_t kD64[] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 };
-static const uint16_t kS65[] = { 5, 125, 245, 365, 485, 605, 725, 845, 965, 1085, 1205, 1325 };
-static const uint16_t kD65[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS66[] = { 90, 210, 330, 450, 570, 690, 810, 930, 1050, 1170, 1290, 1410 };
-static const uint16_t kD66[] = { 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30 };
-static const uint16_t kS67[] = { 0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320 };
-static const uint16_t kD67[] = { 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40 };
-static const uint16_t kS68[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
-static const uint16_t kD68[] = { 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35 };
-static const uint16_t kS69[] = { 100, 220, 340, 460, 580, 700, 820, 940, 1060, 1180, 1300, 1420 };
-static const uint16_t kD69[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static const uint16_t kS70[] = { 5, 45, 125, 165, 245, 285, 365, 405, 485, 525, 605, 645, 725, 765, 845, 885, 965, 1005, 1085, 1125, 1205, 1245, 1325, 1365 };
-static const uint16_t kD70[] = { 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 };
-static const uint16_t kS71[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
-static const uint16_t kD71[] = { 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60 };
-static const uint16_t kS72[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
+static const uint8_t  kP58[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL58[] = {
+    { "Bjora Marches", "Bjora-Sümpfe", "[&BCcMAAA=]", "Jora's Keep Waypoint", "Wegmarke Joras Feste" },
+};
+static const uint16_t kS59[] = { 0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320 };
+static const uint16_t kD59[] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 };
+static const uint8_t  kP59[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL59[] = {
+    { "Bjora Marches", "Bjora-Sümpfe", "[&BCcMAAA=]", "Jora's Keep Waypoint", "Wegmarke Joras Feste" },
+};
+static const uint16_t kS60[] = { 5, 125, 245, 365, 485, 605, 725, 845, 965, 1085, 1205, 1325 };
+static const uint16_t kD60[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP60[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL60[] = {
+    { "Bjora Marches", "Bjora-Sümpfe", "[&BCcMAAA=]", "Jora's Keep Waypoint", "Wegmarke Joras Feste" },
+};
+static const uint16_t kS61[] = { 90, 210, 330, 450, 570, 690, 810, 930, 1050, 1170, 1290, 1410 };
+static const uint16_t kD61[] = { 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30 };
+static const uint8_t  kP61[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL61[] = {
+    { "Seitung Province", "Provinz Seitung", "[&BGUNAAA=]", "Daigo Ward Waypoint", "Wegmarke Daigo-Bezirk" },
+};
+static const uint16_t kS62[] = { 0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320 };
+static const uint16_t kD62[] = { 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40 };
+static const uint8_t  kP62[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL62[] = {
+    { "New Kaineng City", "Stadt Neu-Kaineng", "[&BBkNAAA=]", "Ministry Ward Waypoint", "Wegmarke Ministeriumsviertel" },
+};
+static const uint16_t kS63[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
+static const uint16_t kD63[] = { 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35 };
+static const uint8_t  kP63[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL63[] = {
+    { "The Echovald Wilds", "Die Echowald-Wildnis", "[&BMwMAAA=]", "Kropa Waypoint", "Wegmarke Kropa" },
+};
+static const uint16_t kS64[] = { 100, 220, 340, 460, 580, 700, 820, 940, 1060, 1180, 1300, 1420 };
+static const uint16_t kD64[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP64[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL64[] = {
+    { "The Echovald Wilds", "Die Echowald-Wildnis", "[&BPkMAAA=]", "Jade Gate Waypoint", "Wegmarke Jadetor" },
+};
+static const uint16_t kS65[] = { 5, 45, 125, 165, 245, 285, 365, 405, 485, 525, 605, 645, 725, 765, 845, 885, 965, 1005, 1085, 1125, 1205, 1245, 1325, 1365 };
+static const uint16_t kD65[] = { 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8, 8 };
+static const uint8_t  kP65[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL65[] = {
+    { "Dragon's End", "Drachen-Ende", "[&BKIMAAA=]", "Jade Quarry Waypoint", "Wegmarke Jadesteinbruch" },
+};
+static const uint16_t kS66[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
+static const uint16_t kD66[] = { 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60 };
+static const uint8_t  kP66[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL66[] = {
+    { "Dragon's End", "Drachen-Ende", "[&BKIMAAA=]", "Jade Quarry Waypoint", "Wegmarke Jadesteinbruch" },
+};
+static const uint16_t kS67[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
+static const uint16_t kD67[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
+static const uint8_t  kP67[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL67[] = {
+    { "Skywatch Archipelago", "Himmelswacht-Archipel", "[&BL4NAAA=]", "Droknar's Light Waypoint", "Wegmarke Droknars Licht" },
+};
+static const uint16_t kS68[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
+static const uint16_t kD68[] = { 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40 };
+static const uint8_t  kP68[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL68[] = {
+    { "The Wizard's Tower", "Der Turm des Zauberers", "[&BB8OAAA=]", "Tower Courtyard Waypoint", "Wegmarke Turm-Innenhof" },
+};
+static const uint16_t kS69[] = { 115, 235, 355, 475, 595, 715, 835, 955, 1075, 1195, 1315, 1435 };
+static const uint16_t kD69[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
+static const uint8_t  kP69[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL69[] = {
+    { "The Wizard's Tower", "Der Turm des Zauberers", "[&BB8OAAA=]", "Tower Courtyard Waypoint", "Wegmarke Turm-Innenhof" },
+};
+static const uint16_t kS70[] = { 100, 220, 340, 460, 580, 700, 820, 940, 1060, 1180, 1300, 1420 };
+static const uint16_t kD70[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP70[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL70[] = {
+    { "The Wizard's Tower", "Der Turm des Zauberers", "[&BB8OAAA=]", "Tower Courtyard Waypoint", "Wegmarke Turm-Innenhof" },
+};
+static const uint16_t kS71[] = { 0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320 };
+static const uint16_t kD71[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
+static const uint8_t  kP71[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL71[] = {
+    { "Amnytas", "Amnytas", "[&BDQOAAA=]", "Bastion of the Natural Waypoint", "Wegmarke Bastion des Natürlichen" },
+};
+static const uint16_t kS72[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
 static const uint16_t kD72[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
-static const uint16_t kS73[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
-static const uint16_t kD73[] = { 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40, 40 };
-static const uint16_t kS74[] = { 115, 235, 355, 475, 595, 715, 835, 955, 1075, 1195, 1315, 1435 };
-static const uint16_t kD74[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
+static const uint8_t  kP72[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL72[] = {
+    { "Janthir Syntri", "Janthir Syntri", "[&BCoPAAA=]", "Stricken Plains Waypoint", "Wegmarke Geplagte Ebene" },
+};
+static const uint16_t kS73[] = { 80, 200, 320, 440, 560, 680, 800, 920, 1040, 1160, 1280, 1400 };
+static const uint16_t kD73[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
+static const uint8_t  kP73[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL73[] = {
+    { "Bava Nisos", "Bava Nisos", "[&BGEPAAA=]", "Mantle's Arrival Waypoint", "Wegmarke Mantels Ankunft" },
+};
+static const uint16_t kS74[] = { 40, 160, 280, 400, 520, 640, 760, 880, 1000, 1120, 1240, 1360 };
+static const uint16_t kD74[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP74[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL74[] = {
+    { "Shipwreck Strand", "Strand der Wracks", "[&BJEPAAA=]", "Pub Canach Waypoint", "Wegmarke Canachs Kaschemme" },
+};
 static const uint16_t kS75[] = { 100, 220, 340, 460, 580, 700, 820, 940, 1060, 1180, 1300, 1420 };
-static const uint16_t kD75[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS76[] = { 0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320 };
+static const uint16_t kD75[] = { 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35 };
+static const uint8_t  kP75[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL75[] = {
+    { "Starlit Weald", "Sternenlicht-Gehölz", "[&BJ4PAAA=]", "Priory Expedition Waypoint", "Wegmarke Abtei-Expedition" },
+};
+static const uint16_t kS76[] = { 75, 195, 315, 435, 555, 675, 795, 915, 1035, 1155, 1275, 1395 };
 static const uint16_t kD76[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
-static const uint16_t kS77[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
-static const uint16_t kD77[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
-static const uint16_t kS78[] = { 80, 200, 320, 440, 560, 680, 800, 920, 1040, 1160, 1280, 1400 };
-static const uint16_t kD78[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
-static const uint16_t kS79[] = { 40, 160, 280, 400, 520, 640, 760, 880, 1000, 1120, 1240, 1360 };
-static const uint16_t kD79[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static const uint16_t kS80[] = { 100, 220, 340, 460, 580, 700, 820, 940, 1060, 1180, 1300, 1420 };
-static const uint16_t kD80[] = { 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35, 35 };
-static const uint16_t kS81[] = { 75, 195, 315, 435, 555, 675, 795, 915, 1035, 1155, 1275, 1395 };
-static const uint16_t kD81[] = { 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25, 25 };
-static const uint16_t kS82[] = { 120, 300, 480, 660, 840, 1020, 1200, 1380 };
-static const uint16_t kD82[] = { 30, 30, 30, 30, 30, 30, 30, 30 };
-static const uint16_t kS83[] = { 0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320 };
-static const uint16_t kD83[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static const uint16_t kS84[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
-static const uint16_t kD84[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS85[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
-static const uint16_t kD85[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
-static const uint16_t kS86[] = { 90, 210, 330, 450, 570, 690, 810, 930, 1050, 1170, 1290, 1410 };
-static const uint16_t kD86[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
-static const uint16_t kS87[] = { 0, 180, 360, 540, 720, 900, 1080, 1260 };
-static const uint16_t kD87[] = { 10, 10, 10, 10, 10, 10, 10, 10 };
-static const uint16_t kS88[] = { 90, 270, 450, 630, 810, 990, 1170, 1350 };
-static const uint16_t kD88[] = { 10, 10, 10, 10, 10, 10, 10, 10 };
-static const uint16_t kS89[] = { 60, 240, 420, 600, 780, 960, 1140, 1320 };
-static const uint16_t kD89[] = { 10, 10, 10, 10, 10, 10, 10, 10 };
-static const uint16_t kS90[] = { 0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320 };
+static const uint8_t  kP76[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL76[] = {
+    { "Eternity's Garden", "Ewigkeitsgarten", "[&BPwPAAA=]", "Pilgrim's Rest Waypoint", "Wegmarke Pilgersruh" },
+};
+static const uint16_t kS77[] = { 120, 300, 480, 660, 840, 1020, 1200, 1380 };
+static const uint16_t kD77[] = { 30, 30, 30, 30, 30, 30, 30, 30 };
+static const uint8_t  kP77[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL77[] = {
+    { "Leyspring Hollows", "Leyquellen-Senke", "[&BDYQAAA=]", "Hall of Assemblage Waypoint", "Wegmarke Halle des Zusammenbaus" },
+};
+static const uint16_t kS78[] = { 0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320 };
+static const uint16_t kD78[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP78[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL78[] = {
+    { "Eye of the North", "Auge des Nordens", "[&BAkMAAA=]", "Eye of the North Waypoint", "Wegmarke Auge des Nordens" },
+};
+static const uint16_t kS79[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
+static const uint16_t kD79[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP79[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL79[] = {
+    { "Eye of the North", "Auge des Nordens", "[&BAkMAAA=]", "Eye of the North Waypoint", "Wegmarke Auge des Nordens" },
+};
+static const uint16_t kS80[] = { 60, 180, 300, 420, 540, 660, 780, 900, 1020, 1140, 1260, 1380 };
+static const uint16_t kD80[] = { 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20, 20 };
+static const uint8_t  kP80[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL80[] = {
+    { "Eye of the North", "Auge des Nordens", "[&BAkMAAA=]", "Eye of the North Waypoint", "Wegmarke Auge des Nordens" },
+};
+static const uint16_t kS81[] = { 90, 210, 330, 450, 570, 690, 810, 930, 1050, 1170, 1290, 1410 };
+static const uint16_t kD81[] = { 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15, 15 };
+static const uint8_t  kP81[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL81[] = {
+    { "Eye of the North", "Auge des Nordens", "[&BAkMAAA=]", "Eye of the North Waypoint", "Wegmarke Auge des Nordens" },
+};
+static const uint16_t kS82[] = { 0, 180, 360, 540, 720, 900, 1080, 1260 };
+static const uint16_t kD82[] = { 10, 10, 10, 10, 10, 10, 10, 10 };
+static const uint8_t  kP82[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL82[] = {
+    { "Lowland Shore", "Tiefland-Küste", "[&BK4OAAA=]", "Harvest Den Waypoint", "Wegmarke Erntehöhle" },
+};
+static const uint16_t kS83[] = { 90, 270, 450, 630, 810, 990, 1170, 1350 };
+static const uint16_t kD83[] = { 10, 10, 10, 10, 10, 10, 10, 10 };
+static const uint8_t  kP83[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL83[] = {
+    { "The Wizard's Tower", "Der Turm des Zauberers", "[&BB8OAAA=]", "Tower Courtyard Waypoint", "Wegmarke Turm-Innenhof" },
+};
+static const uint16_t kS84[] = { 60, 240, 420, 600, 780, 960, 1140, 1320 };
+static const uint16_t kD84[] = { 10, 10, 10, 10, 10, 10, 10, 10 };
+static const uint8_t  kP84[] = { 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL84[] = {
+    { "Leyspring Hollows", "Leyquellen-Senke", "[&BDYQAAA=]", "Hall of Assemblage Waypoint", "Wegmarke Halle des Zusammenbaus" },
+};
+static const uint16_t kS85[] = { 0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320 };
+static const uint16_t kD85[] = { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
+static const uint8_t  kP85[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL85[] = {
+    { "Labyrinthine Cliffs", "Labyrinthklippen", "[&BBwHAAA=]", "Bazaar Docks Waypoint", "Wegmarke Basar-Docks" },
+};
+static const uint16_t kS86[] = { 15, 135, 255, 375, 495, 615, 735, 855, 975, 1095, 1215, 1335 };
+static const uint16_t kD86[] = { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
+static const uint8_t  kP86[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL86[] = {
+    { "Labyrinthine Cliffs", "Labyrinthklippen", "[&BBwHAAA=]", "Bazaar Docks Waypoint", "Wegmarke Basar-Docks" },
+};
+static const uint16_t kS87[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
+static const uint16_t kD87[] = { 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30 };
+static const uint8_t  kP87[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL87[] = {
+    { "Labyrinthine Cliffs", "Labyrinthklippen", "[&BBwHAAA=]", "Bazaar Docks Waypoint", "Wegmarke Basar-Docks" },
+};
+static const uint16_t kS88[] = { 75, 195, 315, 435, 555, 675, 795, 915, 1035, 1155, 1275, 1395 };
+static const uint16_t kD88[] = { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
+static const uint8_t  kP88[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL88[] = {
+    { "Labyrinthine Cliffs", "Labyrinthklippen", "[&BBwHAAA=]", "Bazaar Docks Waypoint", "Wegmarke Basar-Docks" },
+};
+static const uint16_t kS89[] = { 90, 210, 330, 450, 570, 690, 810, 930, 1050, 1170, 1290, 1410 };
+static const uint16_t kD89[] = { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
+static const uint8_t  kP89[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL89[] = {
+    { "Labyrinthine Cliffs", "Labyrinthklippen", "[&BBwHAAA=]", "Bazaar Docks Waypoint", "Wegmarke Basar-Docks" },
+};
+static const uint16_t kS90[] = { 105, 225, 345, 465, 585, 705, 825, 945, 1065, 1185, 1305, 1425 };
 static const uint16_t kD90[] = { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
-static const uint16_t kS91[] = { 15, 135, 255, 375, 495, 615, 735, 855, 975, 1095, 1215, 1335 };
-static const uint16_t kD91[] = { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
-static const uint16_t kS92[] = { 30, 150, 270, 390, 510, 630, 750, 870, 990, 1110, 1230, 1350 };
-static const uint16_t kD92[] = { 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30, 30 };
-static const uint16_t kS93[] = { 75, 195, 315, 435, 555, 675, 795, 915, 1035, 1155, 1275, 1395 };
-static const uint16_t kD93[] = { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
-static const uint16_t kS94[] = { 90, 210, 330, 450, 570, 690, 810, 930, 1050, 1170, 1290, 1410 };
-static const uint16_t kD94[] = { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
-static const uint16_t kS95[] = { 105, 225, 345, 465, 585, 705, 825, 945, 1065, 1185, 1305, 1425 };
-static const uint16_t kD95[] = { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
-static const uint16_t kS96[] = { 0, 60, 120, 180, 240, 300, 360, 420, 480, 540, 600, 660, 720, 780, 840, 900, 960, 1020, 1080, 1140, 1200, 1260, 1320, 1380 };
-static const uint16_t kD96[] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 };
-static const uint16_t kS97[] = { 15, 75, 135, 195, 255, 315, 375, 435, 495, 555, 615, 675, 735, 795, 855, 915, 975, 1035, 1095, 1155, 1215, 1275, 1335, 1395 };
-static const uint16_t kD97[] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 };
-static const uint16_t kS98[] = { 30, 90, 150, 210, 270, 330, 390, 450, 510, 570, 630, 690, 750, 810, 870, 930, 990, 1050, 1110, 1170, 1230, 1290, 1350, 1410 };
-static const uint16_t kD98[] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 };
-static const uint16_t kS99[] = { 45, 105, 165, 225, 285, 345, 405, 465, 525, 585, 645, 705, 765, 825, 885, 945, 1005, 1065, 1125, 1185, 1245, 1305, 1365, 1425 };
-static const uint16_t kD99[] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 };
-static const uint16_t kS100[] = { 0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320 };
-static const uint16_t kD100[] = { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
+static const uint8_t  kP90[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL90[] = {
+    { "Labyrinthine Cliffs", "Labyrinthklippen", "[&BBwHAAA=]", "Bazaar Docks Waypoint", "Wegmarke Basar-Docks" },
+};
+static const uint16_t kS91[] = { 0, 15, 30, 45, 60, 75, 90, 105, 120, 135, 150, 165, 180, 195, 210, 225, 240, 255, 270, 285, 300, 315, 330, 345, 360, 375, 390, 405, 420, 435, 450, 465, 480, 495, 510, 525, 540, 555, 570, 585, 600, 615, 630, 645, 660, 675, 690, 705, 720, 735, 750, 765, 780, 795, 810, 825, 840, 855, 870, 885, 900, 915, 930, 945, 960, 975, 990, 1005, 1020, 1035, 1050, 1065, 1080, 1095, 1110, 1125, 1140, 1155, 1170, 1185, 1200, 1215, 1230, 1245, 1260, 1275, 1290, 1305, 1320, 1335, 1350, 1365, 1380, 1395, 1410, 1425 };
+static const uint16_t kD91[] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 };
+static const uint8_t  kP91[] = { 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3 };
+static const PlaceDef kL91[] = {
+    { "Wayfarer Foothills", "Wanderer-Hügel", "[&BH0BAAA=]", "Twinspur Haven Waypoint", "Wegmarke Doppelsporn-Freistatt" },
+    { "Dredgehaunt Cliffs", "Schauflerschreck-Klippen", "[&BGMCAAA=]", "Havfrue Basin Waypoint", "Wegmarke Havfrue-Becken" },
+    { "Lornar's Pass", "Lornars Pass", "[&BJkBAAA=]", "Mistriven Waypoint", "Wegmarke Nebelriss-Klamm" },
+    { "Snowden Drifts", "Schneekuhlenhöhen", "[&BL4AAAA=]", "Soderhem Steading Waypoint", "Wegmarke Soderhem-Gehöft" },
+};
+static const uint16_t kS92[] = { 0, 120, 240, 360, 480, 600, 720, 840, 960, 1080, 1200, 1320 };
+static const uint16_t kD92[] = { 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10, 10 };
+static const uint8_t  kP92[] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+static const PlaceDef kL92[] = {
+    { "Lion's Arch", "Löwenstein", "[&BBAEAAA=]", "Trader's Forum Waypoint", "Wegmarke Händlerforum" },
+};
 
 const CategoryDef kCategories[] = {
     { "Core Tyria", "Zentraltyria" },
@@ -225,410 +589,192 @@ const CategoryDef kCategories[] = {
 const size_t kCategoryCount = sizeof kCategories / sizeof kCategories[0];
 
 const EventDef kEvents[] = {
-    { "admiral-taidha-covington", "Admiral Taidha Covington", "Admiral Taidha Covington",
-      "Bloodtide Coast", "Blutstrom-Küste", 0,
-      "[&BKgBAAA=]", "Laughing Gull Waypoint", "Wegmarke Lachmöwe",
-      "Kill Admiral Taidha Covington", 8, kS0, kD0 },
-    { "svanir-shaman-chief", "Svanir Shaman Chief", "Svanir-Schamane",
-      "Wayfarer Foothills", "Wanderer-Hügel", 0,
-      "[&BMIDAAA=]", "Krennak's Homestead Waypoint", "Wegmarke Krennaks Gehöft",
-      "Kill the Svanir shaman chief to break his control over the ice elemental", 12, kS1, kD1 },
-    { "megadestroyer", "Megadestroyer", "Mega-Zerstörer",
-      "Mount Maelstrom", "Mahlstromgipfel", 0,
-      "[&BM0CAAA=]", "Maelstrom's Waypoint", "Wegmarke Mahlstrom",
-      "Kill the megadestroyer before it blows everyone up", 8, kS2, kD2 },
-    { "fire-elemental", "Fire Elemental", "Feuer-Elementar",
-      "Metrica Province", "Provinz Metrica", 0,
-      "[&BEcAAAA=]", "Muridian Waypoint", "Wegmarke Muridianisches Hochland",
-      "Destroy the fire elemental created from chaotic energy fusing with the C.L.E.A.N. 5000's energy core", 12, kS3, kD3 },
-    { "the-shatterer", "The Shatterer", "Der Zerschmetterer",
-      "Blazeridge Steppes", "Flammenkamm-Steppe", 0,
-      "[&BE4DAAA=]", "Lowland Burns Waypoint", "Wegmarke Tiefland-Brand",
-      "Slay the Shatterer", 8, kS4, kD4 },
-    { "great-jungle-wurm", "Great Jungle Wurm", "Großer Dschungelwurm",
-      "Caledon Forest", "Caledon-Wald", 0,
-      "[&BEEFAAA=]", "Twilight Arbor Waypoint", "Wegmarke Zwielichtgarten",
-      "Defeat the great jungle wurm", 12, kS5, kD5 },
-    { "modniir-ulgoth", "Modniir Ulgoth", "Modniir Ulgoth",
-      "Harathi Hinterlands", "Harathi-Hinterland", 0,
-      "[&BLAAAAA=]", "Junction Camp Waypoint", "Wegmarke Knotenpunkt-Lager",
-      "Defeat Ulgoth the Modniir and his minions", 8, kS6, kD6 },
-    { "shadow-behemoth", "Shadow Behemoth", "Schatten-Behemoth",
-      "Queensdale", "Königintal", 0,
-      "[&BPcAAAA=]", "Swamplost Haven Waypoint", "Wegmarke Sumpf-Freistatt",
-      "Defeat the shadow behemoth", 12, kS7, kD7 },
-    { "claw-of-jormag", "Claw of Jormag", "Klaue von Jormag",
-      "Frostgorge Sound", "Eisklamm-Sund", 0,
-      "[&BHoCAAA=]", "Earthshake Waypoint", "Wegmarke Erdbeben",
-      "Defeat the Claw of Jormag", 8, kS8, kD8 },
-    { "golem-mark-ii", "Golem Mark II", "Inquestur-Golem Typ II",
-      "Mount Maelstrom", "Mahlstromgipfel", 0,
-      "[&BNQCAAA=]", "Old Sledge Site Waypoint", "Wegmarke Alter Hammergrund",
-      "Defeat the Inquest's golem Mark II", 8, kS9, kD9 },
-    { "triple-trouble", "Triple Trouble", "Dreifacher Ärger",
-      "Bloodtide Coast", "Blutstrom-Küste", 0,
-      "[&BKoBAAA=]", "Firthside Vigil Waypoint", "Wegmarke Wachsame der Fördenmündung",
-      "Triple Trouble", 6, kS10, kD10 },
-    { "karka-queen", "Karka Queen", "Karka-Königin",
-      "Southsun Cove", "Südlicht-Bucht", 0,
-      "[&BNUGAAA=]", "Pearl Islet Waypoint", "Wegmarke Perlen-Inselchen",
-      "Defeat the Karka Queen threatening the settlements", 6, kS11, kD11 },
-    { "tequatl-the-sunless", "Tequatl the Sunless", "Tequatl der Sonnenlose",
-      "Sparkfly Fen", "Funkenschwärmersumpf", 0,
-      "[&BNABAAA=]", "Splintered Coast Waypoint", "Wegmarke Splitterküste",
-      "Defeat Tequatl the Sunless", 6, kS12, kD12 },
-    { "ley-line-anomaly-timberline-falls", "Ley-Line Anomaly (Timberline Falls)", "Ley-Linien-Anomalie (Baumgrenzen-Fälle)",
-      "Timberline Falls", "Baumgrenzen-Fälle", 0,
-      "[&BEwCAAA=]", "Valance Tutory Waypoint", "Wegmarke Vorsprunghut",
-      "Defeat the Ley-Line Anomaly to disperse its destructive energy before it overloads", 4, kS13, kD13 },
-    { "ley-line-anomaly-iron-marches", "Ley-Line Anomaly (Iron Marches)", "Ley-Linien-Anomalie (Eisenmark)",
-      "Iron Marches", "Eisenmark", 0,
-      "[&BOcBAAA=]", "Village of Scalecatch Waypoint", "Wegmarke Dorf Schuppenfang",
-      "Defeat the Ley-Line Anomaly to disperse its destructive energy before it overloads", 4, kS14, kD14 },
-    { "ley-line-anomaly-gendarran-fields", "Ley-Line Anomaly (Gendarran Fields)", "Ley-Linien-Anomalie (Gendarran-Felder)",
-      "Gendarran Fields", "Gendarran-Felder", 0,
-      "[&BOQAAAA=]", "Provern Shore Waypoint", "Wegmarke Provern-Ufer",
-      "Defeat the Ley-Line Anomaly to disperse its destructive energy before it overloads", 4, kS15, kD15 },
-    { "awakened-invasion", "Awakened Invasion", nullptr,
-      nullptr, nullptr, 0,
-      nullptr, nullptr, nullptr,
-      "Defeat the invading Awakened", 24, kS16, kD16 },
-    { "defeat-scarlets-minions", "Defeat Scarlet's minions", nullptr,
-      nullptr, nullptr, 0,
-      "[&BOQAAAA=]", "Provern Shore Waypoint", "Wegmarke Provern-Ufer",
-      "Defeat the invading minions of Scarlet Briar", 12, kS17, kD17 },
-    { "fractal-incursion-diessa-plateau", "Fractal Incursion (Diessa Plateau)", nullptr,
-      "Diessa Plateau", "Diessa-Plateau", 0,
-      "[&BN0AAAA=]", "Nageling Waypoint", "Wegmarke Nageling",
-      "Defeat the enemy spawned by the fractal incursion", 6, kS18, kD18 },
-    { "fractal-incursion-brisban-wildlands", "Fractal Incursion (Brisban Wildlands)", nullptr,
-      "Brisban Wildlands", "Brisban-Wildnis", 0,
-      "[&BHUAAAA=]", "Mrot Boru Waypoint", "Wegmarke Mrot Boru",
-      "Defeat the enemy spawned by the fractal incursion", 6, kS19, kD19 },
-    { "fractal-incursion-snowden-drifts", "Fractal Incursion (Snowden Drifts)", nullptr,
-      "Snowden Drifts", "Schneekuhlenhöhen", 0,
-      "[&BLQAAAA=]", "Lornar's Waypoint", "Wegmarke Lornar",
-      "Defeat the enemy spawned by the fractal incursion", 6, kS20, kD20 },
-    { "fractal-incursion-kessex-hills", "Fractal Incursion (Kessex Hills)", nullptr,
-      "Kessex Hills", "Kessex-Hügel", 0,
-      "[&BBIAAAA=]", "Cereboth Waypoint", "Wegmarke Cereboth",
-      "Defeat the enemy spawned by the fractal incursion", 6, kS21, kD21 },
-    { "automated-tournament-balthazars-brawl-eu", "Automated Tournament: Balthazar's Brawl (EU)", nullptr,
-      "PvP", "PvP", 0,
-      nullptr, nullptr, nullptr,
-      "Automated Tournaments#Daily_tournaments", 1, kS22, kD22 },
-    { "automated-tournament-grenths-game-eu", "Automated Tournament: Grenth's Game (EU)", nullptr,
-      "PvP", "PvP", 0,
-      nullptr, nullptr, nullptr,
-      "Automated Tournaments#Daily_tournaments", 1, kS23, kD23 },
-    { "automated-tournament-melandrus-matchup-eu", "Automated Tournament: Melandru's Matchup (EU)", nullptr,
-      "PvP", "PvP", 0,
-      nullptr, nullptr, nullptr,
-      "Automated Tournaments#Daily_tournaments", 1, kS24, kD24 },
-    { "automated-tournament-lyssas-legions-eu", "Automated Tournament: Lyssa's Legions (EU)", nullptr,
-      "PvP", "PvP", 0,
-      nullptr, nullptr, nullptr,
-      "Automated Tournaments#Daily_tournaments", 1, kS25, kD25 },
-    { "automated-tournament-balthazars-brawl-na", "Automated Tournament: Balthazar's Brawl (NA)", nullptr,
-      "PvP", "PvP", 0,
-      nullptr, nullptr, nullptr,
-      "Automated Tournaments#Daily_tournaments", 1, kS26, kD26 },
-    { "automated-tournament-grenths-game-na", "Automated Tournament: Grenth's Game (NA)", nullptr,
-      "PvP", "PvP", 0,
-      nullptr, nullptr, nullptr,
-      "Automated Tournaments#Daily_tournaments", 1, kS27, kD27 },
-    { "automated-tournament-melandrus-matchup-na", "Automated Tournament: Melandru's Matchup (NA)", nullptr,
-      "PvP", "PvP", 0,
-      nullptr, nullptr, nullptr,
-      "Automated Tournaments#Daily_tournaments", 1, kS28, kD28 },
-    { "automated-tournament-lyssas-legions-na", "Automated Tournament: Lyssa's Legions (NA)", nullptr,
-      "PvP", "PvP", 0,
-      nullptr, nullptr, nullptr,
-      "Automated Tournaments#Daily_tournaments", 1, kS29, kD29 },
-    { "crash-site", "Crash Site", nullptr,
-      "Dry Top", nullptr, 1,
-      nullptr, nullptr, nullptr,
-      "Crash Site (meta event)", 24, kS30, kD30 },
-    { "sandstorm", "Sandstorm", "Sandsturm!",
-      "Dry Top", "Trockenkuppe", 1,
-      "[&BIAHAAA=]", "Dry Top Entry Waypoint", "Wegmarke Trockenkuppenzugang",
-      "Sandstorm!", 24, kS31, kD31 },
-    { "day-securing-verdant-brink", "Day: Securing Verdant Brink", nullptr,
-      "Verdant Brink", nullptr, 2,
-      nullptr, nullptr, nullptr,
-      "Securing Verdant Brink", 12, kS32, kD32 },
-    { "night-night-and-the-enemy", "Night: Night and the Enemy", nullptr,
-      "Verdant Brink", nullptr, 2,
-      nullptr, nullptr, nullptr,
-      "Night and the Enemy", 12, kS33, kD33 },
-    { "night-bosses", "Night Bosses", "Nachtbosse",
-      "Verdant Brink", "Grasgrüne Schwelle", 2,
-      "[&BAgIAAA=]", "Pact Encampment Waypoint", "Wegmarke Pakt-Lager",
-      "Night and the Enemy", 12, kS34, kD34 },
-    { "auric-basin-defending-tarir-pylons", "Auric Basin: Defending Tarir (Pylons)", "Güldener Talkessel: Pylonen",
-      "Auric Basin", "Güldener Talkessel", 2,
-      "[&BN0HAAA=]", "Northwatch Waypoint", "Wegmarke Nordwacht",
-      "Defending Tarir", 12, kS35, kD35 },
-    { "auric-basin-challenges", "Auric Basin: Challenges", "Güldener Talkessel: Herausforderungen",
-      "Auric Basin", "Güldener Talkessel", 2,
-      "[&BGwIAAA=]", "Eastwatch Waypoint", "Wegmarke Ostwacht",
-      "Battle in Tarir", 12, kS36, kD36 },
-    { "auric-basin-battle-in-tarir-octovine", "Auric Basin: Battle in Tarir (Octovine)", "Güldener Talkessel: Rankenkrake",
-      "Auric Basin", "Güldener Talkessel", 2,
-      "[&BAIIAAA=]", "Southwatch Waypoint", "Wegmarke Südwacht",
-      "Battle in Tarir", 12, kS37, kD37 },
-    { "advancing-across-tangled-roots-outposts", "Advancing Across Tangled Roots (Outposts)", nullptr,
-      "Tangled Depths", nullptr, 2,
-      nullptr, nullptr, nullptr,
-      "Advancing Across Tangled Roots", 12, kS38, kD38 },
-    { "king-of-the-jungle-chak-gerent", "King of the Jungle (Chak Gerent)", "Chak-Potentat",
-      "Tangled Depths", "Verschlungene Tiefen", 2,
-      "[&BPUHAAA=]", "Ley-Line Confluence Waypoint", "Wegmarke Zusammenfluss der Ley-Linien",
-      "King of the Jungle", 12, kS39, kD39 },
-    { "dragons-stand", "Dragon's Stand", "Widerstand des Drachen",
-      "Dragon's Stand", "Widerstand des Drachen", 2,
-      "[&BBAIAAA=]", "Pact Base Camp Waypoint", "Wegmarke Basislager des Pakts",
-      "Advancing on the Blighting Towers", 12, kS40, kD40 },
-    { "white-mantle-control-saidras-haven", "White Mantle Control: Saidra's Haven", "Saidras Hafen",
-      "Lake Doric", "Doric-See", 3,
-      "[&BK0JAAA=]", "Doric's Landing Waypoint", "Wegmarke Doric-Anlegestelle",
-      "White Mantle Control: Saidra's Haven", 12, kS41, kD41 },
-    { "white-mantle-control-new-loamhurst", "White Mantle Control: New Loamhurst", "Neulehmwald",
-      "Lake Doric", "Doric-See", 3,
-      "[&BLQJAAA=]", "Lakeside Bazaar Waypoint", "Wegmarke Seeufer-Basar",
-      "White Mantle Control: New Loamhurst", 12, kS42, kD42 },
-    { "white-mantle-control-norans-homestead", "White Mantle Control: Noran's Homestead", "Norans Heimstatt",
-      "Lake Doric", "Doric-See", 3,
-      "[&BK8JAAA=]", "Red Leaf Retreat Waypoint", "Wegmarke Rotblatt-Rückzug",
-      "White Mantle Control: Noran's Homestead", 12, kS43, kD43 },
-    { "casino-blitz-rounds-1-to-3", "Casino Blitz: Rounds 1 to 3", nullptr,
-      "Crystal Oasis", "Kristalloase", 4,
-      "[&BLsKAAA=]", "Amnoon Waypoint", "Wegmarke Amnoon",
-      "Casino Blitz", 12, kS44, kD44 },
-    { "casino-blitz-pinata-reset", "Casino Blitz: Pinata/Reset", nullptr,
-      "Crystal Oasis", "Kristalloase", 4,
-      "[&BLsKAAA=]", "Amnoon Waypoint", "Wegmarke Amnoon",
-      "Casino Blitz", 12, kS45, kD45 },
-    { "buried-treasure", "Buried Treasure", "Vergrabene Schätze",
-      "Desert Highlands", "Wüsten-Hochland", 4,
-      "[&BGsKAAA=]", "Makali Outpost Waypoint", "Wegmarke Makali-Außenposten",
-      "The Search for Buried Treasure", 12, kS46, kD46 },
-    { "the-path-to-ascension-augury-rock", "The Path to Ascension: Augury Rock", nullptr,
-      "Elon Riverlands", "Elon-Flusslande", 4,
-      "[&BFMKAAA=]", "Augury's Shadow Waypoint", "Wegmarke Schatten der Weissagung",
-      "The Path to Ascension", 12, kS47, kD47 },
-    { "doppelganger", "Doppelganger", nullptr,
-      "Elon Riverlands", "Elon-Flusslande", 4,
-      "[&BFMKAAA=]", "Augury's Shadow Waypoint", "Wegmarke Schatten der Weissagung",
-      "The Path to Ascension", 12, kS48, kD48 },
-    { "maws-of-torment", "Maws of Torment", "Schlünde der Qual",
-      "The Desolation", "Das Ödland", 4,
-      "[&BKMKAAA=]", "The Darklands Waypoint", "Wegmarke Dunkellande",
-      "Maws of Torment", 12, kS49, kD49 },
-    { "junundu-rising", "Junundu Rising", "Aufstand der Junundu",
-      "The Desolation", "Das Ödland", 4,
-      "[&BMEKAAA=]", "Lair of the Forgotten Waypoint", "Wegmarke Höhle der Vergessenen",
-      "Junundu Rising", 24, kS50, kD50 },
-    { "serpents-ire", "Serpents' Ire", "Zorn der Schlangen",
-      "Domain of Vabbi", "Domäne Vaabi", 4,
-      "[&BHQKAAA=]", "Market Ruins Waypoint", "Wegmarke Marktruinen",
-      "Serpents' Ire", 12, kS51, kD51 },
-    { "forged-with-fire", "Forged with Fire", "Im Feuer geschmiedet",
-      "Domain of Vabbi", "Domäne Vaabi", 4,
-      "[&BO0KAAA=]", "Vehjin Palace Waypoint", "Wegmarke Vehjin-Palast",
-      "Forged with Fire", 24, kS52, kD52 },
-    { "palawadan", "Palawadan", "Palawadan",
-      "Domain of Istan", "Domäne Istan", 5,
-      "[&BAkLAAA=]", "Chalon Docks Waypoint", "Wegmarke Chalon-Docks",
-      "Palawadan, Jewel of Istan (meta event)", 12, kS53, kD53 },
-    { "escorts", "Escorts", "Eskorte",
-      "Jahai Bluffs", "Jahai-Klippen", 5,
-      "[&BIMLAAA=]", "Soul's Vendetta Waypoint", "Wegmarke \"Rache der Seele\"",
-      "Dangerous Prey", 12, kS54, kD54 },
-    { "death-branded-shatterer", "Death-Branded Shatterer", "Zerschmetterer",
-      "Jahai Bluffs", "Jahai-Klippen", 5,
-      "[&BJMLAAA=]", "Venta Pass Waypoint", "Wegmarke Venta-Pass",
-      "Destroy the Death-Branded Shatterer", 12, kS55, kD55 },
-    { "thunderhead-keep", "Thunderhead Keep", "Feste Donnerkopf",
-      "Thunderhead Peaks", "Donnerkopf-Gipfel", 5,
-      "[&BLsLAAA=]", "History's End Waypoint", "Wegmarke Ende der Geschichte",
-      "Thunderhead Keep (meta event)", 12, kS56, kD56 },
-    { "the-oil-floes", "The Oil Floes", "Öl auf dem Eis",
-      "Thunderhead Peaks", "Donnerkopf-Gipfel", 5,
-      "[&BKYLAAA=]", "Revolution's Heart Waypoint", "Wegmarke Herz der Revolution",
-      "The Oil Floes", 12, kS57, kD57 },
-    { "effigy", "Effigy", nullptr,
-      "Grothmar Valley", "Grothmar-Tal", 6,
-      "[&BA4MAAA=]", "Dalada Forest Waypoint", "Wegmarke Dalada-Wald",
-      "Ceremony of the Sacred Flame", 12, kS58, kD58 },
-    { "doomlore-shrine", "Doomlore Shrine", nullptr,
-      "Grothmar Valley", "Grothmar-Tal", 6,
-      "[&BA4MAAA=]", "Dalada Forest Waypoint", "Wegmarke Dalada-Wald",
-      "The Haunting of Doomlore Shrine", 12, kS59, kD59 },
-    { "ooze-pits", "Ooze Pits", nullptr,
-      "Grothmar Valley", "Grothmar-Tal", 6,
-      "[&BPgLAAA=]", "Wardowns Waypoint", "Wegmarke Kriegshügel",
-      "The Ooze Pit Trials", 12, kS60, kD60 },
-    { "metal-concert", "Metal Concert", nullptr,
-      "Grothmar Valley", "Grothmar-Tal", 6,
-      "[&BPgLAAA=]", "Wardowns Waypoint", "Wegmarke Kriegshügel",
-      "A Concert for the Ages", 12, kS61, kD61 },
-    { "drakkar-and-spirits-of-the-wild", "Drakkar and Spirits of the Wild", "Drakkar und die Geister der Wildnis",
-      "Bjora Marches", "Bjora-Sümpfe", 6,
-      "[&BDkMAAA=]", "Still Waters Speaking Waypoint", "Wegmarke Sprechen Stiller Wasser",
-      "Champion of the Ice Dragon", 12, kS62, kD62 },
-    { "defend-joras-keep", "Defend Jora's Keep", nullptr,
-      "Bjora Marches", "Bjora-Sümpfe", 6,
-      "[&BCcMAAA=]", "Jora's Keep Waypoint", "Wegmarke Joras Feste",
-      "Storms of Winter", 12, kS63, kD63 },
-    { "shards-and-construct", "Shards and Construct", nullptr,
-      "Bjora Marches", "Bjora-Sümpfe", 6,
-      "[&BCcMAAA=]", "Jora's Keep Waypoint", "Wegmarke Joras Feste",
-      "Storms of Winter", 12, kS64, kD64 },
-    { "icebrood-champions", "Icebrood Champions", nullptr,
-      "Bjora Marches", "Bjora-Sümpfe", 6,
-      "[&BCcMAAA=]", "Jora's Keep Waypoint", "Wegmarke Joras Feste",
-      "Storms of Winter", 12, kS65, kD65 },
-    { "aetherblade-assault", "Aetherblade Assault", "Ätherklingen-Angriff",
-      "Seitung Province", "Provinz Seitung", 7,
-      "[&BGUNAAA=]", "Daigo Ward Waypoint", "Wegmarke Daigo-Bezirk",
-      "Aetherblade Assault", 12, kS66, kD66 },
-    { "kaineng-blackout", "Kaineng Blackout", "Kaineng-Energieausfall",
-      "New Kaineng City", "Stadt Neu-Kaineng", 7,
-      "[&BBkNAAA=]", "Ministry Ward Waypoint", "Wegmarke Ministeriumsviertel",
-      "Kaineng Blackout", 12, kS67, kD67 },
-    { "gang-war", "Gang War", "Bandenkrieg",
-      "The Echovald Wilds", "Die Echowald-Wildnis", 7,
-      "[&BMwMAAA=]", "Kropa Waypoint", "Wegmarke Kropa",
-      "The Gang War of Echovald", 12, kS68, kD68 },
-    { "aspenwood", "Aspenwood", "Espenwald",
-      "The Echovald Wilds", "Die Echowald-Wildnis", 7,
-      "[&BPkMAAA=]", "Jade Gate Waypoint", "Wegmarke Jadetor",
-      "Use the siege turtles to destroy the shield generators as you fight through the fort", 12, kS69, kD69 },
-    { "jade-maw", "Jade Maw", nullptr,
-      "Dragon's End", "Drachen-Ende", 7,
-      "[&BKIMAAA=]", "Jade Quarry Waypoint", "Wegmarke Jadesteinbruch",
-      "Defeat the Void-corrupted Jade Maw", 24, kS70, kD70 },
-    { "the-battle-for-the-jade-sea", "The Battle for the Jade Sea", nullptr,
-      "Dragon's End", "Drachen-Ende", 7,
-      "[&BKIMAAA=]", "Jade Quarry Waypoint", "Wegmarke Jadesteinbruch",
-      "The Battle for the Jade Sea", 12, kS71, kD71 },
-    { "unlocking-the-wizards-tower", "Unlocking the Wizard's Tower", "Den Turm des Zauberers entriegeln",
-      "Skywatch Archipelago", "Himmelswacht-Archipel", 8,
-      "[&BL4NAAA=]", "Droknar's Light Waypoint", "Wegmarke Droknars Licht",
-      "Unlocking the Wizard's Tower", 12, kS72, kD72 },
-    { "target-practice", "Target Practice", nullptr,
-      "The Wizard's Tower", "Der Turm des Zauberers", 8,
-      "[&BB8OAAA=]", "Tower Courtyard Waypoint", "Wegmarke Turm-Innenhof",
-      "Skyscale Target Practice in the Wizard's Tower", 12, kS73, kD73 },
-    { "fly-by-night", "Fly by Night", nullptr,
-      "The Wizard's Tower", "Der Turm des Zauberers", 8,
-      "[&BB8OAAA=]", "Tower Courtyard Waypoint", "Wegmarke Turm-Innenhof",
-      "Wizard's Tower: Fly by Night", 12, kS74, kD74 },
-    { "target-practice-fly-by-night", "Target Practice & Fly by Night", nullptr,
-      "The Wizard's Tower", "Der Turm des Zauberers", 8,
-      "[&BB8OAAA=]", "Tower Courtyard Waypoint", "Wegmarke Turm-Innenhof",
-      "Adventure#Secrets of the Obscure", 12, kS75, kD75 },
-    { "defense-of-amnytas", "Defense of Amnytas", "Verteidigung von Amnytas",
-      "Amnytas", "Amnytas", 8,
-      "[&BDQOAAA=]", "Bastion of the Natural Waypoint", "Wegmarke Bastion des Natürlichen",
-      "The Defense of Amnytas", 12, kS76, kD76 },
-    { "of-mists-and-monsters", "Of Mists and Monsters", "Monster im Nebel",
-      "Janthir Syntri", "Janthir Syntri", 9,
-      "[&BCoPAAA=]", "Stricken Plains Waypoint", "Wegmarke Geplagte Ebene",
-      "Of Mists and Monsters", 12, kS77, kD77 },
-    { "a-titanic-voyage", "A Titanic Voyage", nullptr,
-      "Bava Nisos", "Bava Nisos", 9,
-      "[&BGEPAAA=]", "Mantle's Arrival Waypoint", "Wegmarke Mantels Ankunft",
-      "A Titanic Voyage", 12, kS78, kD78 },
-    { "hammerhart-rumble", "Hammerhart Rumble!", nullptr,
-      "Shipwreck Strand", "Strand der Wracks", 10,
-      "[&BJEPAAA=]", "Pub Canach Waypoint", "Wegmarke Canachs Kaschemme",
-      "Hammerhart Rumble!", 12, kS79, kD79 },
-    { "secrets-of-the-weald", "Secrets of the Weald", nullptr,
-      "Starlit Weald", "Sternenlicht-Gehölz", 10,
-      "[&BJ4PAAA=]", "Priory Expedition Waypoint", "Wegmarke Abtei-Expedition",
-      "Secrets of the Weald", 12, kS80, kD80 },
-    { "shackles-of-the-ancients", "Shackles of the Ancients", nullptr,
-      "Eternity's Garden", "Ewigkeitsgarten", 10,
-      "[&BPwPAAA=]", "Pilgrim's Rest Waypoint", "Wegmarke Pilgersruh",
-      "Shackles of the Ancients", 12, kS81, kD81 },
-    { "depths-of-cruelty", "Depths of Cruelty", nullptr,
-      "Leyspring Hollows", "Leyquellen-Senke", 10,
-      "[&BDYQAAA=]", "Hall of Assemblage Waypoint", "Wegmarke Halle des Zusammenbaus",
-      "Depths of Cruelty", 8, kS82, kD82 },
-    { "twisted-marionette", "Twisted Marionette", nullptr,
-      "Eye of the North", "Auge des Nordens", 11,
-      "[&BAkMAAA=]", "Eye of the North Waypoint", "Wegmarke Auge des Nordens",
-      "The Twisted Marionette", 12, kS83, kD83 },
-    { "battle-for-lions-arch", "Battle For Lion's Arch", nullptr,
-      "Eye of the North", "Auge des Nordens", 11,
-      "[&BAkMAAA=]", "Eye of the North Waypoint", "Wegmarke Auge des Nordens",
-      "The Battle For Lion's Arch", 12, kS84, kD84 },
-    { "dragonstorm", "Dragonstorm", nullptr,
-      "Eye of the North", "Auge des Nordens", 11,
-      "[&BAkMAAA=]", "Eye of the North Waypoint", "Wegmarke Auge des Nordens",
-      "Dragonstorm", 12, kS85, kD85 },
-    { "tower-of-nightmares", "Tower of Nightmares", nullptr,
-      "Eye of the North", "Auge des Nordens", 11,
-      "[&BAkMAAA=]", "Eye of the North Waypoint", "Wegmarke Auge des Nordens",
-      "The Tower of Nightmares (meta event)", 12, kS86, kD86 },
-    { "convergence-mount-balrior", "Convergence: Mount Balrior", nullptr,
-      "Lowland Shore", "Tiefland-Küste", 11,
-      "[&BK4OAAA=]", "Harvest Den Waypoint", "Wegmarke Erntehöhle",
-      "Convergence: Mount Balrior", 8, kS87, kD87 },
-    { "convergence-outer-nayos", "Convergence: Outer Nayos", nullptr,
-      "The Wizard's Tower", "Der Turm des Zauberers", 11,
-      "[&BB8OAAA=]", "Tower Courtyard Waypoint", "Wegmarke Turm-Innenhof",
-      "Convergence: Outer Nayos", 8, kS88, kD88 },
-    { "convergence-nexus-of-eternity", "Convergence: Nexus of Eternity", nullptr,
-      "Leyspring Hollows", "Leyquellen-Senke", 11,
-      "[&BDYQAAA=]", "Hall of Assemblage Waypoint", "Wegmarke Halle des Zusammenbaus",
-      "Convergence: Nexus of Eternity", 8, kS89, kD89 },
-    { "skiff-race", "Skiff Race", nullptr,
-      "Labyrinthine Cliffs", "Labyrinthklippen", 12,
-      "[&BBwHAAA=]", "Bazaar Docks Waypoint", "Wegmarke Basar-Docks",
-      "Labyrinthine Skiffs: A race is starting soon!", 12, kS90, kD90 },
-    { "water-balloons", "Water Balloons", nullptr,
-      "Labyrinthine Cliffs", "Labyrinthklippen", 12,
-      "[&BBwHAAA=]", "Bazaar Docks Waypoint", "Wegmarke Basar-Docks",
-      "Launch kite baskets full of water balloons", 12, kS91, kD91 },
-    { "treasure-hunt", "Treasure Hunt", nullptr,
-      "Labyrinthine Cliffs", "Labyrinthklippen", 12,
-      "[&BBwHAAA=]", "Bazaar Docks Waypoint", "Wegmarke Basar-Docks",
-      "Participate in the treasure hunt!", 12, kS92, kD92 },
-    { "skimmer-race", "Skimmer Race", nullptr,
-      "Labyrinthine Cliffs", "Labyrinthklippen", 12,
-      "[&BBwHAAA=]", "Bazaar Docks Waypoint", "Wegmarke Basar-Docks",
-      "Skimmer Slalom: Reach the finish line!", 12, kS93, kD93 },
-    { "fishing", "Fishing", nullptr,
-      "Labyrinthine Cliffs", "Labyrinthklippen", 12,
-      "[&BBwHAAA=]", "Bazaar Docks Waypoint", "Wegmarke Basar-Docks",
-      "Fishing Tournament Sign-Up", 12, kS94, kD94 },
-    { "dolyak-race", "Dolyak Race", nullptr,
-      "Labyrinthine Cliffs", "Labyrinthklippen", 12,
-      "[&BBwHAAA=]", "Bazaar Docks Waypoint", "Wegmarke Basar-Docks",
-      "Flying Dolyak: Reach the finish line!", 12, kS95, kD95 },
-    { "dragon-bash-hologram-stampede-wayfarer-foothills", "Dragon Bash Hologram Stampede (Wayfarer Foothills)", "Wanderer-Hügel",
-      "Wayfarer Foothills", "Wanderer-Hügel", 12,
-      "[&BH0BAAA=]", "Twinspur Haven Waypoint", "Wegmarke Doppelsporn-Freistatt",
-      "Dragon Bash Hologram Stampede!", 24, kS96, kD96 },
-    { "dragon-bash-hologram-stampede-dredgehaunt-cliffs", "Dragon Bash Hologram Stampede (Dredgehaunt Cliffs)", "Schauflerschreck-Klippen",
-      "Dredgehaunt Cliffs", "Schauflerschreck-Klippen", 12,
-      "[&BGMCAAA=]", "Havfrue Basin Waypoint", "Wegmarke Havfrue-Becken",
-      "Dragon Bash Hologram Stampede!", 24, kS97, kD97 },
-    { "dragon-bash-hologram-stampede-lornars-pass", "Dragon Bash Hologram Stampede (Lornar's Pass)", "Lornars Pass",
-      "Lornar's Pass", "Lornars Pass", 12,
-      "[&BJkBAAA=]", "Mistriven Waypoint", "Wegmarke Nebelriss-Klamm",
-      "Dragon Bash Hologram Stampede!", 24, kS98, kD98 },
-    { "dragon-bash-hologram-stampede-snowden-drifts", "Dragon Bash Hologram Stampede (Snowden Drifts)", "Schneekuhlenhöhen",
-      "Snowden Drifts", "Schneekuhlenhöhen", 12,
-      "[&BL4AAAA=]", "Soderhem Steading Waypoint", "Wegmarke Soderhem-Gehöft",
-      "Dragon Bash Hologram Stampede!", 24, kS99, kD99 },
-    { "mad-king-says", "Mad King Says", "Der Verrückte König sagt",
-      "Lion's Arch", "Löwenstein", 12,
-      "[&BBAEAAA=]", "Trader's Forum Waypoint", "Wegmarke Händlerforum",
-      "Your Mad King says...", 12, kS100, kD100 },
+    { "admiral-taidha-covington", "Admiral Taidha Covington", "Admiral Taidha Covington", 0,
+      "Kill Admiral Taidha Covington", 1, kL0, 8, kS0, kD0, kP0 },
+    { "svanir-shaman-chief", "Svanir Shaman Chief", "Svanir-Schamane", 0,
+      "Kill the Svanir shaman chief to break his control over the ice elemental", 1, kL1, 12, kS1, kD1, kP1 },
+    { "megadestroyer", "Megadestroyer", "Mega-Zerstörer", 0,
+      "Kill the megadestroyer before it blows everyone up", 1, kL2, 8, kS2, kD2, kP2 },
+    { "fire-elemental", "Fire Elemental", "Feuer-Elementar", 0,
+      "Destroy the fire elemental created from chaotic energy fusing with the C.L.E.A.N. 5000's energy core", 1, kL3, 12, kS3, kD3, kP3 },
+    { "the-shatterer", "The Shatterer", "Der Zerschmetterer", 0,
+      "Slay the Shatterer", 1, kL4, 8, kS4, kD4, kP4 },
+    { "great-jungle-wurm", "Great Jungle Wurm", "Großer Dschungelwurm", 0,
+      "Defeat the great jungle wurm", 1, kL5, 12, kS5, kD5, kP5 },
+    { "modniir-ulgoth", "Modniir Ulgoth", "Modniir Ulgoth", 0,
+      "Defeat Ulgoth the Modniir and his minions", 1, kL6, 8, kS6, kD6, kP6 },
+    { "shadow-behemoth", "Shadow Behemoth", "Schatten-Behemoth", 0,
+      "Defeat the shadow behemoth", 1, kL7, 12, kS7, kD7, kP7 },
+    { "claw-of-jormag", "Claw of Jormag", "Klaue von Jormag", 0,
+      "Defeat the Claw of Jormag", 1, kL8, 8, kS8, kD8, kP8 },
+    { "golem-mark-ii", "Golem Mark II", "Inquestur-Golem Typ II", 0,
+      "Defeat the Inquest's golem Mark II", 1, kL9, 8, kS9, kD9, kP9 },
+    { "triple-trouble", "Triple Trouble", "Dreifacher Ärger", 0,
+      "Triple Trouble", 1, kL10, 6, kS10, kD10, kP10 },
+    { "karka-queen", "Karka Queen", "Karka-Königin", 0,
+      "Defeat the Karka Queen threatening the settlements", 1, kL11, 6, kS11, kD11, kP11 },
+    { "tequatl-the-sunless", "Tequatl the Sunless", "Tequatl der Sonnenlose", 0,
+      "Defeat Tequatl the Sunless", 1, kL12, 6, kS12, kD12, kP12 },
+    { "ley-line-anomaly", "Ley-Line Anomaly", "Ley-Linien-Anomalie", 0,
+      "Defeat the Ley-Line Anomaly to disperse its destructive energy before it overloads", 3, kL13, 12, kS13, kD13, kP13 },
+    { "awakened-invasion", "Awakened Invasion", nullptr, 0,
+      "Defeat the invading Awakened", 1, kL14, 24, kS14, kD14, kP14 },
+    { "defeat-scarlets-minions", "Defeat Scarlet's minions", nullptr, 0,
+      "Defeat the invading minions of Scarlet Briar", 1, kL15, 12, kS15, kD15, kP15 },
+    { "fractal-incursion", "Fractal Incursion", nullptr, 0,
+      "Defeat the enemy spawned by the fractal incursion", 4, kL16, 24, kS16, kD16, kP16 },
+    { "automated-tournament-balthazars-brawl-eu", "Automated Tournament: Balthazar's Brawl (EU)", nullptr, 0,
+      "Automated Tournaments#Daily_tournaments", 1, kL17, 1, kS17, kD17, kP17 },
+    { "automated-tournament-grenths-game-eu", "Automated Tournament: Grenth's Game (EU)", nullptr, 0,
+      "Automated Tournaments#Daily_tournaments", 1, kL18, 1, kS18, kD18, kP18 },
+    { "automated-tournament-melandrus-matchup-eu", "Automated Tournament: Melandru's Matchup (EU)", nullptr, 0,
+      "Automated Tournaments#Daily_tournaments", 1, kL19, 1, kS19, kD19, kP19 },
+    { "automated-tournament-lyssas-legions-eu", "Automated Tournament: Lyssa's Legions (EU)", nullptr, 0,
+      "Automated Tournaments#Daily_tournaments", 1, kL20, 1, kS20, kD20, kP20 },
+    { "automated-tournament-balthazars-brawl-na", "Automated Tournament: Balthazar's Brawl (NA)", nullptr, 0,
+      "Automated Tournaments#Daily_tournaments", 1, kL21, 1, kS21, kD21, kP21 },
+    { "automated-tournament-grenths-game-na", "Automated Tournament: Grenth's Game (NA)", nullptr, 0,
+      "Automated Tournaments#Daily_tournaments", 1, kL22, 1, kS22, kD22, kP22 },
+    { "automated-tournament-melandrus-matchup-na", "Automated Tournament: Melandru's Matchup (NA)", nullptr, 0,
+      "Automated Tournaments#Daily_tournaments", 1, kL23, 1, kS23, kD23, kP23 },
+    { "automated-tournament-lyssas-legions-na", "Automated Tournament: Lyssa's Legions (NA)", nullptr, 0,
+      "Automated Tournaments#Daily_tournaments", 1, kL24, 1, kS24, kD24, kP24 },
+    { "crash-site", "Crash Site", nullptr, 1,
+      "Crash Site (meta event)", 1, kL25, 24, kS25, kD25, kP25 },
+    { "sandstorm", "Sandstorm", "Sandsturm!", 1,
+      "Sandstorm!", 1, kL26, 24, kS26, kD26, kP26 },
+    { "day-securing-verdant-brink", "Day: Securing Verdant Brink", nullptr, 2,
+      "Securing Verdant Brink", 1, kL27, 12, kS27, kD27, kP27 },
+    { "night-night-and-the-enemy", "Night: Night and the Enemy", nullptr, 2,
+      "Night and the Enemy", 1, kL28, 12, kS28, kD28, kP28 },
+    { "night-bosses", "Night Bosses", "Nachtbosse", 2,
+      "Night and the Enemy", 1, kL29, 12, kS29, kD29, kP29 },
+    { "auric-basin-defending-tarir-pylons", "Auric Basin: Defending Tarir (Pylons)", "Güldener Talkessel: Pylonen", 2,
+      "Defending Tarir", 1, kL30, 12, kS30, kD30, kP30 },
+    { "auric-basin-challenges", "Auric Basin: Challenges", "Güldener Talkessel: Herausforderungen", 2,
+      "Battle in Tarir", 1, kL31, 12, kS31, kD31, kP31 },
+    { "auric-basin-battle-in-tarir-octovine", "Auric Basin: Battle in Tarir (Octovine)", "Güldener Talkessel: Rankenkrake", 2,
+      "Battle in Tarir", 1, kL32, 12, kS32, kD32, kP32 },
+    { "advancing-across-tangled-roots-outposts", "Advancing Across Tangled Roots (Outposts)", nullptr, 2,
+      "Advancing Across Tangled Roots", 1, kL33, 12, kS33, kD33, kP33 },
+    { "king-of-the-jungle-chak-gerent", "King of the Jungle (Chak Gerent)", "Chak-Potentat", 2,
+      "King of the Jungle", 1, kL34, 12, kS34, kD34, kP34 },
+    { "dragons-stand", "Dragon's Stand", "Widerstand des Drachen", 2,
+      "Advancing on the Blighting Towers", 1, kL35, 12, kS35, kD35, kP35 },
+    { "white-mantle-control-saidras-haven", "White Mantle Control: Saidra's Haven", "Saidras Hafen", 3,
+      "White Mantle Control: Saidra's Haven", 1, kL36, 12, kS36, kD36, kP36 },
+    { "white-mantle-control-new-loamhurst", "White Mantle Control: New Loamhurst", "Neulehmwald", 3,
+      "White Mantle Control: New Loamhurst", 1, kL37, 12, kS37, kD37, kP37 },
+    { "white-mantle-control-norans-homestead", "White Mantle Control: Noran's Homestead", "Norans Heimstatt", 3,
+      "White Mantle Control: Noran's Homestead", 1, kL38, 12, kS38, kD38, kP38 },
+    { "casino-blitz-rounds-1-to-3", "Casino Blitz: Rounds 1 to 3", nullptr, 4,
+      "Casino Blitz", 1, kL39, 12, kS39, kD39, kP39 },
+    { "casino-blitz-pinata-reset", "Casino Blitz: Pinata/Reset", nullptr, 4,
+      "Casino Blitz", 1, kL40, 12, kS40, kD40, kP40 },
+    { "buried-treasure", "Buried Treasure", "Vergrabene Schätze", 4,
+      "The Search for Buried Treasure", 1, kL41, 12, kS41, kD41, kP41 },
+    { "the-path-to-ascension-augury-rock", "The Path to Ascension: Augury Rock", nullptr, 4,
+      "The Path to Ascension", 1, kL42, 12, kS42, kD42, kP42 },
+    { "doppelganger", "Doppelganger", nullptr, 4,
+      "The Path to Ascension", 1, kL43, 12, kS43, kD43, kP43 },
+    { "maws-of-torment", "Maws of Torment", "Schlünde der Qual", 4,
+      "Maws of Torment", 1, kL44, 12, kS44, kD44, kP44 },
+    { "junundu-rising", "Junundu Rising", "Aufstand der Junundu", 4,
+      "Junundu Rising", 1, kL45, 24, kS45, kD45, kP45 },
+    { "serpents-ire", "Serpents' Ire", "Zorn der Schlangen", 4,
+      "Serpents' Ire", 1, kL46, 12, kS46, kD46, kP46 },
+    { "forged-with-fire", "Forged with Fire", "Im Feuer geschmiedet", 4,
+      "Forged with Fire", 1, kL47, 24, kS47, kD47, kP47 },
+    { "palawadan", "Palawadan", "Palawadan", 5,
+      "Palawadan, Jewel of Istan (meta event)", 1, kL48, 12, kS48, kD48, kP48 },
+    { "escorts", "Escorts", "Eskorte", 5,
+      "Dangerous Prey", 1, kL49, 12, kS49, kD49, kP49 },
+    { "death-branded-shatterer", "Death-Branded Shatterer", "Zerschmetterer", 5,
+      "Destroy the Death-Branded Shatterer", 1, kL50, 12, kS50, kD50, kP50 },
+    { "thunderhead-keep", "Thunderhead Keep", "Feste Donnerkopf", 5,
+      "Thunderhead Keep (meta event)", 1, kL51, 12, kS51, kD51, kP51 },
+    { "the-oil-floes", "The Oil Floes", "Öl auf dem Eis", 5,
+      "The Oil Floes", 1, kL52, 12, kS52, kD52, kP52 },
+    { "effigy", "Effigy", nullptr, 6,
+      "Ceremony of the Sacred Flame", 1, kL53, 12, kS53, kD53, kP53 },
+    { "doomlore-shrine", "Doomlore Shrine", nullptr, 6,
+      "The Haunting of Doomlore Shrine", 1, kL54, 12, kS54, kD54, kP54 },
+    { "ooze-pits", "Ooze Pits", nullptr, 6,
+      "The Ooze Pit Trials", 1, kL55, 12, kS55, kD55, kP55 },
+    { "metal-concert", "Metal Concert", nullptr, 6,
+      "A Concert for the Ages", 1, kL56, 12, kS56, kD56, kP56 },
+    { "drakkar-and-spirits-of-the-wild", "Drakkar and Spirits of the Wild", "Drakkar und die Geister der Wildnis", 6,
+      "Champion of the Ice Dragon", 1, kL57, 12, kS57, kD57, kP57 },
+    { "defend-joras-keep", "Defend Jora's Keep", nullptr, 6,
+      "Storms of Winter", 1, kL58, 12, kS58, kD58, kP58 },
+    { "shards-and-construct", "Shards and Construct", nullptr, 6,
+      "Storms of Winter", 1, kL59, 12, kS59, kD59, kP59 },
+    { "icebrood-champions", "Icebrood Champions", nullptr, 6,
+      "Storms of Winter", 1, kL60, 12, kS60, kD60, kP60 },
+    { "aetherblade-assault", "Aetherblade Assault", "Ätherklingen-Angriff", 7,
+      "Aetherblade Assault", 1, kL61, 12, kS61, kD61, kP61 },
+    { "kaineng-blackout", "Kaineng Blackout", "Kaineng-Energieausfall", 7,
+      "Kaineng Blackout", 1, kL62, 12, kS62, kD62, kP62 },
+    { "gang-war", "Gang War", "Bandenkrieg", 7,
+      "The Gang War of Echovald", 1, kL63, 12, kS63, kD63, kP63 },
+    { "aspenwood", "Aspenwood", "Espenwald", 7,
+      "Use the siege turtles to destroy the shield generators as you fight through the fort", 1, kL64, 12, kS64, kD64, kP64 },
+    { "jade-maw", "Jade Maw", nullptr, 7,
+      "Defeat the Void-corrupted Jade Maw", 1, kL65, 24, kS65, kD65, kP65 },
+    { "the-battle-for-the-jade-sea", "The Battle for the Jade Sea", nullptr, 7,
+      "The Battle for the Jade Sea", 1, kL66, 12, kS66, kD66, kP66 },
+    { "unlocking-the-wizards-tower", "Unlocking the Wizard's Tower", "Den Turm des Zauberers entriegeln", 8,
+      "Unlocking the Wizard's Tower", 1, kL67, 12, kS67, kD67, kP67 },
+    { "target-practice", "Target Practice", nullptr, 8,
+      "Skyscale Target Practice in the Wizard's Tower", 1, kL68, 12, kS68, kD68, kP68 },
+    { "fly-by-night", "Fly by Night", nullptr, 8,
+      "Wizard's Tower: Fly by Night", 1, kL69, 12, kS69, kD69, kP69 },
+    { "target-practice-fly-by-night", "Target Practice & Fly by Night", nullptr, 8,
+      "Adventure#Secrets of the Obscure", 1, kL70, 12, kS70, kD70, kP70 },
+    { "defense-of-amnytas", "Defense of Amnytas", "Verteidigung von Amnytas", 8,
+      "The Defense of Amnytas", 1, kL71, 12, kS71, kD71, kP71 },
+    { "of-mists-and-monsters", "Of Mists and Monsters", "Monster im Nebel", 9,
+      "Of Mists and Monsters", 1, kL72, 12, kS72, kD72, kP72 },
+    { "a-titanic-voyage", "A Titanic Voyage", nullptr, 9,
+      "A Titanic Voyage", 1, kL73, 12, kS73, kD73, kP73 },
+    { "hammerhart-rumble", "Hammerhart Rumble!", nullptr, 10,
+      "Hammerhart Rumble!", 1, kL74, 12, kS74, kD74, kP74 },
+    { "secrets-of-the-weald", "Secrets of the Weald", nullptr, 10,
+      "Secrets of the Weald", 1, kL75, 12, kS75, kD75, kP75 },
+    { "shackles-of-the-ancients", "Shackles of the Ancients", nullptr, 10,
+      "Shackles of the Ancients", 1, kL76, 12, kS76, kD76, kP76 },
+    { "depths-of-cruelty", "Depths of Cruelty", nullptr, 10,
+      "Depths of Cruelty", 1, kL77, 8, kS77, kD77, kP77 },
+    { "twisted-marionette", "Twisted Marionette", nullptr, 11,
+      "The Twisted Marionette", 1, kL78, 12, kS78, kD78, kP78 },
+    { "battle-for-lions-arch", "Battle For Lion's Arch", nullptr, 11,
+      "The Battle For Lion's Arch", 1, kL79, 12, kS79, kD79, kP79 },
+    { "dragonstorm", "Dragonstorm", nullptr, 11,
+      "Dragonstorm", 1, kL80, 12, kS80, kD80, kP80 },
+    { "tower-of-nightmares", "Tower of Nightmares", nullptr, 11,
+      "The Tower of Nightmares (meta event)", 1, kL81, 12, kS81, kD81, kP81 },
+    { "convergence-mount-balrior", "Convergence: Mount Balrior", nullptr, 11,
+      "Convergence: Mount Balrior", 1, kL82, 8, kS82, kD82, kP82 },
+    { "convergence-outer-nayos", "Convergence: Outer Nayos", nullptr, 11,
+      "Convergence: Outer Nayos", 1, kL83, 8, kS83, kD83, kP83 },
+    { "convergence-nexus-of-eternity", "Convergence: Nexus of Eternity", nullptr, 11,
+      "Convergence: Nexus of Eternity", 1, kL84, 8, kS84, kD84, kP84 },
+    { "skiff-race", "Skiff Race", nullptr, 12,
+      "Labyrinthine Skiffs: A race is starting soon!", 1, kL85, 12, kS85, kD85, kP85 },
+    { "water-balloons", "Water Balloons", nullptr, 12,
+      "Launch kite baskets full of water balloons", 1, kL86, 12, kS86, kD86, kP86 },
+    { "treasure-hunt", "Treasure Hunt", nullptr, 12,
+      "Participate in the treasure hunt!", 1, kL87, 12, kS87, kD87, kP87 },
+    { "skimmer-race", "Skimmer Race", nullptr, 12,
+      "Skimmer Slalom: Reach the finish line!", 1, kL88, 12, kS88, kD88, kP88 },
+    { "fishing", "Fishing", nullptr, 12,
+      "Fishing Tournament Sign-Up", 1, kL89, 12, kS89, kD89, kP89 },
+    { "dolyak-race", "Dolyak Race", nullptr, 12,
+      "Flying Dolyak: Reach the finish line!", 1, kL90, 12, kS90, kD90, kP90 },
+    { "dragon-bash-hologram-stampede", "Dragon Bash Hologram Stampede", "Wanderer-Hügel", 12,
+      "Dragon Bash Hologram Stampede!", 4, kL91, 96, kS91, kD91, kP91 },
+    { "mad-king-says", "Mad King Says", "Der Verrückte König sagt", 12,
+      "Your Mad King says...", 1, kL92, 12, kS92, kD92, kP92 },
 };
 const size_t kEventCount = sizeof kEvents / sizeof kEvents[0];
 

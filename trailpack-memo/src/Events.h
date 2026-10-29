@@ -26,24 +26,34 @@ size_t FindToken(const std::string& s, size_t from, size_t& length, std::string&
 // True if all of `s` is one token (sets `id` when given).
 bool IsToken(const std::string& s, std::string* id = nullptr);
 
-// Where an event stands at `now`.
-struct Status {
-    bool    active = false;   // an occurrence is running (start <= now < end)
-    int64_t start  = 0;       // active: start of the running occurrence; else the next start
-    int64_t end    = 0;       // end of that occurrence
+// One occurrence of an event: when and where (index into EventDef::places).
+struct Occurrence {
+    int64_t start = 0;
+    int64_t end   = 0;
+    uint8_t place = 0;
+};
+
+// Where an event stands at `now`: the running occurrence, else the next one. So a rotating
+// event shows its current place while it runs and switches to the next place only after it
+// has ended.
+struct Status : Occurrence {
+    bool active = false;      // the occurrence is running (start <= now < end)
 };
 Status State(const EventDef& e, int64_t now);
 
-// The next `n` starts strictly after `now`, ascending.
-std::vector<int64_t> NextStarts(const EventDef& e, int64_t now, int n);
+// The next `n` occurrences starting strictly after `now`, ascending.
+std::vector<Occurrence> NextOccurrences(const EventDef& e, int64_t now, int n);
 
-// Name / map / category in `lang` (German falls back to English; map may be "").
+// Texts in `lang` (German falls back to English; map / waypoint name may be "").
 const char* Name(const EventDef& e, I18n::Lang lang);
-const char* Map(const EventDef& e, I18n::Lang lang);
 const char* CategoryName(uint8_t category, I18n::Lang lang);
+const char* MapName(const PlaceDef& p, I18n::Lang lang);
+const char* WaypointName(const PlaceDef& p, I18n::Lang lang);
+// All maps of an event, ", "-separated, without repeats ("Timberline Falls, Iron Marches").
+std::string Maps(const EventDef& e, I18n::Lang lang);
 
-// Events matching `query` in data order: case-insensitive substring of the name, map or id in
-// either language (German umlauts included). An empty query matches every event.
+// Events matching `query` in data order: case-insensitive substring of the name, any map or
+// the id in either language (German umlauts included). An empty query matches every event.
 std::vector<const EventDef*> Search(const std::string& query);
 
 // Chip time text in the current language (I18n::Tr): before the start "in 45 s", "in 23 min",

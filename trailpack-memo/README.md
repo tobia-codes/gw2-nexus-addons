@@ -41,7 +41,8 @@
   list (border on/off and colour, background, text, group names, the "No group" label), note
   (border on/off and colour, background, text) and daily / weekly badges (background and letter, each
   separately, with a live preview). Each row is a swatch that opens a picker with alpha, plus a
-  Reset; "Reset all colours" restores every default. Borders are off by default.
+  Reset; "Reset all colours" restores every default. Borders are off by default. Popups (menus, tooltips, the event picker, dialogs) are opaque black
+  with Nexus's text colour by default; both are settable under "Popups".
 - **Themes**: pick *Default (Nexus)*, *Light* or *Dark* under "Colour options" > Theme, or save the
   current colours as your own theme (*Save as theme*; same name overwrites, *Delete theme* removes it).
 - **Backup**: "Backup" in the settings: *Create backup...* saves all notes, groups and settings
@@ -84,11 +85,13 @@ If an LLM creating software upsets you, then perhaps this repo isn't for you. Mo
   - **Right-click** a chip to **Copy chat code** or **Open in wiki**.
   - **Left-click a waypoint chip to open the world map** at that point (needs [Pie UI](https://github.com/PieOrCake/pie_ui); see below).
   - Build links show their spec automatically (e.g. `[Mirage Build]`).
-- **Event timers** — write `{{event:<id>}}` (e.g. `{{event:tequatl-the-sunless}}`) and it becomes a live
+- **Event timers** — pick an event with *Event* in the edit toolbar (search by name or map, or browse
+  the categories), or write `{{event:<id>}}` (e.g. `{{event:tequatl-the-sunless}}`); it becomes a live
   chip: "Tequatl the Sunless - in 23 min" or "- for 4 min" while it runs. Hover for the next starts in
   local time, duration, map and waypoint; left-click copies the waypoint, right-click offers
-  *Copy waypoint* / *Open in wiki*. ~100 fixed-schedule events (world bosses, metas, ...), computed
-  locally in UTC -- no internet needed.
+  *Copy waypoint* / *Open in wiki*. ~90 fixed-schedule events (world bosses, metas, ...), computed
+  locally in UTC -- no internet needed. Rotating events (e.g. the Ley-Line Anomaly) are one chip that
+  shows the current place while it runs, then the next one.
 - **Works with or without [Decoder Ring](https://github.com/PieOrCake/decoder_ring)**: with it loaded, chips show full names and icons; without it, chips fall back to basic labels and the copy / wiki actions still work. Nothing breaks if it loads or unloads mid-session.
 - **Optional [Pie UI](https://github.com/PieOrCake/pie_ui) integration**: when Pie UI is loaded, left-clicking a waypoint chip opens and pans the in-game map to that point (Pie UI then lets you click to travel). Without Pie UI the option simply isn't shown; load it any time and it appears, no restart needed.
 

@@ -16,6 +16,9 @@ using namespace NotesUi;
 
 void NotesWindow::renderModals_()
 {
+    // Only modals are drawn here: they all get the popup text colour (background: PopupBg,
+    // pushed with the window style).
+    Theme::PopupTextScope popupText;
     renderUnsavedModal_();
     renderDeleteModal_();
     renderNoticeModal_();
@@ -316,7 +319,7 @@ void NotesWindow::renderGroupColorModal_()
             close = true;
         }
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", Tr("Use the group colour from the addon options."));
+            Theme::Tooltip("%s", Tr("Use the group colour from the addon options."));
         ImGui::SameLine();
         if (ImGui::Button(Tr("Cancel"), ImVec2(ButtonWidth(Tr("Cancel"), 80), 0))) {
             g->hasColor = groupColorHadOwn_;

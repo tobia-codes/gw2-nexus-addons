@@ -1,18 +1,33 @@
 // Theme.cpp — user-colour state + window style push/pop for Theme.h.
 #include "Theme.h"
 
+#include <cstdarg>
+
 namespace Theme {
 
 static UserColors s_Colors;
 static int        s_PushedColors = 0;
 static ImVec4     s_WindowText   = { 1.0f, 1.0f, 1.0f, 1.0f };
+static ImVec4     s_NexusText    = { 1.0f, 1.0f, 1.0f, 1.0f };   // before our pushes
 
 UserColors& Colors() { return s_Colors; }
 ImVec4      WindowText() { return s_WindowText; }
+ImVec4      PopupText()  { return s_Colors.hasPopupText ? s_Colors.popupText : s_NexusText; }
+
+void Tooltip(const char* fmt, ...) {
+    PopupTextScope text;
+    va_list args;
+    va_start(args, fmt);
+    ImGui::SetTooltipV(fmt, args);
+    va_end(args);
+}
 
 void PushWindowStyle() {
     s_PushedColors = 0;
-    s_WindowText = s_Colors.hasText ? s_Colors.text : ImGui::GetStyle().Colors[ImGuiCol_Text];
+    s_NexusText  = ImGui::GetStyle().Colors[ImGuiCol_Text];
+    s_WindowText = s_Colors.hasText ? s_Colors.text : s_NexusText;
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, s_Colors.popupBg);
+    ++s_PushedColors;
     ImGui::PushStyleColor(ImGuiCol_Border, s_Colors.border);
     ++s_PushedColors;
     if (s_Colors.hasBackground) {

@@ -225,7 +225,7 @@ void NotesWindow::renderImportModal_()
                 if (ImGui::Checkbox(label, &on)) importChecked_[i] = on ? 1 : 0;
                 ImGui::PopStyleColor(1);
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("%s", Tr("You already have this note, but the file's version differs.\n"
+                    Theme::Tooltip("%s", Tr("You already have this note, but the file's version differs.\n"
                                                "Tick to replace your title and text with the file's version."));
                 if (on) ++toUpdate;
             } else {

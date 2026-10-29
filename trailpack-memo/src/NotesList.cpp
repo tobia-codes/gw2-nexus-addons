@@ -108,9 +108,10 @@ float NotesWindow::renderListColumn_()
     if (ImGui::Button("##notes_menu_btn", ImVec2(menuW, menuW))) ImGui::OpenPopup("##notes_menu");
     if (mc.hasMenuButton) ImGui::PopStyleColor(3);
     DrawHamburger(menuW);
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", Tr("Menu"));
+    if (ImGui::IsItemHovered()) Theme::Tooltip("%s", Tr("Menu"));
 
     if (ImGui::BeginPopup("##notes_menu")) {
+        Theme::PopupTextScope popupText;
         if (ImGui::MenuItem(Tr("New group..."))) {
             groupNameId_.clear();
             groupNameBuffer_ = Tr("New group");
@@ -119,11 +120,11 @@ float NotesWindow::renderListColumn_()
         ImGui::Separator();
         if (ImGui::MenuItem(Tr("Import..."))) startImport_();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", Tr("Add notes from an exported file (or a notes.json).\n"
+            Theme::Tooltip("%s", Tr("Add notes from an exported file (or a notes.json).\n"
                                        "Existing notes are only updated if you choose to."));
         if (ImGui::MenuItem(Tr("Export all..."))) startExport_(std::string());
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", Tr("Save all notes to one file.\n"
+            Theme::Tooltip("%s", Tr("Save all notes to one file.\n"
                                        "Right-click a note in the list to export just that one."));
         ImGui::Separator();
         if (ImGui::MenuItem(Tr("Delete notes..."), nullptr, false, !notes.empty())) {
@@ -189,6 +190,7 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
     }
 
     if (ImGui::BeginPopupContextItem("##row_ctx")) {
+        Theme::PopupTextScope popupText;
         if (ImGui::MenuItem(Tr("Edit"), nullptr, false,
                             !(mode_ == Mode::Edit && selectedId_ == note.id)))
             editRequestId_ = note.id;
@@ -243,11 +245,11 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
         const bool clipped = titleX + ImGui::CalcTextSize(note.title.c_str()).x > titleRight;
         const std::string reset = ResetText(note.type);
         if (clipped && !reset.empty())
-            ImGui::SetTooltip("%s\n%s", note.title.c_str(), reset.c_str());
+            Theme::Tooltip("%s\n%s", note.title.c_str(), reset.c_str());
         else if (clipped)
-            ImGui::SetTooltip("%s", note.title.c_str());
+            Theme::Tooltip("%s", note.title.c_str());
         else if (!reset.empty())
-            ImGui::SetTooltip("%s", reset.c_str());
+            Theme::Tooltip("%s", reset.c_str());
     }
 }
 
@@ -282,6 +284,7 @@ bool NotesWindow::renderGroupHeader_(Magpie::Group& group)
     }
 
     if (ImGui::BeginPopupContextItem("##group_ctx")) {
+        Theme::PopupTextScope popupText;
         if (ImGui::MenuItem(Tr("New note in group"))) {
             createRequested_      = true;
             createRequestGroupId_ = group.id;
@@ -334,7 +337,7 @@ bool NotesWindow::renderGroupHeader_(Magpie::Group& group)
     dl->AddText(ImVec2(nameX, rowPos.y), ImGui::GetColorU32(groupColor_(group)), groupName);
     dl->PopClipRect();
     if (ImGui::IsItemHovered() && nameX + ImGui::CalcTextSize(groupName).x > rowRight - countW - 6.0f)
-        ImGui::SetTooltip("%s", groupName);
+        Theme::Tooltip("%s", groupName);
 
     return !group.collapsed;
 }

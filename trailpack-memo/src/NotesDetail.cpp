@@ -11,6 +11,8 @@
 #include "MarkdownEdit.h"
 #include "MarkdownRender.h"
 #include "NotesUi.h"
+#include "EventPicker.h"
+#include "Events.h"
 
 using Magpie::I18n::Tr;
 using namespace NotesUi;
@@ -83,11 +85,16 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
     ImGui::SetNextItemWidth(typeW);
     int type = (int)note.type;
     const char* types[] = { Tr("Note"), Tr("Daily"), Tr("Weekly") };
-    if (ImGui::Combo("##type", &type, types, IM_ARRAYSIZE(types)) &&
+    bool typeChanged;
+    {
+        Theme::PopupTextScope popupText;   // the list opens as a popup (and the field is Nexus-dark)
+        typeChanged = ImGui::Combo("##type", &type, types, IM_ARRAYSIZE(types));
+    }
+    if (typeChanged &&
         store_.SetType(note.id, (Magpie::NoteType)type, (int64_t)std::time(nullptr)))
         Save();
     if (ImGui::IsItemHovered())
-        ImGui::SetTooltip("%s", Tr("Daily / Weekly: checkboxes are unchecked after the reset."));
+        Theme::Tooltip("%s", Tr("Daily / Weekly: checkboxes are unchecked after the reset."));
 
     ImGui::Spacing();
     renderEditToolbar_();
@@ -158,7 +165,7 @@ void NotesWindow::renderEditToolbar_()
     // Labels stay ASCII: Nexus's font has no symbol glyphs.
     auto toolButton = [](const char* label, const char* tip) {
         const bool pressed = ImGui::Button(label);
-        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tip);
+        if (ImGui::IsItemHovered()) Theme::Tooltip("%s", tip);
         ImGui::SameLine();
         return pressed;
     };
@@ -183,6 +190,13 @@ void NotesWindow::renderEditToolbar_()
         r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Task);
     bodyEditor_.ApplyEdit(r);
 
+    // Event picker (D8): a popup in this child's id scope, begun every frame below.
+    if (toolButton(Tr("Event"), Tr("Insert an event timer"))) {
+        eventQuery_.clear();
+        eventPickerFocus_ = true;
+        ImGui::OpenPopup("##event_picker");
+    }
+
     // Preview toggle, right-aligned on the same row.
     const char* previewLabel = Tr("Preview");
     const float boxW = ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x +
@@ -197,7 +211,21 @@ void NotesWindow::renderEditToolbar_()
         toggled = ImGui::Checkbox(previewLabel, &showPreview_);
     }
     if (toggled) settingsChanged_ = true;
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", Tr("Show a live preview beside the editor"));
+    if (ImGui::IsItemHovered()) Theme::Tooltip("%s", Tr("Show a live preview beside the editor"));
+
+    // The picked event becomes a chip at the editor's caret (the selection stb kept when the
+    // button took the focus); the editor gets the focus back.
+    if (ImGui::BeginPopup("##event_picker")) {
+        Theme::PopupTextScope popupText;
+        if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape))) ImGui::CloseCurrentPopup();
+        const std::string id = Magpie::EventPicker::Render(eventQuery_, eventPickerFocus_);
+        if (!id.empty()) {
+            bodyEditor_.InsertChip(Magpie::Events::Token(id));
+            bodyEditor_.Focus();
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndPopup();
+    }
 }
 
 void NotesWindow::renderViewBody_(Magpie::Note* note)
@@ -226,6 +254,7 @@ void NotesWindow::renderViewBody_(Magpie::Note* note)
         ImGui::OpenPopup("##view_ctx");
     }
     if (ImGui::BeginPopup("##view_ctx")) {
+        Theme::PopupTextScope popupText;
         if (ImGui::MenuItem(Tr("Edit"))) editRequestId_ = note->id;
         ImGui::Separator();
         const Magpie::Md::TaskCount tc = Magpie::Md::CountTasks(note->body);

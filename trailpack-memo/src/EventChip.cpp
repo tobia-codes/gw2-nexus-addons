@@ -83,10 +83,18 @@ void OpenWiki(const Events::EventDef& e)
     ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
 }
 
-void CopyWaypoint(const Events::EventDef& e, int uid)
+// The place that counts now: the running occurrence's, else the next one's (a rotating event
+// moves on only after its current run has ended).
+const Events::PlaceDef& CurrentPlace(const Events::EventDef& e, int64_t now)
 {
-    if (e.waypoint == nullptr) return;
-    ImGui::SetClipboardText(e.waypoint);
+    return e.places[Events::State(e, now).place];
+}
+
+void CopyWaypoint(const Events::EventDef& e, int64_t now, int uid)
+{
+    const char* wp = CurrentPlace(e, now).waypoint;
+    if (wp == nullptr) return;
+    ImGui::SetClipboardText(wp);
     s_CopiedUntil = ImGui::GetTime() + kCopiedSeconds;
     s_CopiedUid   = uid;
 }
@@ -103,20 +111,23 @@ void Tooltip(const Events::EventDef& e, int64_t now)
         ImGui::Text(Tr("Running since %s, ends at %s"), LocalClock(st.start).c_str(),
                     LocalClock(st.end).c_str());
     }
+    // Rotating events name the map of every start: "03:20 (Iron Marches)".
     std::string starts;
-    for (int64_t t : Events::NextStarts(e, now, 3)) {
+    for (const Events::Occurrence& o : Events::NextOccurrences(e, now, 3)) {
         if (!starts.empty()) starts += ", ";
-        starts += LocalClock(t);
+        starts += LocalClock(o.start);
+        if (e.placeCount > 1) starts += std::string(" (") + Events::MapName(e.places[o.place], lang) + ")";
     }
     ImGui::Text(Tr("Next starts: %s"), starts.c_str());
     ImGui::Text(Tr("Duration: %s"), Events::FormatDuration(st.end - st.start).c_str());
 
-    const char* map = Events::Map(e, lang);
+    // Map and waypoint of the running occurrence, else of the next one.
+    const Events::PlaceDef& place = e.places[st.place];
+    const char* map = Events::MapName(place, lang);
     if (map[0] != '\0') ImGui::Text(Tr("Map: %s"), map);
-    if (e.waypoint != nullptr) {
-        const char* wp = lang == I18n::Lang::De && e.waypointNameDe != nullptr ? e.waypointNameDe
-                                                                               : e.waypointNameEn;
-        ImGui::Text(Tr("Waypoint: %s"), wp != nullptr ? wp : e.waypoint);
+    if (place.waypoint != nullptr) {
+        const char* wp = Events::WaypointName(place, lang);
+        ImGui::Text(Tr("Waypoint: %s"), wp[0] != '\0' ? wp : place.waypoint);
         ImGui::Separator();
         ImGui::TextDisabled("%s", Tr("Left-click: copy waypoint. Right-click: more."));
     } else {
@@ -164,12 +175,12 @@ float DrawEventChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& 
     const ImVec2 rMin(pos.x, pos.y - 1.0f), rMax(pos.x + width, pos.y + fontSize + 1.0f);
     const bool hovering = ImGui::IsWindowHovered() && ImGui::IsMouseHoveringRect(rMin, rMax);
     {
-        // Tooltips and the menu keep the window text colour, not the note text colour.
-        Theme::TextColorScope popupText(true, Theme::WindowText());
+        // Tooltips and the menu use the popup text colour, not the note text colour.
+        Theme::PopupTextScope popupText;
         const bool copiedHint = uid == s_CopiedUid && ImGui::GetTime() < s_CopiedUntil;
         if (hovering) {
-            if (e->waypoint != nullptr) ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) CopyWaypoint(*e, uid);
+            if (CurrentPlace(*e, now).waypoint != nullptr) ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) CopyWaypoint(*e, now, uid);
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) ImGui::OpenPopup(pid);
             if (!copiedHint && !ImGui::IsPopupOpen(pid)) {
                 ImGui::BeginTooltip();
@@ -180,8 +191,8 @@ float DrawEventChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& 
         // The hint follows the mouse for its full time, also after leaving the chip.
         if (copiedHint) ImGui::SetTooltip("%s", Tr("Waypoint copied"));
         if (ImGui::BeginPopup(pid)) {
-            if (ImGui::MenuItem(Tr("Copy waypoint"), nullptr, false, e->waypoint != nullptr))
-                CopyWaypoint(*e, uid);
+            if (ImGui::MenuItem(Tr("Copy waypoint"), nullptr, false, CurrentPlace(*e, now).waypoint != nullptr))
+                CopyWaypoint(*e, now, uid);
             if (ImGui::MenuItem(Tr("Open in wiki"))) OpenWiki(*e);
             ImGui::EndPopup();
         }

@@ -72,26 +72,31 @@ Status State(const EventDef& e, int64_t now)
                 st.active = true;
                 st.start  = s;
                 st.end    = end;
+                st.place  = e.placeOf[k];
                 return st;
             }
             if (s > now && !haveNext) {
                 haveNext = true;
                 st.start = s;
                 st.end   = end;
+                st.place = e.placeOf[k];
             }
         }
     }
     return st;
 }
 
-std::vector<int64_t> NextStarts(const EventDef& e, int64_t now, int n)
+std::vector<Occurrence> NextOccurrences(const EventDef& e, int64_t now, int n)
 {
-    std::vector<int64_t> out;
+    std::vector<Occurrence> out;
     if (e.count == 0 || n <= 0) return out;
     for (int64_t day = floorDiv(now, kDay) * kDay; (int)out.size() < n; day += kDay) {
         for (int k = 0; k < e.count && (int)out.size() < n; ++k) {
-            const int64_t s = day + (int64_t)e.starts[k] * 60;
-            if (s > now) out.push_back(s);
+            Occurrence o;
+            o.start = day + (int64_t)e.starts[k] * 60;
+            o.end   = o.start + (int64_t)e.durations[k] * 60;
+            o.place = e.placeOf[k];
+            if (o.start > now) out.push_back(o);
         }
     }
     return out;
@@ -102,10 +107,28 @@ const char* Name(const EventDef& e, Lang lang)
     return lang == Lang::De && e.nameDe != nullptr ? e.nameDe : e.nameEn;
 }
 
-const char* Map(const EventDef& e, Lang lang)
+const char* MapName(const PlaceDef& p, Lang lang)
 {
-    const char* m = lang == Lang::De && e.mapDe != nullptr ? e.mapDe : e.mapEn;
+    const char* m = lang == Lang::De && p.mapDe != nullptr ? p.mapDe : p.mapEn;
     return m != nullptr ? m : "";
+}
+
+const char* WaypointName(const PlaceDef& p, Lang lang)
+{
+    const char* w = lang == Lang::De && p.waypointNameDe != nullptr ? p.waypointNameDe : p.waypointNameEn;
+    return w != nullptr ? w : "";
+}
+
+std::string Maps(const EventDef& e, Lang lang)
+{
+    std::string out;
+    for (int i = 0; i < e.placeCount; ++i) {
+        const std::string m = MapName(e.places[i], lang);
+        if (m.empty() || (", " + out + ", ").find(", " + m + ", ") != std::string::npos) continue;
+        if (!out.empty()) out += ", ";
+        out += m;
+    }
+    return out;
 }
 
 const char* CategoryName(uint8_t category, Lang lang)
@@ -143,7 +166,11 @@ std::vector<const EventDef*> Search(const std::string& query)
     std::vector<const EventDef*> out;
     for (size_t i = 0; i < kEventCount; ++i) {
         const EventDef& e = kEvents[i];
-        const char* fields[] = { e.nameEn, e.nameDe, e.mapEn, e.mapDe, e.id };
+        std::vector<const char*> fields = { e.nameEn, e.nameDe, e.id };
+        for (int p = 0; p < e.placeCount; ++p) {
+            fields.push_back(e.places[p].mapEn);
+            fields.push_back(e.places[p].mapDe);
+        }
         for (const char* f : fields) {
             if (q.empty() || (f != nullptr && folded(f).find(q) != std::string::npos)) {
                 out.push_back(&e);
