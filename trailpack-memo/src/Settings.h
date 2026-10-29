@@ -40,6 +40,10 @@ struct Settings {
     OptionalColor listText;         // note titles in the list; unset: window text
     OptionalColor noteBackground;   // note pane; unset: Nexus child background
     OptionalColor noteText;         // note title, body, editor; unset: window text
+    bool          showListBorder = true;   // pane borders on/off
+    bool          showNoteBorder = true;
+    OptionalColor listBorder;       // unset: follow `border`
+    OptionalColor noteBorder;       // unset: follow `border`
     Rgba          dailyBadge     { 0.90f, 0.62f, 0.20f, 1.0f };   // amber
     Rgba          dailyBadgeText { 0.08f, 0.08f, 0.08f, 1.0f };
     Rgba          weeklyBadge    { 0.40f, 0.60f, 0.95f, 1.0f };   // blue

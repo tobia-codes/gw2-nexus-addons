@@ -65,12 +65,26 @@ struct UserColors {
     ImVec4 noteBg        = { 0.0f, 0.0f, 0.0f, 0.0f };
     bool   hasNoteText   = false;
     ImVec4 noteText      = { 0.0f, 0.0f, 0.0f, 0.0f };
+    // Pane borders (list / note): on by default; colour follows `border` until picked.
+    bool   showListBorder = true;
+    bool   hasListBorder  = false;
+    ImVec4 listBorder     = { 0.0f, 0.0f, 0.0f, 0.0f };
+    bool   showNoteBorder = true;
+    bool   hasNoteBorder  = false;
+    ImVec4 noteBorder     = { 0.0f, 0.0f, 0.0f, 0.0f };
 };
 UserColors& Colors();   // the live, mutable set (Theme.cpp)
 
 // Window text colour (user-set, else Nexus's), captured by PushWindowStyle. Tooltips and
 // popups opened inside the note pane push it back, so they ignore the note text colour.
 ImVec4 WindowText();
+
+// Border of a pane (child window): size and colour are read by BeginChild, so push right
+// before it and pop right after (later ImGuiCol_Border users inside keep the window colour).
+void PushPaneBorder(bool show, bool hasColor, const ImVec4& color);
+void PopPaneBorder();
+inline void PushListBorder() { const UserColors& c = Colors(); PushPaneBorder(c.showListBorder, c.hasListBorder, c.listBorder); }
+inline void PushNoteBorder() { const UserColors& c = Colors(); PushPaneBorder(c.showNoteBorder, c.hasNoteBorder, c.noteBorder); }
 
 // Push ImGuiCol_Text for a scope when `set` (e.g. note text); no-op otherwise.
 struct TextColorScope {

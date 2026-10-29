@@ -670,6 +670,8 @@ static void test_settings_roundtrip()
     Magpie::Settings a;
     a.showQaIcon    = false;
     a.showBorder    = false;
+    a.showNoteBorder = false;
+    a.listBorder    = { true, Magpie::Rgba{ 0.0f, 0.0f, 0.7f, 1.0f } };
     a.editPreview   = true;
     a.uiTextScale   = 150;
     a.noteTextScale = 80;
@@ -689,6 +691,8 @@ static void test_settings_roundtrip()
     CHECK(b.FromJson(a.ToJson()));
     CHECK(!b.showQaIcon);
     CHECK(!b.showBorder);
+    CHECK(b.showListBorder && !b.showNoteBorder);
+    CHECK(b.listBorder.set && b.listBorder.color.b == 0.7f && !b.noteBorder.set);
     CHECK(b.editPreview);
     CHECK_EQ(b.uiTextScale, 150);
     CHECK_EQ(b.noteTextScale, 80);

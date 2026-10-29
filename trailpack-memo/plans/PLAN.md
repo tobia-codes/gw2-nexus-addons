@@ -110,6 +110,9 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   get ChildBg = transparent, so the colour is exact (Nexus's own ChildBg is translucent and was
   stacked on WindowBg). Note text uses `Theme::TextColorScope` around title / body / editor /
   preview; chip tooltips and menus push `Theme::WindowText()` back. List text: `ListTextColor`.
+  Pane borders: `show_{list,note}_border` + `color_{list,note}_border` (null = follow the window
+  border colour), pushed via `Theme::PushListBorder/PushNoteBorder` around BeginChild only
+  (ChildBorderSize + ImGuiCol_Border); the preview pane uses the note's border.
   "No group" label: `color_no_group` (null = Nexus disabled text), `NotesUi::NoGroupColor`.
   Options layout: label | swatch | Reset in fixed columns, subheadings Window / Note list /
   badges (2x2 table with preview), "Reset all colours" resets `Theme::UserColors`.

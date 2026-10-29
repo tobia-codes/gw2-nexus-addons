@@ -112,6 +112,12 @@ static void ApplySettings() {
     c.noteBg        = ToImVec4(g_Settings.noteBackground.color);
     c.hasNoteText   = g_Settings.noteText.set;
     c.noteText      = ToImVec4(g_Settings.noteText.color);
+    c.showListBorder = g_Settings.showListBorder;
+    c.hasListBorder  = g_Settings.listBorder.set;
+    c.listBorder     = ToImVec4(g_Settings.listBorder.color);
+    c.showNoteBorder = g_Settings.showNoteBorder;
+    c.hasNoteBorder  = g_Settings.noteBorder.set;
+    c.noteBorder     = ToImVec4(g_Settings.noteBorder.color);
     c.dailyBadge      = ToImVec4(g_Settings.dailyBadge);
     c.dailyBadgeText  = ToImVec4(g_Settings.dailyBadgeText);
     c.weeklyBadge     = ToImVec4(g_Settings.weeklyBadge);
@@ -132,6 +138,10 @@ static void CollectSettings() {
     g_Settings.listText       = { c.hasListText, ToRgba(c.listText) };
     g_Settings.noteBackground = { c.hasNoteBg,   ToRgba(c.noteBg) };
     g_Settings.noteText       = { c.hasNoteText, ToRgba(c.noteText) };
+    g_Settings.showListBorder = c.showListBorder;
+    g_Settings.listBorder     = { c.hasListBorder, ToRgba(c.listBorder) };
+    g_Settings.showNoteBorder = c.showNoteBorder;
+    g_Settings.noteBorder     = { c.hasNoteBorder, ToRgba(c.noteBorder) };
     g_Settings.dailyBadge      = ToRgba(c.dailyBadge);
     g_Settings.dailyBadgeText  = ToRgba(c.dailyBadgeText);
     g_Settings.weeklyBadge     = ToRgba(c.weeklyBadge);
@@ -439,7 +449,13 @@ static void RenderOptions() {
 
         heading(Tr("Window"));
         ImGui::Indent();
-        if (ImGui::Checkbox(Tr("Show border"), &c.showBorder)) s_ColorsDirty = true;
+        // Same label in three sections: the id is scoped per section.
+        auto borderToggle = [&](const char* id, bool& show) {
+            ImGui::PushID(id);
+            if (ImGui::Checkbox(Tr("Show border"), &show)) s_ColorsDirty = true;
+            ImGui::PopID();
+        };
+        borderToggle("window_border", c.showBorder);
         ImGui::PushID("border");
         label(Tr("Border"));
         if (ImGui::ColorEdit4("##c", &c.border.x, flags)) s_ColorsDirty = true;
@@ -458,6 +474,8 @@ static void RenderOptions() {
 
         heading(Tr("Note list"));
         ImGui::Indent();
+        borderToggle("list_border_on", c.showListBorder);
+        optionalRow("list_border", Tr("Border"),   c.hasListBorder, c.listBorder, c.border);
         optionalRow("list_bg",   Tr("Background"), c.hasListBg,   c.listBg,   paneBg);
         optionalRow("list_text", Tr("Text"),       c.hasListText, c.listText, paneText);
         // Group names: follow the border colour until picked; single groups can override
@@ -474,6 +492,8 @@ static void RenderOptions() {
         // Daily / weekly badges: preview + name | background | letter | Reset (both).
         heading(Tr("Note"));
         ImGui::Indent();
+        borderToggle("note_border_on", c.showNoteBorder);
+        optionalRow("note_border", Tr("Border"),   c.hasNoteBorder, c.noteBorder, c.border);
         optionalRow("note_bg",   Tr("Background"), c.hasNoteBg,   c.noteBg,   paneBg);
         optionalRow("note_text", Tr("Text"),       c.hasNoteText, c.noteText, paneText);
         ImGui::Unindent();

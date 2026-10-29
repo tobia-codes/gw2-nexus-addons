@@ -21,7 +21,9 @@ void NotesWindow::renderDetailPane_()
     // preview columns) get a transparent background so no second layer tints it.
     const bool ownBg = Theme::Colors().hasNoteBg;
     if (ownBg) ImGui::PushStyleColor(ImGuiCol_ChildBg, Theme::Colors().noteBg);
+    Theme::PushNoteBorder();
     ImGui::BeginChild("##notes_detail", ImVec2(0, 0), true);
+    Theme::PopPaneBorder();
     if (ownBg) {
         ImGui::PopStyleColor();
         ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
@@ -106,7 +108,9 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
     ImGui::EndChild();
 
     ImGui::SameLine();
+    Theme::PushNoteBorder();   // the preview pane is framed like the note
     ImGui::BeginChild("##preview_col", ImVec2(0, 0), true);
+    Theme::PopPaneBorder();
     {
         const std::vector<Magpie::Md::Line>& lines = parsed_(previewParse_, bodyEditor_.GetText());
         Magpie::FontScaleScope noteFont(noteTextScale_);
