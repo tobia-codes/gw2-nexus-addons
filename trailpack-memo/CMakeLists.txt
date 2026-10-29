@@ -7,6 +7,7 @@ if(NOT GW2_HOST_TESTS)
         src/dllmain.cpp
         src/Theme.cpp
         src/NotesStore.cpp
+        src/I18n.cpp
         src/NotesWindow.cpp
         src/Markdown.cpp
         src/MarkdownRender.cpp
@@ -48,6 +49,7 @@ else()
     add_executable(trailpack_host_tests
         tests/host_tests_main.cpp
         src/NotesStore.cpp
+        src/I18n.cpp
         src/Markdown.cpp
         src/MarkdownEdit.cpp
         src/chat/ChatLinks.cpp

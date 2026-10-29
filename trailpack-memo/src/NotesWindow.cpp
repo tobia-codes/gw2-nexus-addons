@@ -16,8 +16,25 @@
 #include "Markdown.h"
 #include "MarkdownRender.h"
 #include "MarkdownEdit.h"
+#include "I18n.h"
 
 namespace fs = std::filesystem;
+using Magpie::I18n::Tr;
+using Magpie::I18n::TrN;
+
+// "<translated title>###<stable id>": a popup keeps its ImGui id when the language
+// changes, so OpenPopup and BeginPopupModal always agree.
+static std::string PopupName(const char* en, const char* id)
+{
+    return std::string(Tr(en)) + "###" + id;
+}
+
+// Button width that fits its (translated) label, but never narrower than `minW`.
+static float ButtonWidth(const char* label, float minW)
+{
+    const float w = ImGui::CalcTextSize(label).x + ImGui::GetStyle().FramePadding.x * 2.0f;
+    return w > minW ? w : minW;
+}
 
 // ── Init ──────────────────────────────────────────────────────────────────
 
@@ -131,7 +148,7 @@ void NotesWindow::resolvePending_()
         pendingCreate_ = false;
         pendingSelectId_.clear();
         // Create the new note, select it, and open in Edit mode.
-        Magpie::Note& n = store_.Create("Untitled note");
+        Magpie::Note& n = store_.Create(Tr("Untitled note"));
         selectedId_ = n.id;
         Save();
         enterEdit_(&n);
@@ -159,7 +176,7 @@ void NotesWindow::requestSelect_(const std::string& id)
     if (dirty) {
         pendingSelectId_ = id;
         pendingCreate_   = false;
-        ImGui::OpenPopup("Unsaved Changes");
+        ImGui::OpenPopup(PopupName("Unsaved Changes", "unsaved").c_str());
     } else {
         selectedId_ = id;
         mode_ = Mode::View;
@@ -181,9 +198,9 @@ void NotesWindow::requestCreate_()
     if (dirty) {
         pendingCreate_   = true;
         pendingSelectId_.clear();
-        ImGui::OpenPopup("Unsaved Changes");
+        ImGui::OpenPopup(PopupName("Unsaved Changes", "unsaved").c_str());
     } else {
-        Magpie::Note& n = store_.Create("Untitled note");
+        Magpie::Note& n = store_.Create(Tr("Untitled note"));
         selectedId_ = n.id;
         Save();
         enterEdit_(&n);
@@ -199,14 +216,14 @@ void NotesWindow::renderUnsavedModal_()
     ImVec2 centre  = ImVec2(display.x * 0.5f, display.y * 0.5f);
     ImGui::SetNextWindowPos(centre, ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-    if (ImGui::BeginPopupModal("Unsaved Changes", nullptr,
+    if (ImGui::BeginPopupModal(PopupName("Unsaved Changes", "unsaved").c_str(), nullptr,
                                ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::Text("This note has unsaved changes.");
+        ImGui::TextUnformatted(Tr("This note has unsaved changes."));
         ImGui::Spacing();
 
         Theme::PushGreenButton();
-        if (ImGui::Button("Save", ImVec2(80, 0))) {
+        if (ImGui::Button(Tr("Save"), ImVec2(ButtonWidth(Tr("Save"), 80), 0))) {
             commitEdit_();
             ImGui::CloseCurrentPopup();
             resolvePending_();
@@ -216,7 +233,7 @@ void NotesWindow::renderUnsavedModal_()
         ImGui::SameLine();
 
         Theme::PushAmberButton();
-        if (ImGui::Button("Discard", ImVec2(80, 0))) {
+        if (ImGui::Button(Tr("Discard"), ImVec2(ButtonWidth(Tr("Discard"), 80), 0))) {
             cancelEdit_();
             ImGui::CloseCurrentPopup();
             resolvePending_();
@@ -225,7 +242,7 @@ void NotesWindow::renderUnsavedModal_()
 
         ImGui::SameLine();
 
-        if (ImGui::Button("Cancel", ImVec2(80, 0))) {
+        if (ImGui::Button(Tr("Cancel"), ImVec2(ButtonWidth(Tr("Cancel"), 80), 0))) {
             pendingSelectId_.clear();
             pendingCreate_ = false;
             ImGui::CloseCurrentPopup();
@@ -282,7 +299,7 @@ void NotesWindow::Render()
             clickedId = note.id;
         }
         if (ImGui::BeginPopupContextItem("##row_ctx")) {
-            if (ImGui::MenuItem("Export note...")) startExport_(note.id);
+            if (ImGui::MenuItem(Tr("Export note..."))) startExport_(note.id);
             ImGui::EndPopup();
         }
         ImGui::PopID();
@@ -313,7 +330,7 @@ void NotesWindow::Render()
 
     // Create New Note button — immediately below the list, inside the column.
     Theme::PushGreenButton();
-    if (ImGui::Button("Create New Note", ImVec2(leftWidth, 0))) {
+    if (ImGui::Button(Tr("Create New Note"), ImVec2(leftWidth, 0))) {
         requestCreate_();
     }
     Theme::PopButton();
@@ -321,15 +338,15 @@ void NotesWindow::Render()
     // Import / Export all — second row, split in half.
     {
         const float half = (leftWidth - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
-        if (ImGui::Button("Import...", ImVec2(half, 0))) startImport_();
+        if (ImGui::Button(Tr("Import..."), ImVec2(half, 0))) startImport_();
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Add notes from an exported file (or a notes.json).\n"
-                              "Existing notes are never replaced.");
+            ImGui::SetTooltip("%s", Tr("Add notes from an exported file (or a notes.json).\n"
+                                       "Existing notes are only updated if you choose to."));
         ImGui::SameLine();
-        if (ImGui::Button("Export all...", ImVec2(half, 0))) startExport_(std::string());
+        if (ImGui::Button(Tr("Export all..."), ImVec2(half, 0))) startExport_(std::string());
         if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("Save all notes to one file.\n"
-                              "Right-click a note in the list to export just that one.");
+            ImGui::SetTooltip("%s", Tr("Save all notes to one file.\n"
+                                       "Right-click a note in the list to export just that one."));
     }
 
     ImGui::EndGroup();
@@ -348,14 +365,14 @@ void NotesWindow::Render()
     if (note == nullptr) {
         // Empty state — light magpie flavour, all ASCII.
         ImGui::Spacing();
-        ImGui::TextDisabled("Your nest is empty.");
-        ImGui::TextDisabled("Tap 'Create New Note' to start collecting.");
+        ImGui::TextDisabled("%s", Tr("Your nest is empty."));
+        ImGui::TextDisabled("%s", Tr("Click 'Create New Note' to start collecting."));
     } else if (mode_ == Mode::Edit) {
         // ── Edit mode ──────────────────────────────────────────────────────
 
         // Save / Cancel buttons at the top.
         Theme::PushGreenButton();
-        if (ImGui::Button("Save", ImVec2(70, 0))) {
+        if (ImGui::Button(Tr("Save"), ImVec2(ButtonWidth(Tr("Save"), 70), 0))) {
             commitEdit_();
         }
         Theme::PopButton();
@@ -363,18 +380,19 @@ void NotesWindow::Render()
         ImGui::SameLine();
 
         Theme::PushAmberButton();
-        if (ImGui::Button("Cancel", ImVec2(70, 0))) {
+        if (ImGui::Button(Tr("Cancel"), ImVec2(ButtonWidth(Tr("Cancel"), 70), 0))) {
             cancelEdit_();
         }
         Theme::PopButton();
 
         // Delete button on the far right, same row.
+        const float deleteW = ButtonWidth(Tr("Delete"), 60.0f);
         {
             float avail = ImGui::GetContentRegionAvail().x;
-            ImGui::SameLine(ImGui::GetCursorPosX() + avail - 60.0f);
+            ImGui::SameLine(ImGui::GetCursorPosX() + avail - deleteW);
         }
         Theme::PushAmberButton();
-        if (ImGui::Button("Delete", ImVec2(60.0f, 0))) {
+        if (ImGui::Button(Tr("Delete"), ImVec2(deleteW, 0))) {
             deleteClickedId = note->id;   // confirm before deleting
         }
         Theme::PopButton();
@@ -426,12 +444,14 @@ void NotesWindow::Render()
         ImGui::Text("%s", note->title.c_str());
 
         // Edit button right-aligned before Delete.
+        const float editW   = ButtonWidth(Tr("Edit"), 60.0f);
+        const float deleteW = ButtonWidth(Tr("Delete"), 60.0f);
         {
             float avail = ImGui::GetContentRegionAvail().x;
-            ImGui::SameLine(ImGui::GetCursorPosX() + avail - 60.0f - 65.0f - ImGui::GetStyle().ItemSpacing.x);
+            ImGui::SameLine(ImGui::GetCursorPosX() + avail - editW - deleteW - ImGui::GetStyle().ItemSpacing.x);
         }
         Theme::PushGreenButton();
-        if (ImGui::Button("Edit", ImVec2(60.0f, 0))) {
+        if (ImGui::Button(Tr("Edit"), ImVec2(editW, 0))) {
             enterEdit_(note);
         }
         Theme::PopButton();
@@ -439,7 +459,7 @@ void NotesWindow::Render()
         ImGui::SameLine();
 
         Theme::PushAmberButton();
-        if (ImGui::Button("Delete", ImVec2(60.0f, 0))) {
+        if (ImGui::Button(Tr("Delete"), ImVec2(deleteW, 0))) {
             deleteClickedId = note->id;   // confirm before deleting
         }
         Theme::PopButton();
@@ -457,7 +477,7 @@ void NotesWindow::Render()
     // BeginPopupModal in renderDeleteModal_).
     if (!deleteClickedId.empty()) {
         pendingDeleteId_ = deleteClickedId;
-        ImGui::OpenPopup("Confirm Delete");
+        ImGui::OpenPopup(PopupName("Confirm Delete", "confirm_delete").c_str());
     }
 }
 
@@ -488,29 +508,29 @@ void NotesWindow::renderEditToolbar_()
     bodyEditor_.GetSelection(selA, selB);
 
     EditResult r;
-    if (toolButton(" B ",     "Bold (Ctrl+B)"))
+    if (toolButton(" B ",     Tr("Bold (Ctrl+B)")))
         r = WrapSelection(bodyEditor_.Codepoints(), selA, selB, "**");
-    if (toolButton(" I ",     "Italic (Ctrl+I)"))
+    if (toolButton(" I ",     Tr("Italic (Ctrl+I)")))
         r = WrapSelection(bodyEditor_.Codepoints(), selA, selB, "*");
-    if (toolButton("H1",      "Heading 1"))
+    if (toolButton("H1",      Tr("Heading 1")))
         r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Heading1);
-    if (toolButton("H2",      "Heading 2"))
+    if (toolButton("H2",      Tr("Heading 2")))
         r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Heading2);
-    if (toolButton("- List",  "Bullet list"))
+    if (toolButton(Tr("- List"),  Tr("Bullet list")))
         r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Bullet);
-    if (toolButton("[ ] Task", "Checkbox (task list)"))
+    if (toolButton(Tr("[ ] Task"), Tr("Checkbox (task list)")))
         r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Task);
     bodyEditor_.ApplyEdit(r);
 
     // Preview toggle, right-aligned on the same row.
-    const char* previewLabel = "Preview";
+    const char* previewLabel = Tr("Preview");
     const float boxW = ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x +
                        ImGui::CalcTextSize(previewLabel).x;
     const float avail = ImGui::GetContentRegionAvail().x;
     if (avail > boxW) ImGui::SameLine(ImGui::GetCursorPosX() + avail - boxW);
     else              ImGui::NewLine();
     if (ImGui::Checkbox(previewLabel, &showPreview_)) settingsChanged_ = true;
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("Show a live preview beside the editor");
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", Tr("Show a live preview beside the editor"));
 }
 
 void NotesWindow::renderViewBody_(Magpie::Note* note)
@@ -535,11 +555,11 @@ void NotesWindow::renderViewBody_(Magpie::Note* note)
     }
     if (ImGui::BeginPopup("##view_ctx")) {
         const Magpie::Md::TaskCount tc = Magpie::Md::CountTasks(note->body);
-        if (ImGui::MenuItem("Uncheck all tasks", nullptr, false, tc.done > 0)) {
+        if (ImGui::MenuItem(Tr("Uncheck all tasks"), nullptr, false, tc.done > 0)) {
             Magpie::Md::UncheckAllTasks(note->body);
             Save();
         }
-        if (ImGui::MenuItem("Export note...")) startExport_(note->id);
+        if (ImGui::MenuItem(Tr("Export note..."))) startExport_(note->id);
         ImGui::EndPopup();
     }
 
@@ -563,14 +583,14 @@ void NotesWindow::renderDeleteModal_()
     ImGui::SetNextWindowPos(ImVec2(display.x * 0.5f, display.y * 0.5f),
                             ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-    if (ImGui::BeginPopupModal("Confirm Delete", nullptr,
+    if (ImGui::BeginPopupModal(PopupName("Confirm Delete", "confirm_delete").c_str(), nullptr,
                                ImGuiWindowFlags_AlwaysAutoResize))
     {
-        ImGui::Text("Delete this note? This cannot be undone.");
+        ImGui::TextUnformatted(Tr("Delete this note? This cannot be undone."));
         ImGui::Spacing();
 
         Theme::PushAmberButton();
-        if (ImGui::Button("Delete", ImVec2(80, 0))) {
+        if (ImGui::Button(Tr("Delete"), ImVec2(ButtonWidth(Tr("Delete"), 80), 0))) {
             performDelete_(pendingDeleteId_);
             pendingDeleteId_.clear();
             ImGui::CloseCurrentPopup();
@@ -579,7 +599,7 @@ void NotesWindow::renderDeleteModal_()
 
         ImGui::SameLine();
 
-        if (ImGui::Button("Cancel", ImVec2(80, 0))) {
+        if (ImGui::Button(Tr("Cancel"), ImVec2(ButtonWidth(Tr("Cancel"), 80), 0))) {
             pendingDeleteId_.clear();
             ImGui::CloseCurrentPopup();
         }
@@ -616,24 +636,35 @@ std::string FileNameFor(const std::string& title)
 
 // Modal Windows open/save dialog (runs on a worker thread). Returns the chosen
 // path, or empty if cancelled.
-std::wstring RunFileDialog(bool save, std::wstring dir, std::wstring fileName)
+std::wstring RunFileDialog(bool save, std::wstring dir, std::wstring fileName,
+                           std::wstring title, std::wstring filter)
 {
     wchar_t buf[MAX_PATH * 4] = L"";
     if (save) fileName.copy(buf, (sizeof buf / sizeof buf[0]) - 1);
 
     OPENFILENAMEW ofn = {};
     ofn.lStructSize     = sizeof ofn;
-    ofn.lpstrFilter     = L"Trailpack Memo notes (*.json)\0*.json\0All files (*.*)\0*.*\0";
+    ofn.lpstrFilter     = filter.c_str();   // "label\0pattern\0...\0" (see DialogFilter)
     ofn.lpstrFile       = buf;
     ofn.nMaxFile        = sizeof buf / sizeof buf[0];
     ofn.lpstrInitialDir = dir.empty() ? nullptr : dir.c_str();
     ofn.lpstrDefExt     = L"json";
-    ofn.lpstrTitle      = save ? L"Export notes" : L"Import notes";
+    ofn.lpstrTitle      = title.c_str();
     ofn.Flags = OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR |
                 (save ? OFN_OVERWRITEPROMPT : OFN_FILEMUSTEXIST);
 
     const BOOL ok = save ? GetSaveFileNameW(&ofn) : GetOpenFileNameW(&ofn);
     return ok ? std::wstring(buf) : std::wstring();
+}
+
+// Dialog file-type filter in the current language: pairs of label + pattern, each
+// NUL-terminated, plus a final NUL.
+std::wstring DialogFilter()
+{
+    std::wstring f;
+    f += Widen(Tr("Trailpack Memo notes (*.json)")); f += L'\0'; f += L"*.json"; f += L'\0';
+    f += Widen(Tr("All files (*.*)"));               f += L'\0'; f += L"*.*";    f += L'\0';
+    return f;
 }
 
 } // namespace
@@ -660,7 +691,8 @@ void NotesWindow::startExport_(const std::string& id)
     ioAction_   = IoAction::Export;
     ioExportId_ = id;
     ioDialog_   = std::async(std::launch::async, RunFileDialog, true,
-                             exportDir_.wstring(), Widen(name));
+                             exportDir_.wstring(), Widen(name),
+                             Widen(Tr("Export notes")), DialogFilter());
 }
 
 void NotesWindow::startImport_()
@@ -671,7 +703,8 @@ void NotesWindow::startImport_()
 
     ioAction_ = IoAction::Import;
     ioDialog_ = std::async(std::launch::async, RunFileDialog, false,
-                           exportDir_.wstring(), std::wstring());
+                           exportDir_.wstring(), std::wstring(),
+                           Widen(Tr("Import notes")), DialogFilter());
 }
 
 void NotesWindow::pollFileDialog_()
@@ -696,10 +729,12 @@ void NotesWindow::pollFileDialog_()
         std::ofstream f(path, std::ios::out | std::ios::trunc | std::ios::binary);
         if (f.is_open()) f << store_.ExportJson(ids);
         if (f.is_open() && f.good())
-            snprintf(msg, sizeof msg, "Exported %zu note%s to %s.", count,
-                     count == 1 ? "" : "s", fileName.c_str());
+            if (count == 1)
+                snprintf(msg, sizeof msg, Tr("Exported 1 note to %s."), fileName.c_str());
+            else
+                snprintf(msg, sizeof msg, Tr("Exported %d notes to %s."), (int)count, fileName.c_str());
         else
-            snprintf(msg, sizeof msg, "Could not write %s.", fileName.c_str());
+            snprintf(msg, sizeof msg, Tr("Could not write %s."), fileName.c_str());
     } else {
         std::ifstream f(path, std::ios::in | std::ios::binary);
         std::ostringstream ss;
@@ -711,13 +746,13 @@ void NotesWindow::pollFileDialog_()
             [](const Magpie::ImportItem& i) { return !i.duplicate || i.changed; });
         if (!valid) {
             snprintf(msg, sizeof msg,
-                     "%s is not a Trailpack Memo export or notes file.\nNothing was imported.",
+                     Tr("%s is not a Trailpack Memo export or notes file.\nNothing was imported."),
                      fileName.c_str());
         } else if (items.empty()) {
-            snprintf(msg, sizeof msg, "%s contains no notes.", fileName.c_str());
+            snprintf(msg, sizeof msg, Tr("%s contains no notes."), fileName.c_str());
         } else if (offered == 0) {
             snprintf(msg, sizeof msg,
-                     "All notes in %s already exist and are up to date.\nNothing was imported.",
+                     Tr("All notes in %s already exist and are up to date.\nNothing was imported."),
                      fileName.c_str());
         } else {
             // Let the user pick: new notes pre-selected; updates of existing notes are
@@ -727,13 +762,13 @@ void NotesWindow::pollFileDialog_()
             for (size_t i = 0; i < importItems_.size(); ++i)
                 importChecked_[i] = importItems_[i].duplicate ? 0 : 1;
             importFile_ = fileName;
-            ImGui::OpenPopup("Import Notes");
+            ImGui::OpenPopup(PopupName("Import Notes", "import_notes").c_str());
             return;
         }
     }
 
     ioMessage_ = msg;
-    ImGui::OpenPopup("Import / Export");
+    ImGui::OpenPopup(PopupName("Import / Export", "import_export").c_str());
 }
 
 void NotesWindow::renderIoModal_()
@@ -742,12 +777,12 @@ void NotesWindow::renderIoModal_()
     ImGui::SetNextWindowPos(ImVec2(display.x * 0.5f, display.y * 0.5f),
                             ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
 
-    if (ImGui::BeginPopupModal("Import / Export", nullptr,
+    if (ImGui::BeginPopupModal(PopupName("Import / Export", "import_export").c_str(), nullptr,
                                ImGuiWindowFlags_AlwaysAutoResize))
     {
         ImGui::TextUnformatted(ioMessage_.c_str());
         ImGui::Spacing();
-        if (ImGui::Button("OK", ImVec2(80, 0))) {
+        if (ImGui::Button(Tr("OK"), ImVec2(80, 0))) {
             ioMessage_.clear();
             ImGui::CloseCurrentPopup();
         }
@@ -762,10 +797,10 @@ void NotesWindow::renderImportModal_()
                             ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
     ImGui::SetNextWindowSize(ImVec2(420.0f, 0.0f), ImGuiCond_Appearing);
 
-    if (!ImGui::BeginPopupModal("Import Notes", nullptr, ImGuiWindowFlags_AlwaysAutoResize))
+    if (!ImGui::BeginPopupModal(PopupName("Import Notes", "import_notes").c_str(), nullptr, ImGuiWindowFlags_AlwaysAutoResize))
         return;
 
-    ImGui::Text("Notes in %s:", importFile_.c_str());
+    ImGui::Text(Tr("Notes in %s:"), importFile_.c_str());
     ImGui::Spacing();
 
     // An update is only possible when the local note is not open in the editor
@@ -785,57 +820,57 @@ void NotesWindow::renderImportModal_()
     for (size_t i = 0; i < importItems_.size(); ++i) {
         const Magpie::ImportItem& item = importItems_[i];
         ImGui::PushID((int)i);
-        const char* title = item.title.empty() ? "(untitled)" : item.title.c_str();
+        const char* title = item.title.empty() ? Tr("(untitled)") : item.title.c_str();
         if (selectable(item)) {
             bool on = importChecked_[i] != 0;
             if (item.duplicate) {
                 // Exists locally with different title/text: ask before replacing it.
                 char label[300];
-                snprintf(label, sizeof label, "Update: %s", title);
+                snprintf(label, sizeof label, Tr("Update: %s"), title);
                 ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.75f, 0.35f, 1.0f));
                 if (ImGui::Checkbox(label, &on)) importChecked_[i] = on ? 1 : 0;
                 ImGui::PopStyleColor(1);
                 if (ImGui::IsItemHovered())
-                    ImGui::SetTooltip("You already have this note, but the file's version differs.\n"
-                                      "Tick to replace your title and text with the file's version.");
+                    ImGui::SetTooltip("%s", Tr("You already have this note, but the file's version differs.\n"
+                                               "Tick to replace your title and text with the file's version."));
                 if (on) ++toUpdate;
             } else {
                 if (ImGui::Checkbox(title, &on)) importChecked_[i] = on ? 1 : 0;
                 if (on) ++toAdd;
             }
         } else if (item.changed) {
-            ImGui::TextDisabled("[-] %s  (open in the editor - save or cancel first)", title);
+            ImGui::TextDisabled(Tr("[-] %s  (open in the editor - save or cancel first)"), title);
         } else {
             // Already in the notes (same id, or same title + text) and identical.
-            ImGui::TextDisabled("[-] %s  (already up to date)", title);
+            ImGui::TextDisabled(Tr("[-] %s  (already up to date)"), title);
         }
         ImGui::PopID();
     }
     ImGui::EndChild();
 
     ImGui::Spacing();
-    if (ImGui::SmallButton("All")) {
+    if (ImGui::SmallButton(Tr("All"))) {
         for (size_t i = 0; i < importItems_.size(); ++i)
             importChecked_[i] = selectable(importItems_[i]) ? 1 : 0;
     }
     ImGui::SameLine();
-    if (ImGui::SmallButton("None")) {
+    if (ImGui::SmallButton(Tr("None"))) {
         std::fill(importChecked_.begin(), importChecked_.end(), 0);
     }
     ImGui::Separator();
 
     char label[64];
     if (toAdd > 0 && toUpdate > 0)
-        snprintf(label, sizeof label, "Import %d, update %d", toAdd, toUpdate);
+        snprintf(label, sizeof label, Tr("Import %d, update %d"), toAdd, toUpdate);
     else if (toUpdate > 0)
-        snprintf(label, sizeof label, "Update %d note%s", toUpdate, toUpdate == 1 ? "" : "s");
+        snprintf(label, sizeof label, TrN(toUpdate, "Update 1 note", "Update %d notes"), toUpdate);
     else
-        snprintf(label, sizeof label, "Import %d note%s", toAdd, toAdd == 1 ? "" : "s");
+        snprintf(label, sizeof label, TrN(toAdd, "Import 1 note", "Import %d notes"), toAdd);
     Theme::PushGreenButton();
-    const bool doImport = ImGui::Button(label, ImVec2(160, 0)) && (toAdd + toUpdate) > 0;
+    const bool doImport = ImGui::Button(label, ImVec2(ButtonWidth(label, 160), 0)) && (toAdd + toUpdate) > 0;
     Theme::PopButton();
     ImGui::SameLine();
-    const bool cancel = ImGui::Button("Cancel", ImVec2(80, 0));
+    const bool cancel = ImGui::Button(Tr("Cancel"), ImVec2(ButtonWidth(Tr("Cancel"), 80), 0));
 
     if (doImport) {
         std::vector<Magpie::ImportItem> adds, updates;

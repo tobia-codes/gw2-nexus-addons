@@ -28,6 +28,7 @@
 #include "DecoderRingApi.h"          // DecoderRecord + enums (rarity)
 #include "IconCache.h"               // Magpie::Icons::RequestUrl / Get
 #include "chat/ChatLinks.h"          // SegmentLine -> (linkType, id)
+#include "I18n.h"                    // Tr
 
 namespace Magpie {
 
@@ -56,12 +57,12 @@ bool LinkKey(const std::string& code, uint8_t& linkType, uint32_t& id)
 const char* PieUiActionLabel(uint8_t linkType)
 {
     switch (linkType) {
-        case PieUI::ChatLinks::LINK_MAP:           return "Open map in Pie UI";
-        case PieUI::ChatLinks::LINK_WARDROBE_TMPL: return "Open wardrobe template in Pie UI";
-        case PieUI::ChatLinks::LINK_BUILD:         return "Open build in Pie UI";
+        case PieUI::ChatLinks::LINK_MAP:           return Magpie::I18n::Tr("Open map in Pie UI");
+        case PieUI::ChatLinks::LINK_WARDROBE_TMPL: return Magpie::I18n::Tr("Open wardrobe template in Pie UI");
+        case PieUI::ChatLinks::LINK_BUILD:         return Magpie::I18n::Tr("Open build in Pie UI");
         case PieUI::ChatLinks::LINK_ITEM:
         case PieUI::ChatLinks::LINK_SKIN:
-        case PieUI::ChatLinks::LINK_OUTFIT:        return "Preview in Pie UI";
+        case PieUI::ChatLinks::LINK_OUTFIT:        return Magpie::I18n::Tr("Preview in Pie UI");
         default:                                   return "";
     }
 }
@@ -152,10 +153,10 @@ void AppendCoin(std::string& out, int32_t copper)
 const char* BoundText(uint8_t bound)
 {
     switch (bound) {
-        case DB_AccountOnAcquire: return "Account Bound on Acquire";
-        case DB_SoulOnAcquire:    return "Soulbound on Acquire";
-        case DB_AccountOnUse:     return "Account Bound on Use";
-        case DB_SoulOnUse:        return "Soulbound on Use";
+        case DB_AccountOnAcquire: return Magpie::I18n::Tr("Account Bound on Acquire");
+        case DB_SoulOnAcquire:    return Magpie::I18n::Tr("Soulbound on Acquire");
+        case DB_AccountOnUse:     return Magpie::I18n::Tr("Account Bound on Use");
+        case DB_SoulOnUse:        return Magpie::I18n::Tr("Soulbound on Use");
         default:                  return nullptr;
     }
 }
@@ -176,7 +177,7 @@ void EmitFacts(const DecoderRecord& rec)
 // but no pasted chat link), and the upgrade section is simply skipped.
 void EmitItemPanel(const DecoderRecord& rec, const std::string& code)
 {
-    const char* nm = rec.name[0] ? rec.name : "(unnamed)";
+    const char* nm = rec.name[0] ? rec.name : Magpie::I18n::Tr("(unnamed)");
     // Rarity-coloured header so the panel matches the chip colour.
     ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(ChipColorForItemRarity(rec.rarity)),
                        "%s", nm);
@@ -192,13 +193,13 @@ void EmitItemPanel(const DecoderRecord& rec, const std::string& code)
     // Vendor value + bind/trade flags. DR deliberately keeps these OUT of
     // facts[], so there is no duplication with the stat lines above.
     ImGui::Separator();
-    std::string v = "Vendor: ";
+    std::string v = Magpie::I18n::Tr("Vendor: ");
     AppendCoin(v, rec.vendorValue);
     ImGui::TextUnformatted(v.c_str());
     if (const char* b = BoundText(rec.bound)) ImGui::TextUnformatted(b);
-    ImGui::TextUnformatted(rec.tradeable ? "Tradeable on the Trading Post"
-                                         : "Not tradeable");
-    if (rec.noSell) ImGui::TextUnformatted("Cannot be sold to a vendor");
+    ImGui::TextUnformatted(rec.tradeable ? Magpie::I18n::Tr("Tradeable on the Trading Post")
+                                         : Magpie::I18n::Tr("Not tradeable"));
+    if (rec.noSell) ImGui::TextUnformatted(Magpie::I18n::Tr("Cannot be sold to a vendor"));
 
     // Rune / sigil set bonuses live on the UPGRADE item's own record (DR
     // keeps records flat), so decode the chip's upgrade ids and resolve
@@ -214,7 +215,7 @@ void EmitItemPanel(const DecoderRecord& rec, const std::string& code)
             if (Magpie::Decoder::Resolve(PieUI::ChatLinks::LINK_ITEM, uid, nullptr, up)) {
                 if (!header) {
                     ImGui::Separator();
-                    ImGui::TextUnformatted("Upgrades:");
+                    ImGui::TextUnformatted(Magpie::I18n::Tr("Upgrades:"));
                     header = true;
                 }
                 if (up.name[0]) ImGui::TextUnformatted(up.name);
@@ -242,7 +243,7 @@ void TooltipWarm(const DecoderRecord& rec, const std::string& code)
         return;
     }
 
-    const char* nm = rec.name[0] ? rec.name : "(unnamed)";
+    const char* nm = rec.name[0] ? rec.name : Magpie::I18n::Tr("(unnamed)");
     ImGui::TextUnformatted(nm);
 
     switch (rec.linkType) {
@@ -262,7 +263,7 @@ void TooltipWarm(const DecoderRecord& rec, const std::string& code)
         case 0x04: {  // waypoint / PoI
             if (rec.mapName[0]) {
                 ImGui::Separator();
-                std::string m = "Map: ";
+                std::string m = Magpie::I18n::Tr("Map: ");
                 m += rec.mapName;
                 ImGui::TextUnformatted(m.c_str());
             }
@@ -395,13 +396,13 @@ float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& p
             } else {
                 ImGui::TextUnformatted(st.label.c_str());
                 ImGui::Separator();
-                ImGui::TextUnformatted("Decoder Ring not loaded.");
-                ImGui::TextUnformatted("Right-click to copy the code or open the wiki.");
+                ImGui::TextUnformatted(Magpie::I18n::Tr("Decoder Ring not loaded."));
+                ImGui::TextUnformatted(Magpie::I18n::Tr("Right-click to copy the code or open the wiki."));
             }
             // Discoverability for the Pie UI action (supported types, Pie UI present).
             if (offerPie) {
                 ImGui::Separator();
-                ImGui::Text("Left-click: %s", pieLabel);
+                ImGui::Text(Magpie::I18n::Tr("Left-click: %s"), pieLabel);
             }
             ImGui::EndTooltip();
         }
@@ -417,8 +418,8 @@ float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& p
     // Context menu — both actions use the raw stored code, so they work with NO
     // Decoder Ring present. Begun every frame in this window scope.
     if (ImGui::BeginPopup(pid)) {
-        if (ImGui::MenuItem("Copy chat code")) ImGui::SetClipboardText(code.c_str());
-        if (ImGui::MenuItem("Open in wiki"))   OpenWiki(code);
+        if (ImGui::MenuItem(Magpie::I18n::Tr("Copy chat code"))) ImGui::SetClipboardText(code.c_str());
+        if (ImGui::MenuItem(Magpie::I18n::Tr("Open in wiki")))   OpenWiki(code);
         if (offerPie && ImGui::MenuItem(pieLabel)) Magpie::PieUi::OpenChatLink(code);
         ImGui::EndPopup();
     }

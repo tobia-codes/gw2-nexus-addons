@@ -6,6 +6,9 @@
 #include "ChipResolver.h"
 #include "ChipCodec.h"
 #include "IconUrl.h"
+#include "I18n.h"
+#include <set>
+#include <vector>
 #include "ChipColor.h"
 #include "DecoderRingApi.h"
 #include <iostream>
@@ -369,6 +372,50 @@ static void test_import_invalid_leaves_store_untouched()
     // One bad entry rejects the whole file (all-or-nothing).
     CHECK_EQ(dst.ImportJson("[{\"title\":\"ok\",\"body\":\"\"},{\"title\":1,\"body\":\"\"}]"), -1);
     CHECK(dst.Notes().size() == 1);
+}
+
+// ── I18n ───────────────────────────────────────────────────────────────────────
+
+static void test_i18n_lookup_and_fallback()
+{
+    using namespace Magpie::I18n;
+    SetLang(Lang::En);
+    CHECK_EQ(std::string(Tr("Save")), std::string("Save"));
+    SetLang(Lang::De);
+    CHECK_EQ(std::string(Tr("Save")), std::string("Speichern"));
+    CHECK_EQ(std::string(Tr("no such key")), std::string("no such key"));   // falls back to English
+    CHECK_EQ(std::string(TrN(1, "Import 1 note", "Import %d notes")), std::string("1 Notiz importieren"));
+    CHECK_EQ(std::string(TrN(3, "Import 1 note", "Import %d notes")), std::string("%d Notizen importieren"));
+    SetLang(Lang::En);
+}
+
+// printf conversions of a format string, in order ("%%" ignored).
+static std::vector<std::string> FormatSpecs(const char* f)
+{
+    std::vector<std::string> out;
+    for (const char* p = f; *p; ++p) {
+        if (*p != '%') continue;
+        if (p[1] == '%') { ++p; continue; }
+        std::string spec = "%";
+        while (*++p && !std::isalpha((unsigned char)*p)) spec += *p;
+        while (*p == 'l' || *p == 'z' || *p == 'h') spec += *p++;
+        if (*p) spec += *p; else break;
+        out.push_back(spec);
+    }
+    return out;
+}
+
+static void test_i18n_table_is_consistent()
+{
+    std::set<std::string> keys;
+    for (const auto& e : Magpie::I18n::GermanTable()) {
+        CHECK(e.first != nullptr && e.first[0] != '\0');
+        CHECK(e.second != nullptr && e.second[0] != '\0');
+        CHECK(keys.insert(e.first).second);                        // no duplicate keys
+        CHECK(FormatSpecs(e.first) == FormatSpecs(e.second));      // same printf arguments
+        if (FormatSpecs(e.first) != FormatSpecs(e.second))
+            std::cerr << "  format mismatch: " << e.first << "\n";
+    }
 }
 
 // ── Decoder Ring ABI header tests ──────────────────────────────────────────────
@@ -1176,6 +1223,8 @@ int main()
     test_fromjson_invalid_returns_false_and_leaves_state();
     test_export_all_import_roundtrip();
     test_export_selected_ids_only();
+    test_i18n_lookup_and_fallback();
+    test_i18n_table_is_consistent();
     test_reimport_same_note_is_skipped();
     test_import_into_source_store_adds_nothing();
     test_prepare_import_flags_duplicates();

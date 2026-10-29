@@ -21,6 +21,8 @@
   export (notes without one are matched by identical title + text). If the file holds a
   *different* version of a note you have, you are offered **Update** for it (never pre-selected). Dialogs open in
   `addons/TrailpackMemo/exports/`.
+- **English and German UI**: follows the Nexus language by default, or set it in the addon
+  options (Auto / English / Deutsch).
 - **Custom colours** for the window border, background and text (colour pickers with alpha in
   the Nexus addon options, each with a Reset).
 - **Adjustable text size** (70-200 %) in the Nexus addon options; headings and chips scale along.

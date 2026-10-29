@@ -36,6 +36,7 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 | `DecoderClient.{h,cpp}` | no | Decoder Ring consumer |
 | `PieUiClient.{h,cpp}` | no | Pie UI consumer (`OpenChatLink`) |
 | `IconCache.{h,cpp}` / `IconUrl.{h,cpp}` | no / yes | URL -> texture via Nexus `Textures_*FromURL`, failure set (retryable); FNV-1a key, URL split |
+| `I18n.{h,cpp}` | yes | English -> German UI string table, `Tr` / `TrN`, current language |
 | `Theme.{h,cpp}` | no | Accent palette (gold border, green/amber buttons, edit tint) |
 | `chat/*` | yes | **Vendored** Pie UI codec — do not edit |
 
@@ -55,6 +56,10 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   id) are never added; an id match whose title/body differ (`ImportItem::changed`) is offered as
   an opt-in update (`UpdateImported`), locked while that note is open in the editor. Windows file dialogs run on a worker thread
   (`std::async`) and are polled in `Render()`.
+- UI language English/German (`I18n.{h,cpp}`, pure, host-tested table). Auto = Nexus language via
+  a `Localization_Set` probe key (the game's own language is not exposed to addons); `language`
+  in `settings.json`. Chip structural labels (`[Item]`, spec names) come from the vendored codec
+  and stay English; Decoder Ring names come in whatever language it delivers.
 - User colours (border / background / text) in `Theme::Colors()`, pushed for the whole window by
   `Theme::PushWindowStyle()`; background/text only override Nexus's style once picked
   (`color_*` in `settings.json`, null = Nexus default).

@@ -35,6 +35,7 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 | Toggle keybind | `CTRL+SHIFT+T` (Magpie: `CTRL+SHIFT+M`) | `src/dllmain.cpp` |
 | Texture ids | prefix `TPM_ICON_` | `src/IconCache.cpp` |
 | Author | `PieOrCake.7635 & tobia-codes` | `src/dllmain.cpp` |
+| Localization keys | `TPM_LANG_PROBE` (active-language probe), `KB_TRAILPACK_MEMO_TOGGLE` (keybind name) | `src/dllmain.cpp` |
 | Updates | `UP_None`, `UpdateLink = nullptr` (see PLAN backlog B2) | `src/dllmain.cpp` |
 
 New identifiers that the game or Nexus can see (signature, ids, events, textures, paths) must
@@ -50,7 +51,12 @@ New identifiers that the game or Nexus can see (signature, ids, events, textures
   `NotesStore`, `Markdown`, `MarkdownEdit`, `ChipCodec`, `ChipResolver`, `ChipColor`, `IconUrl`,
   `chat/ChatLinks`. Put new logic into a pure unit + host test (`tests/host_tests_main.cpp`) where
   possible.
-- **All rendered text is ASCII** (Nexus font) — no em-dashes, arrows or Unicode bullets in UI strings.
+- **UI text is translated (English + German):** wrap every user-visible literal in
+  `Magpie::I18n::Tr("English text")` and add the German line to the table in `src/I18n.cpp`
+  (same printf specifiers — host-tested). Plurals via `TrN`, popups via `PopupName` (stable
+  `###id`), button widths via `ButtonWidth` (German labels are longer).
+- **Rendered characters:** ASCII plus Latin-1 letters (German umlauts/ß — Nexus's own German
+  locale uses them). No em-dashes, arrows, Unicode bullets or other symbols.
 - **No game-memory reading, no game-function hooks.** Anything that seems to need it is out of scope.
 - Match the surrounding style, naming and comment density. Keep `README.md` (addon + root table)
   in sync with user-visible changes.

@@ -15,6 +15,7 @@
 #include "NotesWindow.h"
 #include "DecoderClient.h"
 #include "PieUiClient.h"
+#include "I18n.h"
 #include "IconCache.h"
 #include "EmbeddedIcon.h"   // MAGPIE_ICON[] + MAGPIE_ICON_size (generated from icon.png)
 
@@ -22,6 +23,7 @@
 #define QA_ID    "QA_TRAILPACK_MEMO"
 #define TEX_ICON "TEX_TRAILPACK_MEMO_ICON"
 #define KB_TOGGLE "KB_TRAILPACK_MEMO_TOGGLE"
+#define LOC_LANG_PROBE "TPM_LANG_PROBE"   // Nexus localization key whose value is the active language
 #define WINDOW_NAME "Trailpack Memo"
 
 // ── Version constants ─────────────────────────────────────────────────────
@@ -36,6 +38,11 @@ bool             g_WindowVisible = false;
 bool             g_ShowQAIcon    = true;   // show the quick-access icon (persisted; default on)
 bool             g_QAIconAdded   = false;  // tracks whether the shortcut is currently registered
 int              g_TextScalePct  = 100;    // window text size in percent (persisted; 100 = Nexus default)
+
+// UI language: Auto follows Nexus's language setting (German if Nexus is set to German,
+// English otherwise); En/De force one. Persisted as "language": "auto" | "en" | "de".
+enum class LangMode { Auto, En, De };
+LangMode         g_LangMode      = LangMode::Auto;
 NotesWindow      g_Notes;
 
 // ── Forward declarations ──────────────────────────────────────────────────
@@ -44,6 +51,31 @@ void AddonUnload();
 void ProcessKeybind(const char* aIdentifier, bool aIsRelease);
 void AddonRender();
 void AddonOptions();
+
+using Magpie::I18n::Tr;
+
+static const char* LangModeKey(LangMode m) {
+    return m == LangMode::En ? "en" : m == LangMode::De ? "de" : "auto";
+}
+
+// Language Nexus is currently set to, read through a probe key registered at load
+// (Localization_Set for "en" and "de"). Any other Nexus language returns the key
+// itself -> English.
+static Magpie::I18n::Lang NexusLang() {
+    if (!APIDefs || !APIDefs->Localization_Translate) return Magpie::I18n::Lang::En;
+    const char* code = APIDefs->Localization_Translate(LOC_LANG_PROBE);
+    return (code && strcmp(code, "de") == 0) ? Magpie::I18n::Lang::De : Magpie::I18n::Lang::En;
+}
+
+// Resolve the setting to the language used this frame (cheap; called per render).
+static void ApplyLanguage() {
+    using Magpie::I18n::Lang;
+    switch (g_LangMode) {
+        case LangMode::En:   Magpie::I18n::SetLang(Lang::En); break;
+        case LangMode::De:   Magpie::I18n::SetLang(Lang::De); break;
+        case LangMode::Auto: Magpie::I18n::SetLang(NexusLang()); break;
+    }
+}
 
 static constexpr int kTextScaleMin = 70;
 static constexpr int kTextScaleMax = 200;
@@ -80,6 +112,7 @@ static void SaveSettings() {
     j["show_qa_icon"] = g_ShowQAIcon;
     j["edit_preview"] = g_Notes.PreviewEnabled();
     j["text_scale"]   = g_TextScalePct;
+    j["language"]     = LangModeKey(g_LangMode);
     const Theme::UserColors& c = Theme::Colors();
     j["color_border"]     = ColorToJson(c.border);
     j["color_background"] = c.hasBackground ? ColorToJson(c.background) : nlohmann::json();
@@ -103,6 +136,10 @@ static void LoadSettings() {
     if (j.contains("text_scale") && j["text_scale"].is_number_integer()) {
         const int pct = j["text_scale"].get<int>();
         g_TextScalePct = pct < kTextScaleMin ? kTextScaleMin : pct > kTextScaleMax ? kTextScaleMax : pct;
+    }
+    if (j.contains("language") && j["language"].is_string()) {
+        const std::string lang = j["language"].get<std::string>();
+        g_LangMode = lang == "en" ? LangMode::En : lang == "de" ? LangMode::De : LangMode::Auto;
     }
     Theme::UserColors& c = Theme::Colors();
     if (j.contains("color_border")) ColorFromJson(j["color_border"], c.border);
@@ -172,6 +209,15 @@ void AddonLoad(AddonAPI_t* aApi) {
     APIDefs->GUI_Register(RT_Render, AddonRender);
     APIDefs->GUI_Register(RT_OptionsRender, AddonOptions);
 
+    // Localization: the language probe (see NexusLang) and the keybind's display name
+    // in Nexus's keybind list, in both supported languages.
+    APIDefs->Localization_Set(LOC_LANG_PROBE, "en", "en");
+    APIDefs->Localization_Set(LOC_LANG_PROBE, "de", "de");
+    APIDefs->Localization_Set(KB_TOGGLE, "en", "Toggle Trailpack Memo");
+    Magpie::I18n::SetLang(Magpie::I18n::Lang::De);
+    APIDefs->Localization_Set(KB_TOGGLE, "de", Tr("Toggle Trailpack Memo"));
+    Magpie::I18n::SetLang(Magpie::I18n::Lang::En);
+
     // Register toggle keybind (default CTRL+SHIFT+T; Magpie Memo keeps CTRL+SHIFT+M).
     APIDefs->InputBinds_RegisterWithString(KB_TOGGLE, ProcessKeybind, "CTRL+SHIFT+T");
 
@@ -193,6 +239,7 @@ void AddonLoad(AddonAPI_t* aApi) {
     // Load persisted settings (e.g. the quick-access toggle), then register the
     // quick-access icon from the embedded icon.png (same method as Alter Ego).
     LoadSettings();
+    ApplyLanguage();
     APIDefs->Textures_LoadFromMemory(TEX_ICON, (void*)MAGPIE_ICON, MAGPIE_ICON_size, nullptr);
     if (g_ShowQAIcon) AddQAIcon();
 
@@ -227,6 +274,7 @@ void AddonUnload() {
 // ── AddonRender ───────────────────────────────────────────────────────────
 void AddonRender() {
     if (!g_WindowVisible) return;
+    ApplyLanguage();   // Auto follows a Nexus language switch without a restart
 
     Theme::PushWindowStyle();
 
@@ -243,32 +291,49 @@ void AddonRender() {
 
 // ── AddonOptions ──────────────────────────────────────────────────────────
 void AddonOptions() {
+    ApplyLanguage();
+
+    // Language: Auto (= Nexus's language) or a fixed one. Language names stay native.
+    {
+        const char* items[] = { Tr("Auto (Nexus language)"), "English", "Deutsch" };
+        int mode = (int)g_LangMode;
+        if (ImGui::Combo(Tr("Language"), &mode, items, IM_ARRAYSIZE(items))) {
+            g_LangMode = (LangMode)mode;
+            ApplyLanguage();
+            SaveSettings();
+        }
+    }
+    ImGui::Separator();
+
     // Live Decoder Ring presence — re-evaluated every frame, never latched.
     // Drives the chip experience: full names + icons + tooltips when present,
     // basic labels (still fully usable) when absent.
     if (Magpie::Decoder::Present()) {
         ImGui::TextColored(ImVec4(0.50f, 0.85f, 0.50f, 1.0f),
-            "Decoder Ring: connected -- chips show full names and icons.");
+            "%s", Tr("Decoder Ring: connected -- chips show full names and icons."));
     } else {
         ImGui::TextColored(ImVec4(0.85f, 0.78f, 0.45f, 1.0f),
-            "Decoder Ring not loaded -- chips show basic labels.");
-        ImGui::TextDisabled("Copy code and Open in wiki still work.");
+            "%s", Tr("Decoder Ring not loaded -- chips show basic labels."));
+        ImGui::TextDisabled("%s", Tr("Copy code and Open in wiki still work."));
     }
 
     ImGui::Separator();
 
     // Quick-access icon toggle (persisted; default on).
-    if (ImGui::Checkbox("Show quick access icon", &g_ShowQAIcon)) {
+    if (ImGui::Checkbox(Tr("Show quick access icon"), &g_ShowQAIcon)) {
         if (g_ShowQAIcon) AddQAIcon();
         else              RemoveQAIcon();
         SaveSettings();
     }
 
     // Text size of the notes window (live; saved when the slider is released).
-    ImGui::SliderInt("Text size", &g_TextScalePct, kTextScaleMin, kTextScaleMax, "%d%%");
+    ImGui::SliderInt(Tr("Text size"), &g_TextScalePct, kTextScaleMin, kTextScaleMax, "%d%%");
     if (ImGui::IsItemDeactivatedAfterEdit()) SaveSettings();
     ImGui::SameLine();
-    if (ImGui::Button("Reset") && g_TextScalePct != 100) {
+    ImGui::PushID("text_size");
+    const bool resetSize = ImGui::Button(Tr("Reset"));
+    ImGui::PopID();
+    if (resetSize && g_TextScalePct != 100) {
         g_TextScalePct = 100;
         SaveSettings();
     }
@@ -280,34 +345,34 @@ void AddonOptions() {
     const ImGuiColorEditFlags flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf;
 
     ImGui::Separator();
-    ImGui::TextUnformatted("Window colours");
+    ImGui::TextUnformatted(Tr("Window colours"));
 
     ImGui::PushID("border");
-    if (ImGui::ColorEdit4("Border", &c.border.x, flags)) s_ColorsDirty = true;
+    if (ImGui::ColorEdit4(Tr("Border"), &c.border.x, flags)) s_ColorsDirty = true;
     ImGui::SameLine();
-    if (ImGui::Button("Reset")) { c.border = Theme::BORDER_GOLD; s_ColorsDirty = true; }
+    if (ImGui::Button(Tr("Reset"))) { c.border = Theme::BORDER_GOLD; s_ColorsDirty = true; }
     ImGui::PopID();
 
     // Background / text show Nexus's current colour until the user picks their own.
     ImGui::PushID("background");
     ImVec4 bg = c.hasBackground ? c.background : ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
-    if (ImGui::ColorEdit4("Background", &bg.x, flags)) {
+    if (ImGui::ColorEdit4(Tr("Background"), &bg.x, flags)) {
         c.background = bg; c.hasBackground = true; s_ColorsDirty = true;
     }
     ImGui::SameLine();
-    if (ImGui::Button("Reset")) { c.hasBackground = false; s_ColorsDirty = true; }
+    if (ImGui::Button(Tr("Reset"))) { c.hasBackground = false; s_ColorsDirty = true; }
     ImGui::PopID();
 
     ImGui::PushID("text");
     ImVec4 tx = c.hasText ? c.text : ImGui::GetStyle().Colors[ImGuiCol_Text];
-    if (ImGui::ColorEdit4("Text", &tx.x, flags)) {
+    if (ImGui::ColorEdit4(Tr("Text"), &tx.x, flags)) {
         c.text = tx; c.hasText = true; s_ColorsDirty = true;
     }
     ImGui::SameLine();
-    if (ImGui::Button("Reset")) { c.hasText = false; s_ColorsDirty = true; }
+    if (ImGui::Button(Tr("Reset"))) { c.hasText = false; s_ColorsDirty = true; }
     ImGui::PopID();
 
-    ImGui::TextDisabled("Reset uses the Nexus default (gold for the border).");
+    ImGui::TextDisabled("%s", Tr("Reset uses the Nexus default (gold for the border)."));
 
     if (s_ColorsDirty && !ImGui::IsAnyItemActive()) {
         SaveSettings();
