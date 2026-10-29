@@ -25,7 +25,8 @@
   options (Auto / English / Deutsch).
 - **Custom colours** for the window border, background and text (colour pickers with alpha in
   the Nexus addon options, each with a Reset).
-- **Adjustable text size** (70-200 %) in the Nexus addon options; headings and chips scale along.
+- **Two text sizes** (70-200 %) in the Nexus addon options: one for the window's UI, one for the
+  note content (view, editor, preview); headings, checkboxes and chips scale along.
 - **Lists continue on Enter**: a new `- ` / `- [ ] ` is started automatically; Enter on an empty
   item ends the list.
 

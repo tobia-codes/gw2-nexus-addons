@@ -29,6 +29,32 @@ static std::string PopupName(const char* en, const char* id)
     return std::string(Tr(en)) + "###" + id;
 }
 
+// Scoped font size for note content: g.FontSize becomes FontBaseSize * `scale`,
+// regardless of window font scales. ImGui 1.80 only inherits SetWindowFontScale one
+// child level deep, so nested panes can't rely on it. Works by temporarily scaling the
+// shared ImFont (restored before PopFont, so nothing else ever sees it).
+class NoteFontScope {
+public:
+    explicit NoteFontScope(float scale) : font_(ImGui::GetFont()), oldScale_(font_->Scale)
+    {
+        const float current = ImGui::GetFontSize();
+        const float target  = ImGui::GetIO().FontGlobalScale * font_->FontSize * oldScale_ * scale;
+        if (current > 0.0f) font_->Scale = oldScale_ * (target / current);
+        ImGui::PushFont(font_);
+    }
+    ~NoteFontScope()
+    {
+        font_->Scale = oldScale_;
+        ImGui::PopFont();
+    }
+    NoteFontScope(const NoteFontScope&) = delete;
+    NoteFontScope& operator=(const NoteFontScope&) = delete;
+
+private:
+    ImFont* font_;
+    float   oldScale_;
+};
+
 // Button width that fits its (translated) label, but never narrower than `minW`.
 static float ButtonWidth(const char* label, float minW)
 {
@@ -438,10 +464,13 @@ void NotesWindow::Render()
                 const float half = (ImGui::GetContentRegionAvail().x -
                                     ImGui::GetStyle().ItemSpacing.x) * 0.5f;
                 ImGui::BeginChild("##edit_col", ImVec2(half, 0), false);
-                bodyEditor_.Render("##body_edit",
-                                   ImGui::GetContentRegionAvail().x,
-                                   ImGui::GetColorU32(Theme::Colors().border),
-                                   /*minLines=*/6);
+                {
+                    NoteFontScope noteFont(noteTextScale_);
+                    bodyEditor_.Render("##body_edit",
+                                       ImGui::GetContentRegionAvail().x,
+                                       ImGui::GetColorU32(Theme::Colors().border),
+                                       /*minLines=*/6);
+                }
                 ImGui::EndChild();
 
                 ImGui::SameLine();
@@ -449,9 +478,13 @@ void NotesWindow::Render()
                 ImGui::BeginChild("##preview_col", ImVec2(0, 0), true);
                 const std::vector<Magpie::Md::Line> lines =
                     Magpie::Md::Parse(bodyEditor_.GetText());
-                Magpie::RenderMarkdown(lines, fontBig_(), ImGui::GetContentRegionAvail().x);
+                {
+                    NoteFontScope noteFont(noteTextScale_);
+                    Magpie::RenderMarkdown(lines, fontBig_(), ImGui::GetContentRegionAvail().x);
+                }
                 ImGui::EndChild();
             } else {
+                NoteFontScope noteFont(noteTextScale_);
                 bodyEditor_.Render("##body_edit",
                                    ImGui::GetContentRegionAvail().x,
                                    ImGui::GetColorU32(Theme::Colors().border),
@@ -561,9 +594,13 @@ void NotesWindow::renderViewBody_(Magpie::Note* note)
     ImGui::BeginChild("##view_body", ImVec2(0, 0), false);
 
     const std::vector<Magpie::Md::Line> lines = Magpie::Md::Parse(note->body);
-    const int clickedTask = Magpie::RenderMarkdown(lines, fontBig_(),
-                                                   ImGui::GetContentRegionAvail().x,
-                                                   /*interactiveTasks=*/true);
+    int clickedTask = -1;
+    {
+        NoteFontScope noteFont(noteTextScale_);
+        clickedTask = Magpie::RenderMarkdown(lines, fontBig_(),
+                                             ImGui::GetContentRegionAvail().x,
+                                             /*interactiveTasks=*/true);
+    }
     if (clickedTask >= 0 && Magpie::Md::ToggleTask(note->body, clickedTask)) {
         Save();
     }

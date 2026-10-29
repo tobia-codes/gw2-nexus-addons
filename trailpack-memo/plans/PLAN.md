@@ -65,8 +65,10 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 - User colours (border / background / text) in `Theme::Colors()`, pushed for the whole window by
   `Theme::PushWindowStyle()`; background/text only override Nexus's style once picked
   (`color_*` in `settings.json`, null = Nexus default).
-- Text-size setting (70-200 %, Nexus options, `text_scale` in `settings.json`) via
-  `SetWindowFontScale`; `RenderMarkdown` uses `ImGui::GetFontSize()` so view text follows it.
+- Two text sizes (70-200 %, Nexus options): UI = `text_scale` via `SetWindowFontScale` on the
+  main window; note content = `note_text_scale` via `NoteFontScope` (NotesWindow.cpp) around the
+  view, editor and preview. ImGui 1.80 inherits `SetWindowFontScale` only one child level deep, so
+  nested panes must not rely on it. `RenderMarkdown` sizes from `ImGui::GetFontSize()`.
 
 ---
 

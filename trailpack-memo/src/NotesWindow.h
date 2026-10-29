@@ -18,6 +18,10 @@ public:
     // Side-by-side live preview while editing (persisted by dllmain's settings.json).
     bool PreviewEnabled() const     { return showPreview_; }
     void SetPreviewEnabled(bool on) { showPreview_ = on; }
+
+    // Note text size (view, editor, preview) as a factor of Nexus's base font size,
+    // independent of the window's UI text size (set by dllmain from settings.json).
+    void SetNoteTextScale(float scale) { noteTextScale_ = scale; }
     // True once after the user changed a persisted UI setting (caller saves settings).
     bool ConsumeSettingsChanged()   { bool c = settingsChanged_; settingsChanged_ = false; return c; }
 
@@ -38,7 +42,8 @@ private:
     std::string            titleBuffer_; // working copy of note title while editing
 
     // ── UI settings ───────────────────────────────────────────────────────
-    bool showPreview_     = false;
+    bool  showPreview_     = false;
+    float noteTextScale_   = 1.0f;
     bool settingsChanged_ = false;
 
     // ── Dirty-guard pending navigation ────────────────────────────────────

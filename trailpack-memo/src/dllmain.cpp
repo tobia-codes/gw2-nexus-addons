@@ -37,7 +37,8 @@ AddonAPI_t*      APIDefs         = nullptr;
 bool             g_WindowVisible = false;
 bool             g_ShowQAIcon    = true;   // show the quick-access icon (persisted; default on)
 bool             g_QAIconAdded   = false;  // tracks whether the shortcut is currently registered
-int              g_TextScalePct  = 100;    // window text size in percent (persisted; 100 = Nexus default)
+int              g_TextScalePct  = 100;    // window UI text size in percent (persisted; 100 = Nexus default)
+int              g_NoteScalePct  = 100;    // note content text size in percent (persisted; independent of UI)
 
 // UI language: Auto follows Nexus's language setting (German if Nexus is set to German,
 // English otherwise); En/De force one. Persisted as "language": "auto" | "en" | "de".
@@ -112,6 +113,7 @@ static void SaveSettings() {
     j["show_qa_icon"] = g_ShowQAIcon;
     j["edit_preview"] = g_Notes.PreviewEnabled();
     j["text_scale"]   = g_TextScalePct;
+    j["note_text_scale"] = g_NoteScalePct;
     j["language"]     = LangModeKey(g_LangMode);
     const Theme::UserColors& c = Theme::Colors();
     j["color_border"]     = ColorToJson(c.border);
@@ -136,6 +138,10 @@ static void LoadSettings() {
     if (j.contains("text_scale") && j["text_scale"].is_number_integer()) {
         const int pct = j["text_scale"].get<int>();
         g_TextScalePct = pct < kTextScaleMin ? kTextScaleMin : pct > kTextScaleMax ? kTextScaleMax : pct;
+    }
+    if (j.contains("note_text_scale") && j["note_text_scale"].is_number_integer()) {
+        const int pct = j["note_text_scale"].get<int>();
+        g_NoteScalePct = pct < kTextScaleMin ? kTextScaleMin : pct > kTextScaleMax ? kTextScaleMax : pct;
     }
     if (j.contains("language") && j["language"].is_string()) {
         const std::string lang = j["language"].get<std::string>();
@@ -281,6 +287,7 @@ void AddonRender() {
     if (ImGui::Begin(WINDOW_NAME, &g_WindowVisible)) {
         // Scales everything inside the window (child panes inherit it), not the title bar.
         ImGui::SetWindowFontScale(g_TextScalePct / 100.0f);
+        g_Notes.SetNoteTextScale(g_NoteScalePct / 100.0f);
         g_Notes.Render();
         if (g_Notes.ConsumeSettingsChanged()) SaveSettings();
     }
@@ -326,17 +333,21 @@ void AddonOptions() {
         SaveSettings();
     }
 
-    // Text size of the notes window (live; saved when the slider is released).
-    ImGui::SliderInt(Tr("Text size"), &g_TextScalePct, kTextScaleMin, kTextScaleMax, "%d%%");
-    if (ImGui::IsItemDeactivatedAfterEdit()) SaveSettings();
-    ImGui::SameLine();
-    ImGui::PushID("text_size");
-    const bool resetSize = ImGui::Button(Tr("Reset"));
-    ImGui::PopID();
-    if (resetSize && g_TextScalePct != 100) {
-        g_TextScalePct = 100;
-        SaveSettings();
-    }
+    // Text sizes (live; saved when a slider is released): the window's UI elements,
+    // and -- independently -- the note content (view, editor, preview).
+    auto sizeSlider = [](const char* id, const char* label, int& pct) {
+        ImGui::PushID(id);
+        ImGui::SliderInt(label, &pct, kTextScaleMin, kTextScaleMax, "%d%%");
+        if (ImGui::IsItemDeactivatedAfterEdit()) SaveSettings();
+        ImGui::SameLine();
+        if (ImGui::Button(Tr("Reset")) && pct != 100) {
+            pct = 100;
+            SaveSettings();
+        }
+        ImGui::PopID();
+    };
+    sizeSlider("ui_size",   Tr("UI text size"),   g_TextScalePct);
+    sizeSlider("note_size", Tr("Note text size"), g_NoteScalePct);
 
     // ── Colours ───────────────────────────────────────────────────────────
     // Picked live; saved once no picker is being dragged any more (not every frame).
