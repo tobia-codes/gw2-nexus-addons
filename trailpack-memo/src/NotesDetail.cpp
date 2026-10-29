@@ -138,18 +138,35 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
 void NotesWindow::renderViewMode_(Magpie::Note& note)
 {
     // Title (+ type and reset countdown), Edit on the right. Deleting lives in the
-    // right-click menus and "Delete notes...".
+    // right-click menus and "Delete notes...". Title and countdown share the space left of
+    // Edit and are cut with "..." when it runs out (full text in the tooltip).
+    const float editW   = ButtonWidth(Tr("Edit"), 60.0f);
+    const float rowX    = ImGui::GetCursorPosX();
+    const float rowW    = ImGui::GetContentRegionAvail().x;
+    const float spacing = ImGui::GetStyle().ItemSpacing.x;
+    const float textW   = rowW - editW - spacing;
+    const std::string reset = note.type != Magpie::NoteType::Note ? "[" + ResetText(note.type) + "]" : "";
+
+    const std::string title = Ellipsize(note.title, textW);
+    bool cut = title != note.title;
     {
         Theme::TextColorScope noteText(Theme::Colors().hasNoteText, Theme::Colors().noteText);
-        ImGui::Text("%s", note.title.c_str());
+        ImGui::TextUnformatted(title.c_str());
     }
-    if (note.type != Magpie::NoteType::Note) {
-        ImGui::SameLine();
-        ImGui::TextColored(TypeColor(note.type), "[%s]", ResetText(note.type).c_str());
+    bool hovered = ImGui::IsItemHovered();
+    if (!reset.empty() && !cut) {
+        const float left = textW - ImGui::CalcTextSize(title.c_str()).x - spacing;
+        const std::string shown = Ellipsize(reset, left);
+        cut = shown != reset;
+        if (!shown.empty()) {
+            ImGui::SameLine();
+            ImGui::TextColored(TypeColor(note.type), "%s", shown.c_str());
+            hovered = hovered || ImGui::IsItemHovered();
+        }
     }
+    if (cut && hovered) Theme::Tooltip("%s%s%s", note.title.c_str(), reset.empty() ? "" : "\n", reset.c_str());
 
-    const float editW = ButtonWidth(Tr("Edit"), 60.0f);
-    ImGui::SameLine(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - editW);
+    ImGui::SameLine(rowX + rowW - editW);
     Theme::PushGreenButton();
     if (ImGui::Button(Tr("Edit"), ImVec2(editW, 0))) enterEdit_(&note);
     Theme::PopButton();
@@ -162,11 +179,21 @@ void NotesWindow::renderEditToolbar_()
 {
     using namespace Magpie::Md;
 
+    // The buttons flow like words: each stays on the current row if it fits, else starts a new
+    // one, so a narrow pane wraps the toolbar instead of cutting it off.
+    const ImGuiStyle& style = ImGui::GetStyle();
+    const float rowRight = ImGui::GetCursorScreenPos().x + ImGui::GetContentRegionAvail().x;
+    bool firstItem = true;
+    auto fitsOnRow = [&](float w) {
+        return !firstItem && ImGui::GetItemRectMax().x + style.ItemSpacing.x + w <= rowRight;
+    };
+
     // Labels stay ASCII: Nexus's font has no symbol glyphs.
-    auto toolButton = [](const char* label, const char* tip) {
+    auto toolButton = [&](const char* label, const char* tip) {
+        if (fitsOnRow(ImGui::CalcTextSize(label).x + style.FramePadding.x * 2.0f)) ImGui::SameLine();
+        firstItem = false;
         const bool pressed = ImGui::Button(label);
         if (ImGui::IsItemHovered()) Theme::Tooltip("%s", tip);
-        ImGui::SameLine();
         return pressed;
     };
 
@@ -197,13 +224,14 @@ void NotesWindow::renderEditToolbar_()
         ImGui::OpenPopup("##event_picker");
     }
 
-    // Preview toggle, right-aligned on the same row.
+    // Preview toggle, right-aligned on the last button row if it fits there, else below.
     const char* previewLabel = Tr("Preview");
-    const float boxW = ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x +
+    const float boxW = ImGui::GetFrameHeight() + style.ItemInnerSpacing.x +
                        ImGui::CalcTextSize(previewLabel).x;
-    const float avail = ImGui::GetContentRegionAvail().x;
-    if (avail > boxW) ImGui::SameLine(ImGui::GetCursorPosX() + avail - boxW);
-    else              ImGui::NewLine();
+    if (fitsOnRow(boxW)) {
+        ImGui::SameLine();
+        ImGui::SetCursorScreenPos(ImVec2(rowRight - boxW, ImGui::GetCursorScreenPos().y));
+    }
     bool toggled;
     {
         // The label sits on the note background: note text colour (the tooltip below doesn't).

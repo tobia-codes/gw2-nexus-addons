@@ -3,6 +3,7 @@
 #include "NotesWindow.h"
 
 #include <algorithm>
+#include <cmath>
 #include <cstdio>
 #include <ctime>
 #include "imgui.h"
@@ -28,6 +29,52 @@ static void DrawHamburger(float size)
         const float y = midY + i * gap;
         dl->AddLine(ImVec2(bMin.x + padX, y), ImVec2(bMax.x - padX, y), col, 1.5f);
     }
+}
+
+// List row: a Selectable whose highlight covers exactly [indent, right edge] x (text line +
+// padding). ImGui stretches a Selectable's highlight by half the item spacing on every side,
+// which made it start left of the row content and run into the next row; spacing 0 while it
+// is submitted removes that, and the gap to the next row is added by RowGap(). ImGui 1.80
+// draws that highlight square, so it is made transparent and drawn here with the window
+// rounding. Row content starts RowPadX() inside the highlight.
+static float RowPadY() { return std::floor(ImGui::GetFontSize() * 0.15f); }
+static float RowPadX() { return std::floor(ImGui::GetFontSize() * 0.4f); }
+
+static bool RowSelectable(const char* id, bool selected, float indent, ImVec2& pos, float& height)
+{
+    if (indent > 0.0f) ImGui::SetCursorPosX(ImGui::GetCursorPosX() + indent);
+    pos    = ImGui::GetCursorScreenPos();
+    height = ImGui::GetTextLineHeight() + 2.0f * RowPadY();
+    const ImVec4 clear(0.0f, 0.0f, 0.0f, 0.0f);
+    ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0.0f, 0.0f));
+    ImGui::PushStyleColor(ImGuiCol_Header, clear);
+    ImGui::PushStyleColor(ImGuiCol_HeaderHovered, clear);
+    ImGui::PushStyleColor(ImGuiCol_HeaderActive, clear);
+    const bool clicked = ImGui::Selectable(id, selected, 0, ImVec2(0.0f, height));
+    ImGui::PopStyleColor(3);
+    ImGui::PopStyleVar();
+
+    const bool hovered = ImGui::IsItemHovered();
+    if (selected || hovered) {
+        const ImGuiCol col = (hovered && ImGui::IsItemActive()) ? ImGuiCol_HeaderActive
+                           : hovered                            ? ImGuiCol_HeaderHovered
+                                                                : ImGuiCol_Header;
+        const float rounding = std::min(ImGui::GetStyle().WindowRounding, height * 0.5f);
+        ImGui::GetWindowDrawList()->AddRectFilled(ImGui::GetItemRectMin(), ImGui::GetItemRectMax(),
+                                                  ImGui::GetColorU32(col), rounding);
+    }
+    return clicked;
+}
+
+static void RowGap()
+{
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + std::floor(ImGui::GetFontSize() * 0.2f));
+}
+
+// Extra space above a group header (not the first) and the "No group" label.
+static void GroupGap()
+{
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + std::floor(ImGui::GetFontSize() * 0.6f));
 }
 
 // ── Column ────────────────────────────────────────────────────────────────
@@ -61,12 +108,16 @@ float NotesWindow::renderListColumn_()
 
     // Groups first (each followed by its notes unless collapsed), then ungrouped notes.
     // Ids are snapshotted: a header's context menu may change the store this frame.
-    const float groupIndent = ImGui::GetFontSize() * 0.9f;
+    const float groupIndent = ImGui::GetFontSize() * 0.75f;   // notes line up with the group name
     std::vector<std::string> groupIds;
     for (const auto& g : store_.Groups()) groupIds.push_back(g.id);
+    bool firstGroup = true;
     for (const auto& gid : groupIds) {
         Magpie::Group* group = store_.GetGroup(gid);
-        if (group == nullptr || !renderGroupHeader_(*group)) continue;
+        if (group == nullptr) continue;
+        if (!firstGroup) GroupGap();
+        firstGroup = false;
+        if (!renderGroupHeader_(*group)) continue;
         for (const auto& note : notes)
             if (note.groupId == gid) renderNoteRow_(note, groupIndent);
     }
@@ -75,7 +126,8 @@ float NotesWindow::renderListColumn_()
         [](const Magpie::Note& n) { return n.groupId.empty(); });
     if (!groupIds.empty() && (anyUngrouped || ImGui::GetDragDropPayload() != nullptr)) {
         // Section label; also the drop target that takes a note out of its group.
-        ImGui::Spacing();
+        GroupGap();
+        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + RowPadX());   // in line with the row text
         ImGui::TextColored(NoGroupColor(), "%s", Tr("No group"));
         if (ImGui::BeginDragDropTarget()) {
             if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("TPM_NOTE")) {
@@ -87,6 +139,18 @@ float NotesWindow::renderListColumn_()
     }
     for (const auto& note : notes)
         if (note.groupId.empty()) renderNoteRow_(note, 0.0f);
+
+    // Right-click on empty space in the list (rows have their own menus).
+    if (ImGui::BeginPopupContextWindow("##list_ctx",
+            ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems)) {
+        Theme::PopupTextScope popupText;
+        if (ImGui::MenuItem(Tr("Create New Note"))) createRequested_ = true;
+        if (ImGui::MenuItem(Tr("New group..."))) requestNewGroup_();
+        ImGui::Separator();
+        if (ImGui::MenuItem(Tr("Delete notes..."), nullptr, false, !notes.empty()))
+            requestBulkDelete_();
+        ImGui::EndPopup();
+    }
 
     ImGui::EndChild();
 
@@ -112,11 +176,7 @@ float NotesWindow::renderListColumn_()
 
     if (ImGui::BeginPopup("##notes_menu")) {
         Theme::PopupTextScope popupText;
-        if (ImGui::MenuItem(Tr("New group..."))) {
-            groupNameId_.clear();
-            groupNameBuffer_ = Tr("New group");
-            requestPopup_(Popup::GroupName);
-        }
+        if (ImGui::MenuItem(Tr("New group..."))) requestNewGroup_();
         ImGui::Separator();
         if (ImGui::MenuItem(Tr("Import..."))) startImport_();
         if (ImGui::IsItemHovered())
@@ -127,11 +187,8 @@ float NotesWindow::renderListColumn_()
             Theme::Tooltip("%s", Tr("Save all notes to one file.\n"
                                        "Right-click a note in the list to export just that one."));
         ImGui::Separator();
-        if (ImGui::MenuItem(Tr("Delete notes..."), nullptr, false, !notes.empty())) {
-            bulkSelected_.clear();
-            bulkConfirm_ = false;
-            requestPopup_(Popup::BulkDelete);
-        }
+        if (ImGui::MenuItem(Tr("Delete notes..."), nullptr, false, !notes.empty()))
+            requestBulkDelete_();
         ImGui::Separator();
         if (ImGui::MenuItem(Tr("Settings..."))) openSettings_ = true;
         ImGui::EndPopup();
@@ -139,6 +196,20 @@ float NotesWindow::renderListColumn_()
 
     ImGui::EndGroup();
     return leftWidth;
+}
+
+void NotesWindow::requestNewGroup_()
+{
+    groupNameId_.clear();
+    groupNameBuffer_ = Tr("New group");
+    requestPopup_(Popup::GroupName);
+}
+
+void NotesWindow::requestBulkDelete_()
+{
+    bulkSelected_.clear();
+    bulkConfirm_ = false;
+    requestPopup_(Popup::BulkDelete);
 }
 
 // Thin draggable divider between list and detail pane; double-click resets the width.
@@ -172,15 +243,16 @@ void NotesWindow::renderSplitter_(float listWidth)
 void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
 {
     const bool selected = (note.id == selectedId_);
-    // Title drawn manually (clipped) so a task-progress count can sit right-aligned
+    // Title drawn manually (shortened with "...") so a task-progress count can sit right-aligned
     // without long titles running over it. PushID keeps duplicate titles distinct.
     ImGui::PushID(note.id.c_str());
-    const ImVec2 rowPos = ImGui::GetCursorScreenPos();
-    if (ImGui::Selectable("##note_row", selected)) {
+    ImVec2 rowPos;
+    float  rowH = 0.0f;
+    if (RowSelectable("##note_row", selected, indent, rowPos, rowH)) {
         selectRequestId_ = note.id;
     }
     const float rowRight = ImGui::GetItemRectMax().x;
-    const float rowH     = ImGui::GetItemRectSize().y;
+    const float textY    = rowPos.y + RowPadY();
 
     // Drag a note onto a group header (or "No group") to move it.
     if (ImGui::BeginDragDropSource()) {
@@ -230,19 +302,21 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
         const ImU32 col = (tc.done == tc.total)
             ? ImGui::GetColorU32(Theme::BTN_GREEN_ACTIVE)
             : ImGui::GetColorU32(Dimmed(ListTextColor()));
-        dl->AddText(ImVec2(rowRight - progressW, rowPos.y), col, progress);
+        dl->AddText(ImVec2(rowRight - RowPadX() - progressW, textY), col, progress);
     }
 
-    const float titleRight = rowRight - (progressW > 0.0f ? progressW + 6.0f : 0.0f);
+    const float titleRight = rowRight - RowPadX() - (progressW > 0.0f ? progressW + 6.0f : 0.0f);
     dl->PushClipRect(rowPos, ImVec2(titleRight, rowPos.y + rowH), true);
-    const float badgeW = DrawTypeBadge(dl, ImVec2(rowPos.x + indent, rowPos.y), rowH, note.type);
-    const float titleX = rowPos.x + indent + (badgeW > 0.0f ? badgeW + 4.0f : 0.0f);
-    dl->AddText(ImVec2(titleX, rowPos.y), ImGui::GetColorU32(ListTextColor()), note.title.c_str());
+    const float badgeX = rowPos.x + RowPadX();   // in line with the group name and "No group"
+    const float badgeW = DrawTypeBadge(dl, ImVec2(badgeX, textY), ImGui::GetTextLineHeight(), note.type);
+    const float titleX = badgeX + (badgeW > 0.0f ? badgeW + 4.0f : 0.0f);
+    const std::string title = Ellipsize(note.title, titleRight - titleX);
+    dl->AddText(ImVec2(titleX, textY), ImGui::GetColorU32(ListTextColor()), title.c_str());
     dl->PopClipRect();
 
-    // Hover: full title when clipped, and the reset countdown for daily/weekly lists.
+    // Hover: full title when shortened, and the reset countdown for daily/weekly lists.
     if (ImGui::IsItemHovered() && !ImGui::IsMouseDragging(ImGuiMouseButton_Left)) {
-        const bool clipped = titleX + ImGui::CalcTextSize(note.title.c_str()).x > titleRight;
+        const bool clipped = title != note.title;
         const std::string reset = ResetText(note.type);
         if (clipped && !reset.empty())
             Theme::Tooltip("%s\n%s", note.title.c_str(), reset.c_str());
@@ -251,6 +325,7 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
         else if (!reset.empty())
             Theme::Tooltip("%s", reset.c_str());
     }
+    RowGap();
 }
 
 ImVec4 NotesWindow::groupColor_(const Magpie::Group& group) const
@@ -264,13 +339,14 @@ ImVec4 NotesWindow::groupColor_(const Magpie::Group& group) const
 bool NotesWindow::renderGroupHeader_(Magpie::Group& group)
 {
     ImGui::PushID(group.id.c_str());
-    const ImVec2 rowPos = ImGui::GetCursorScreenPos();
-    if (ImGui::Selectable("##group_row", false)) {
+    ImVec2 rowPos;
+    float  rowH = 0.0f;
+    if (RowSelectable("##group_row", false, 0.0f, rowPos, rowH)) {
         group.collapsed = !group.collapsed;
         Save();
     }
-    const float rowRight = ImGui::GetItemRectMax().x;
-    const float rowH     = ImGui::GetItemRectSize().y;
+    const float rowRight = ImGui::GetItemRectMax().x - RowPadX();
+    const float textY    = rowPos.y + RowPadY();
 
     if (ImGui::BeginDragDropTarget()) {
         if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("TPM_NOTE")) {
@@ -314,7 +390,7 @@ bool NotesWindow::renderGroupHeader_(Magpie::Group& group)
     ImDrawList* dl   = ImGui::GetWindowDrawList();
     const float  sz  = ImGui::GetFontSize();
     const ImU32  col = ImGui::GetColorU32(ListTextColor());
-    const ImVec2 c(rowPos.x + sz * 0.4f, rowPos.y + rowH * 0.5f);
+    const ImVec2 c(rowPos.x + RowPadX() + sz * 0.25f, rowPos.y + rowH * 0.5f);
     const float  r = sz * 0.25f;
     if (group.collapsed)
         dl->AddTriangleFilled(ImVec2(c.x - r * 0.6f, c.y - r), ImVec2(c.x - r * 0.6f, c.y + r),
@@ -328,17 +404,19 @@ bool NotesWindow::renderGroupHeader_(Magpie::Group& group)
     char countText[16];
     snprintf(countText, sizeof countText, "%d", count);
     const float countW = ImGui::CalcTextSize(countText).x;
-    dl->AddText(ImVec2(rowRight - countW, rowPos.y), ImGui::GetColorU32(Dimmed(ListTextColor())),
+    dl->AddText(ImVec2(rowRight - countW, textY), ImGui::GetColorU32(Dimmed(ListTextColor())),
                 countText);
 
-    const float nameX = rowPos.x + sz * 0.9f;
+    const float nameX = rowPos.x + RowPadX() + sz * 0.75f;
     dl->PushClipRect(ImVec2(nameX, rowPos.y), ImVec2(rowRight - countW - 6.0f, rowPos.y + rowH), true);
-    const char* groupName = group.name.empty() ? Tr("(untitled)") : group.name.c_str();
-    dl->AddText(ImVec2(nameX, rowPos.y), ImGui::GetColorU32(groupColor_(group)), groupName);
+    const std::string groupName = group.name.empty() ? std::string(Tr("(untitled)")) : group.name;
+    const std::string shown     = Ellipsize(groupName, rowRight - countW - 6.0f - nameX);
+    dl->AddText(ImVec2(nameX, textY), ImGui::GetColorU32(groupColor_(group)), shown.c_str());
     dl->PopClipRect();
-    if (ImGui::IsItemHovered() && nameX + ImGui::CalcTextSize(groupName).x > rowRight - countW - 6.0f)
-        Theme::Tooltip("%s", groupName);
+    if (ImGui::IsItemHovered() && shown != groupName)
+        Theme::Tooltip("%s", groupName.c_str());
 
+    RowGap();
     return !group.collapsed;
 }
 

@@ -10,6 +10,10 @@ namespace NotesUi {
 // Button width that fits its (translated) label, but never narrower than `minW`.
 float ButtonWidth(const char* label, float minW);
 
+// `text` cut to fit `maxWidth` px in the current font, ending in "..." when shortened (cut at
+// UTF-8 character boundaries). Empty if not even "..." fits.
+std::string Ellipsize(const std::string& text, float maxWidth);
+
 // Note types (daily / weekly reset): translated name, badge colour (user-set; also used
 // for the countdown), badge letter colour, countdown text ("Daily reset in 3h 12m";
 // empty for a plain note).

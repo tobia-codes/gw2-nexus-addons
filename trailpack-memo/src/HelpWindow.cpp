@@ -76,7 +76,8 @@ const Section kSections[] = {
       "- A coloured D / W badge marks them; hover it for the time to the next reset.\n"
       "- Missed resets (game closed) are caught up when the window is opened." },
     { "Groups",
-      "- Menu button (next to 'Create New Note') > 'New group...'.\n"
+      "- Menu button (next to 'Create New Note') > 'New group...', or right-click an empty spot "
+      "in the list (also: new note, delete notes).\n"
       "- Click a group to fold / unfold it. Drag notes onto it, or right-click a note > "
       "'Move to group'.\n"
       "- Right-click a group: new note in it, rename, colour, export, delete (its notes are kept)." },

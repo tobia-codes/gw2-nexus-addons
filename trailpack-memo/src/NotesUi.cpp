@@ -18,6 +18,23 @@ float ButtonWidth(const char* label, float minW)
     return w > minW ? w : minW;
 }
 
+std::string Ellipsize(const std::string& text, float maxWidth)
+{
+    if (ImGui::CalcTextSize(text.c_str()).x <= maxWidth) return text;
+    const float dotsW = ImGui::CalcTextSize("...").x;
+    if (dotsW > maxWidth) return std::string();
+    // Longest prefix (whole UTF-8 characters) that fits together with "...".
+    size_t keep = 0;
+    for (size_t i = 0; i < text.size();) {
+        size_t next = i + 1;
+        while (next < text.size() && ((unsigned char)text[next] & 0xC0) == 0x80) ++next;
+        if (ImGui::CalcTextSize(text.c_str(), text.c_str() + next).x + dotsW > maxWidth) break;
+        keep = next;
+        i = next;
+    }
+    return text.substr(0, keep) + "...";
+}
+
 const char* TypeName(Magpie::NoteType t)
 {
     return t == Magpie::NoteType::Daily  ? Tr("Daily")

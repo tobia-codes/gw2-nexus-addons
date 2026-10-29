@@ -2,6 +2,7 @@
 #include "Theme.h"
 
 #include <cstdarg>
+#include <initializer_list>
 
 namespace Theme {
 
@@ -51,6 +52,18 @@ void PushWindowStyle() {
     s_PopupText = s_Colors.hasPopupText ? s_Colors.popupText : DefaultPopupText();
     ImGui::PushStyleColor(ImGuiCol_PopupBg, s_PopupBg);
     ++s_PushedColors;
+    // Nexus's buttons are translucent: make them opaque, blended over the pane colour they
+    // mostly sit on, so they look the same but nothing shows through.
+    {
+        const ImGuiStyle& st = ImGui::GetStyle();
+        const ImVec4 base = DefaultPopupBg();
+        for (ImGuiCol idx : { ImGuiCol_Button, ImGuiCol_ButtonHovered, ImGuiCol_ButtonActive }) {
+            const ImVec4 c = st.Colors[idx];
+            ImGui::PushStyleColor(idx, ImVec4(c.x * c.w + base.x * (1.0f - c.w), c.y * c.w + base.y * (1.0f - c.w),
+                                              c.z * c.w + base.z * (1.0f - c.w), 1.0f));
+            ++s_PushedColors;
+        }
+    }
     ImGui::PushStyleColor(ImGuiCol_Border, s_Colors.border);
     ++s_PushedColors;
     if (s_Colors.hasBackground) {

@@ -24,7 +24,8 @@
   selector next to the title while editing). Its checkboxes are unchecked automatically after the
   GW2 reset (daily 00:00 UTC, weekly Monday 07:30 UTC) -- also if the game was closed over the
   reset. A coloured *D* / *W* badge marks them in the list; hover for the countdown.
-- **Groups**: collapsible groups to structure notes (menu button -> *New group...*). Right-click a
+- **Groups**: collapsible groups to structure notes (menu button -> *New group...*, or right-click an empty spot in the list, which
+  also offers *Create New Note* and *Delete notes...*). Right-click a
   group to rename, recolour (*Group colour...*), export or delete it (its notes are kept) or add a note to it; move notes via
   right-click -> *Move to group* or by dragging them onto a group. Groups have unique ids too.
 - **Export / import** (menu button next to *Create New Note*): *Export all...* saves every note to one `.json` file, right-click a note ->

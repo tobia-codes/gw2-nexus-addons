@@ -167,9 +167,14 @@ int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wr
             startX += mSize.x;  // continuation lines hang under the text
         }
 
-        // Checked tasks: dimmed text with a strike-through.
+        // Checked tasks: dimmed text with a strike-through (chips keep their colour, but are
+        // struck through too).
         const bool done = (line.block == Md::Block::Task && line.checked);
         const ImU32 lineCol = done ? doneCol : textCol;
+        auto strike = [&](float x0, float x1) {
+            const float y = penY + fontSize * 0.55f;
+            dl->AddLine(ImVec2(x0, y), ImVec2(x1, y), lineCol, 1.0f);
+        };
 
         if (line.block == Md::Block::Task) {
             const float box = fontSize * 0.85f;
@@ -206,6 +211,7 @@ int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wr
                 }
                 const float w = DrawRichChip(dl, font, fontSize, ImVec2(penX, penY),
                                              span.text, chipUid++);
+                if (done) strike(penX, penX + w);
                 penX += w;
                 continue;
             }
@@ -216,7 +222,9 @@ int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wr
                     penX = startX;
                     penY += lineHeight;
                 }
-                penX += DrawEventChip(dl, font, fontSize, ImVec2(penX, penY), span.text, chipUid++);
+                const float w = DrawEventChip(dl, font, fontSize, ImVec2(penX, penY), span.text, chipUid++);
+                if (done) strike(penX, penX + w);
+                penX += w;
                 continue;
             }
 
@@ -239,11 +247,8 @@ int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wr
 
                 DrawWord(dl, font, fontSize, ImVec2(penX, penY), lineCol,
                          word.c_str(), style);
-                if (done) {
-                    // Strike-through including the inter-word space, so it reads as one line.
-                    const float y = penY + fontSize * 0.55f;
-                    dl->AddLine(ImVec2(penX, y), ImVec2(penX + wordW, y), lineCol, 1.0f);
-                }
+                // Strike-through including the inter-word space, so it reads as one line.
+                if (done) strike(penX, penX + wordW);
                 penX += wordW;
             }
         }
