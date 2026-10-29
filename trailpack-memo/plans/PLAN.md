@@ -120,7 +120,10 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   Themes: Default (= `ColorSet{}`), `ColorSet::Light()` / `Dark()` (window text stays Nexus's;
   editor fields on a custom note background use `Theme::FieldBg`), user themes in
   `settings.json` `themes` (`SaveTheme` / `DeleteTheme`). The combo shows the theme equal to the
-  current colours, else "Custom".
+  current colours, else "Custom". The settings and guide windows never take the user colours
+  (plain Nexus style, readable with any theme). Secondary text in list / note (group arrow and
+  count, task progress, done tasks, empty state) derives from the pane's text colour
+  (`NotesUi::Dimmed`) instead of Nexus's fixed TextDisabled.
   Backup (Settings > Backup, dllmain): `Backup::Make/Parse`; restore validates notes + settings
   first, asks inline, then `NotesWindow::RestoreNotes` + settings from defaults. Default folder
   `addons/TrailpackMemo/backups/`.

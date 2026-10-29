@@ -122,7 +122,7 @@ int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wr
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const ImVec2 origin = ImGui::GetCursorScreenPos();
     const ImU32 textCol = ImGui::GetColorU32(ImGuiCol_Text);
-    const ImU32 doneCol = ImGui::GetColorU32(ImGuiCol_TextDisabled);
+    const ImU32 doneCol = ImGui::GetColorU32(ImGuiCol_Text, 0.55f);   // keeps contrast on any background
     int clickedTask = -1;
 
     const float rightEdge = origin.x + wrapWidth;

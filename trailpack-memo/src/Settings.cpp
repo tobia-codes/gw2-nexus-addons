@@ -52,13 +52,13 @@ ColorSet ColorSet::Light()
 {
     ColorSet c;
     c.border         = Rgba{ 0.55f, 0.56f, 0.60f, 1.0f };
-    c.background     = { true, Rgba{ 0.80f, 0.81f, 0.84f, 0.97f } };
-    c.groupName      = { true, Rgba{ 0.55f, 0.36f, 0.02f, 1.0f } };
-    c.noGroup        = { true, Rgba{ 0.38f, 0.39f, 0.43f, 1.0f } };
+    c.background     = { true, Rgba{ 0.72f, 0.73f, 0.77f, 0.97f } };
+    c.groupName      = { true, Rgba{ 0.48f, 0.30f, 0.00f, 1.0f } };
+    c.noGroup        = { true, Rgba{ 0.28f, 0.29f, 0.33f, 1.0f } };
     c.listBackground = { true, Rgba{ 0.93f, 0.93f, 0.95f, 1.0f } };
-    c.listText       = { true, Rgba{ 0.10f, 0.10f, 0.12f, 1.0f } };
+    c.listText       = { true, Rgba{ 0.05f, 0.05f, 0.07f, 1.0f } };
     c.noteBackground = { true, Rgba{ 0.98f, 0.98f, 0.98f, 1.0f } };
-    c.noteText       = { true, Rgba{ 0.10f, 0.10f, 0.12f, 1.0f } };
+    c.noteText       = { true, Rgba{ 0.05f, 0.05f, 0.07f, 1.0f } };
     return c;
 }
 

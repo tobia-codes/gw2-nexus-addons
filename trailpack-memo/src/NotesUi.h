@@ -22,6 +22,11 @@ std::string ResetText(Magpie::NoteType t);
 ImVec4      NoGroupColor();
 // Colour of note titles in the list (user-set, else the current text colour).
 ImVec4      ListTextColor();
+// Note pane text (user-set, else the current text colour).
+ImVec4      NoteTextColor();
+// Secondary text derived from a text colour (counts, done tasks, hints): same hue, less
+// opaque, so it keeps its contrast on any background.
+ImVec4      Dimmed(ImVec4 c);
 
 // Small coloured badge ("D" / "W") at `pos`; returns its width (0 for a plain note).
 float DrawTypeBadge(ImDrawList* dl, ImVec2 pos, float height, Magpie::NoteType t);
