@@ -110,6 +110,9 @@ Event timer data (`src/events/EventData.{h,cpp}`) is generated from the GW2 wiki
 don't edit it by hand; fix data in `tools/event_overrides.json` and re-run
 `python3 trailpack-memo/tools/gen_events.py` (details in [`plans/EVENTS.md`](plans/EVENTS.md)).
 
+The icon (`icon.png` + `src/EmbeddedIcon.h`) is drawn by `python3 trailpack-memo/tools/make_icon.py`
+(standard library only); change the shapes there and re-run it.
+
 ## License
 
 MIT -- see [`LICENSE`](LICENSE).
