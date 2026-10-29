@@ -17,6 +17,7 @@
 #include "PieUiClient.h"
 #include "I18n.h"
 #include "FontScale.h"
+#include "SafeFile.h"
 #include "IconCache.h"
 #include "EmbeddedIcon.h"   // MAGPIE_ICON[] + MAGPIE_ICON_size (generated from icon.png)
 
@@ -122,18 +123,20 @@ static void SaveSettings() {
     j["color_background"] = c.hasBackground ? ColorToJson(c.background) : nlohmann::json();
     j["color_text"]       = c.hasText       ? ColorToJson(c.text)       : nlohmann::json();
     j["color_group_name"] = c.hasGroupName  ? ColorToJson(c.groupName)  : nlohmann::json();
-    std::ofstream f(path, std::ios::out | std::ios::trunc);
-    if (f.is_open()) f << j.dump(2);
+    Magpie::SafeFile::WriteAtomic(path, j.dump(2));   // crash-safe replace
 }
 
 static void LoadSettings() {
     const std::string path = SettingsPath();
     if (path.empty()) return;
-    std::ifstream f(path);
-    if (!f.is_open()) return;
+    std::string content;
+    if (!Magpie::SafeFile::Read(path, content)) return;
     nlohmann::json j;
-    try { j = nlohmann::json::parse(f); }
-    catch (...) { return; }   // malformed: keep defaults
+    try { j = nlohmann::json::parse(content); }
+    catch (...) {
+        Magpie::SafeFile::SetAside(path);   // malformed: keep it for inspection, use defaults
+        return;
+    }
     if (j.contains("show_qa_icon") && j["show_qa_icon"].is_boolean())
         g_ShowQAIcon = j["show_qa_icon"].get<bool>();
     if (j.contains("edit_preview") && j["edit_preview"].is_boolean())

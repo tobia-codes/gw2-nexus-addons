@@ -19,6 +19,7 @@
 #include "I18n.h"
 #include "FontScale.h"
 #include "Reset.h"
+#include "SafeFile.h"
 
 namespace fs = std::filesystem;
 using Magpie::I18n::Tr;
@@ -96,30 +97,45 @@ void NotesWindow::Init(AddonAPI_t* api)
         exportDir_ = addonDir / "exports";
     }
 
-    if (!notesFile_.empty() && fs::exists(notesFile_)) {
-        std::ifstream f(notesFile_);
-        if (f.is_open()) {
-            std::ostringstream ss;
-            ss << f.rdbuf();
-            const std::string content = ss.str();
-            // Rolls back silently on bad JSON. On success, save at once: loading may have
-            // replaced legacy ids, and exported ids must stay stable across sessions.
-            if (store_.FromJson(content)) {
-                // First load of a version-1 file (plain array): keep a copy before it is
-                // rewritten in the version-2 format, which older builds can't read.
-                const fs::path backup = notesFile_.parent_path() / "notes.v1-backup.json";
-                const size_t first = content.find_first_not_of(" \t\r\n");
-                std::error_code ec;
-                if (first != std::string::npos && content[first] == '[' && !fs::exists(backup, ec)) {
-                    std::ofstream b(backup, std::ios::out | std::ios::trunc | std::ios::binary);
-                    if (b.is_open()) b << content;
-                }
-                Save();
-            }
-        }
+    loadNotes_();
+    selectFirst_();
+}
+
+void NotesWindow::loadNotes_()
+{
+    std::error_code ec;
+    if (notesFile_.empty() || !fs::exists(notesFile_, ec)) return;
+
+    std::string content;
+    if (Magpie::SafeFile::Read(notesFile_, content) && store_.FromJson(content)) {
+        // First load of a version-1 file (plain array): keep a copy before it is
+        // rewritten in the version-2 format, which older builds can't read.
+        const fs::path v1Backup = notesFile_.parent_path() / "notes.v1-backup.json";
+        const size_t first = content.find_first_not_of(" \t\r\n");
+        if (first != std::string::npos && content[first] == '[' && !fs::exists(v1Backup, ec))
+            Magpie::SafeFile::WriteAtomic(v1Backup, content);
+        // Save at once: loading may have replaced legacy ids, and exported ids must stay
+        // stable across sessions.
+        Save();
+        return;
     }
 
-    selectFirst_();
+    // Unreadable: never overwrite it. Move it aside, then fall back to the last backup.
+    const fs::path aside = Magpie::SafeFile::SetAside(notesFile_);
+    const std::string asideName = aside.empty() ? std::string("notes.json") : aside.filename().u8string();
+    std::string backup;
+    const bool restored = Magpie::SafeFile::Read(Magpie::SafeFile::BackupPath(notesFile_), backup) &&
+                          store_.FromJson(backup);
+    char msg[512];
+    snprintf(msg, sizeof msg,
+             restored ? Tr("notes.json could not be read and was kept as %s.\n"
+                           "Your notes were restored from the last backup.")
+                      : Tr("notes.json could not be read and was kept as %s.\n"
+                           "No backup could be loaded, so the list starts empty."),
+             asideName.c_str());
+    noticeMessage_ = msg;
+    noticePending_ = true;
+    if (restored) Save();
 }
 
 // ── Save / Shutdown ───────────────────────────────────────────────────────
@@ -127,10 +143,8 @@ void NotesWindow::Init(AddonAPI_t* api)
 void NotesWindow::Save()
 {
     if (notesFile_.empty()) return;
-
-    std::ofstream f(notesFile_, std::ios::out | std::ios::trunc);
-    if (f.is_open())
-        f << store_.ToJson();
+    // Crash-safe: temp file + atomic replace; the previous version stays as notes.json.bak.
+    Magpie::SafeFile::WriteAtomic(notesFile_, store_.ToJson(), /*keepBackup=*/true);
 }
 
 void NotesWindow::Shutdown()
@@ -323,6 +337,11 @@ void NotesWindow::Render()
     renderDeleteModal_();
     pollFileDialog_();
     renderIoModal_();
+    if (noticePending_) {
+        noticePending_ = false;
+        ImGui::OpenPopup(PopupName("Notice", "notice").c_str());
+    }
+    renderNoticeModal_();
     renderImportModal_();
     renderGroupNameModal_();
     renderDeleteGroupModal_();
@@ -999,6 +1018,23 @@ void NotesWindow::renderIoModal_()
         }
         ImGui::EndPopup();
     }
+}
+
+void NotesWindow::renderNoticeModal_()
+{
+    ImVec2 display = ImGui::GetIO().DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2(display.x * 0.5f, display.y * 0.5f),
+                            ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    if (!ImGui::BeginPopupModal(PopupName("Notice", "notice").c_str(), nullptr,
+                                ImGuiWindowFlags_AlwaysAutoResize))
+        return;
+    ImGui::TextUnformatted(noticeMessage_.c_str());
+    ImGui::Spacing();
+    if (ImGui::Button(Tr("OK"), ImVec2(80, 0))) {
+        noticeMessage_.clear();
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
 }
 
 void NotesWindow::renderImportModal_()

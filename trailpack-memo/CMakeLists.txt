@@ -10,6 +10,7 @@ if(NOT GW2_HOST_TESTS)
         src/NotesStore.cpp
         src/I18n.cpp
         src/Reset.cpp
+        src/SafeFile.cpp
         src/NotesWindow.cpp
         src/Markdown.cpp
         src/MarkdownRender.cpp
@@ -53,6 +54,7 @@ else()
         src/NotesStore.cpp
         src/I18n.cpp
         src/Reset.cpp
+        src/SafeFile.cpp
         src/Markdown.cpp
         src/MarkdownEdit.cpp
         src/chat/ChatLinks.cpp

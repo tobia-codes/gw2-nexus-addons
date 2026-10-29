@@ -70,6 +70,10 @@ private:
     std::string               ioExportGroupId_;  // Export: whole group (takes precedence)
     std::string               ioMessage_;     // result shown in the "Import / Export" modal
 
+    // Load problem (unreadable notes.json) to tell the user once, in the "Notice" modal.
+    std::string noticeMessage_;
+    bool        noticePending_ = false;
+
     // Import selection: the notes read from the chosen file, awaiting the user's pick.
     std::vector<Magpie::ImportItem> importItems_;
     std::vector<char>               importChecked_;   // parallel to importItems_
@@ -138,6 +142,11 @@ private:
     void pollFileDialog_();
     // Draw the "Import / Export" result modal.
     void renderIoModal_();
+    // Draw the one-time "Notice" modal (noticeMessage_).
+    void renderNoticeModal_();
+    // Load notes.json; an unreadable file is set aside (never overwritten) and the last
+    // backup (notes.json.bak) is tried instead.
+    void loadNotes_();
     // Draw the "Import Notes" selection modal (one checkbox per note in the file).
     void renderImportModal_();
 

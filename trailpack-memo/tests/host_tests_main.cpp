@@ -8,6 +8,8 @@
 #include "IconUrl.h"
 #include "I18n.h"
 #include "Reset.h"
+#include "SafeFile.h"
+#include <filesystem>
 #include <set>
 #include <vector>
 #include "ChipColor.h"
@@ -622,6 +624,42 @@ static void test_type_persists_and_travels()
     CHECK_EQ(imported.Get(id)->resetStamp, src.Get(id)->resetStamp);
 
     CHECK(Magpie::NoteTypeFromKey("bogus") == Magpie::NoteType::Note);
+}
+
+// ── Safe file I/O ──────────────────────────────────────────────────────────────
+
+static void test_safe_file_write_backup_and_set_aside()
+{
+    namespace fs = std::filesystem;
+    using namespace Magpie::SafeFile;
+    const fs::path dir = fs::temp_directory_path() / "tpm_safefile_test";
+    fs::remove_all(dir);
+    fs::create_directories(dir);
+    const fs::path file = dir / "notes.json";
+
+    std::string got;
+    CHECK(!Read(file, got));                          // missing
+    CHECK(WriteAtomic(file, "one", true));
+    CHECK(Read(file, got));
+    CHECK_EQ(got, std::string("one"));
+    CHECK(!fs::exists(BackupPath(file)));             // nothing to back up yet
+    CHECK(!fs::exists(dir / "notes.json.tmp"));       // temp file swapped in
+
+    CHECK(WriteAtomic(file, "two", true));
+    CHECK(Read(file, got));
+    CHECK_EQ(got, std::string("two"));
+    CHECK(Read(BackupPath(file), got));
+    CHECK_EQ(got, std::string("one"));                // previous version kept
+
+    const fs::path aside = SetAside(file);
+    CHECK_EQ(aside.filename().string(), std::string("notes.corrupt-1.json"));
+    CHECK(!fs::exists(file));
+    CHECK(Read(aside, got));
+    CHECK_EQ(got, std::string("two"));
+    WriteAtomic(file, "three");
+    CHECK_EQ(SetAside(file).filename().string(), std::string("notes.corrupt-2.json"));
+
+    fs::remove_all(dir);
 }
 
 static void test_delete_many()
@@ -1500,6 +1538,7 @@ int main()
     test_weekly_and_plain_notes();
     test_reset_skips_note_in_editor();
     test_type_persists_and_travels();
+    test_safe_file_write_backup_and_set_aside();
     test_delete_many();
     test_i18n_lookup_and_fallback();
     test_i18n_table_is_consistent();

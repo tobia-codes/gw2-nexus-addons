@@ -96,6 +96,17 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "Wirklich %d Notizen löschen? Das kann nicht rückgängig gemacht werden." },
     { "Back",                              "Zurück" },
 
+    // ── Loading ───────────────────────────────────────────────────────────
+    { "Notice",                            "Hinweis" },
+    { "notes.json could not be read and was kept as %s.\n"
+      "Your notes were restored from the last backup.",
+      "notes.json konnte nicht gelesen werden und wurde als %s aufbewahrt.\n"
+      "Deine Notizen wurden aus der letzten Sicherung wiederhergestellt." },
+    { "notes.json could not be read and was kept as %s.\n"
+      "No backup could be loaded, so the list starts empty.",
+      "notes.json konnte nicht gelesen werden und wurde als %s aufbewahrt.\n"
+      "Es konnte keine Sicherung geladen werden, die Liste startet leer." },
+
     // ── Export / import ───────────────────────────────────────────────────
     { "Export notes",                      "Notizen exportieren" },
     { "Import notes",                      "Notizen importieren" },
