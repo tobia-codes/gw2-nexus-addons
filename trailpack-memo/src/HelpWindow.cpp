@@ -95,8 +95,9 @@ const Section kSections[] = {
       "deletes one." },
     { "Settings",
       "Nexus addon options > Trailpack Memo:\n"
-      "- Language (Auto follows Nexus), UI and note text size.\n"
-      "- Colours for border, background, text and group names.\n"
+      "- Language (Auto follows Nexus), quick access icon.\n"
+      "- 'Font options': UI and note text size.\n"
+      "- 'Colour options': border, background, text and group names.\n"
       "- Drag the divider between list and note to change the list width." },
     { "Your data",
       "Notes are saved in addons/TrailpackMemo/notes.json; the previous version is kept as "

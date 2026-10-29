@@ -241,12 +241,14 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "löscht eine." },
     { "Settings",                          "Einstellungen" },
     { "Nexus addon options > Trailpack Memo:\n"
-      "- Language (Auto follows Nexus), UI and note text size.\n"
-      "- Colours for border, background, text and group names.\n"
+      "- Language (Auto follows Nexus), quick access icon.\n"
+      "- 'Font options': UI and note text size.\n"
+      "- 'Colour options': border, background, text and group names.\n"
       "- Drag the divider between list and note to change the list width.",
       "Nexus-Addon-Optionen > Trailpack Memo:\n"
-      "- Sprache (Automatisch folgt Nexus), UI- und Notiz-Textgröße.\n"
-      "- Farben für Rahmen, Hintergrund, Text und Gruppennamen.\n"
+      "- Sprache (Automatisch folgt Nexus), Schnellzugriff-Icon.\n"
+      "- 'Schriftoptionen': UI- und Notiz-Textgröße.\n"
+      "- 'Farboptionen': Rahmen, Hintergrund, Text und Gruppennamen.\n"
       "- Den Trenner zwischen Liste und Notiz ziehen ändert die Breite der Liste." },
     { "Your data",                         "Deine Daten" },
     { "Notes are saved in addons/TrailpackMemo/notes.json; the previous version is kept as "
@@ -270,7 +272,8 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "UI text size",                      "UI-Textgröße" },
     { "Note text size",                    "Notiz-Textgröße" },
     { "Reset",                             "Zurücksetzen" },
-    { "Window colours",                    "Fensterfarben" },
+    { "Font options",                      "Schriftoptionen" },
+    { "Colour options",                    "Farboptionen" },
     { "Border",                            "Rahmen" },
     { "Background",                        "Hintergrund" },
     { "Text",                              "Text" },
