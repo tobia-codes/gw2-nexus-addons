@@ -1,71 +1,48 @@
-# Trailpack Memo
+# gw2-nexus-addons
 
-> Fork of [Magpie Memo](https://github.com/PieOrCake/magpie_memo) by PieOrCake (MIT), extended with
-> **task-list checkboxes**, a **markdown toolbar** and a **live preview** while editing. Runs side by
-> side with Magpie Memo (own signature, data folder, keybind and textures).
+[Raidcore Nexus](https://raidcore.gg/Nexus) addons for Guild Wars 2, in one repository.
 
-## What's new in Trailpack Memo
+| Addon | Description |
+|-------|-------------|
+| [Trailpack Memo](trailpack-memo/) | Notepad with markdown, **checklists**, a formatting toolbar, live preview and GW2 chat-link chips. Fork of PieOrCake's [Magpie Memo](https://github.com/PieOrCake/magpie_memo). |
 
-- **Checkboxes** with GitHub syntax: `- [ ] todo` / `- [x] done` (indentation allowed).
-  - Click a box in view mode to tick it -- saved immediately.
-  - Checked items are dimmed and struck through.
-  - The note list shows progress (`3/7`, green when complete).
-  - Right-click a note body -> **Uncheck all tasks** (handy for daily/weekly routines).
-- **Markdown toolbar** in edit mode: **B**, *I*, H1, H2, bullet list, task -- works on the
-  selection or the current line(s), and toggles off when applied again. `Ctrl+B` / `Ctrl+I` too.
-- **Live preview** beside the editor (`Preview` checkbox, remembered across sessions).
-- **Lists continue on Enter**: a new `- ` / `- [ ] ` is started automatically; Enter on an empty
-  item ends the list.
+## Layout
 
-Default toggle hotkey: `CTRL+SHIFT+T`. Data lives in `addons/TrailpackMemo/`.
-
----
-
-*Original Magpie Memo description:*
-
-A notepad addon for Guild Wars 2 (Raidcore Nexus). Keep multiple notes of markdown text with Guild Wars 2 chat links embedded inline as rich "chips" — icon, name, and tooltip — right where you wrote them. Named for the bird that collects shiny things.
-
-## AI Notice
-
-This addon has been largely created using Claude. I understand that some folks have a moral, financial or political objection to creating software using an LLM. I just wanted to make a useful tool for the GW2 community, and this was the only way I could do it.
-
-If an LLM creating software upsets you, then perhaps this repo isn't for you. Move on, and enjoy your day.
-
-## Screenshots
-![Test Note](screenshots/test_note.png)
-![Edit Mode](screenshots/edit_mode.png)
-![Memo showing PSNA agent locations](screenshots/psna.png)
-![Attack!](screenshots/attack.jpg)
-
-## Features
-
-- **Multiple notes**, two-pane: titles on the left, the selected note on the right. Create, rename, and delete.
-- **Markdown** in the rendered view: bold, italic, headings, and bullet lists. Edit mode shows the raw source.
-- **View / edit modes** with a distinct edit tint, Save / Cancel, and an unsaved-changes prompt so edits are never lost.
-- **Chat-link chips** — paste any GW2 chat link (waypoint, item, skin, skill, build) into a note and it becomes an inline chip:
-  - Shows the item's **icon and name** with a rich hover **tooltip** — item stats, rarity, flavour text and rune/sigil bonuses, skill facts, waypoint map, and full **recipe** breakdowns (ingredients, required rating, and the crafted item).
-  - **Right-click** a chip to **Copy chat code** or **Open in wiki**.
-  - **Left-click a waypoint chip to open the world map** at that point (needs [Pie UI](https://github.com/PieOrCake/pie_ui); see below).
-  - Build links show their spec automatically (e.g. `[Mirage Build]`).
-- **Works with or without [Decoder Ring](https://github.com/PieOrCake/decoder_ring)**: with it loaded, chips show full names and icons; without it, chips fall back to basic labels and the copy / wiki actions still work. Nothing breaks if it loads or unloads mid-session.
-- **Optional [Pie UI](https://github.com/PieOrCake/pie_ui) integration**: when Pie UI is loaded, left-clicking a waypoint chip opens and pans the in-game map to that point (Pie UI then lets you click to travel). Without Pie UI the option simply isn't shown; load it any time and it appears, no restart needed.
-
-## Install
-
-Build produces `TrailpackMemo.dll`. Copy it into your Guild Wars 2 `addons` folder. Toggle the window with the quick-access shortcut or `CTRL+SHIFT+T`.
+```
+gw2-nexus-addons/
+├── CMakeLists.txt        # builds every addon
+├── shared/               # third-party code used by all addons
+│   ├── imgui/            #   Dear ImGui 1.80 (matches Nexus)
+│   └── include/          #   nexus/Nexus.h, nlohmann/json
+└── <addon>/              # one folder per addon (src/, tests/, README, LICENSE)
+```
 
 ## Building
 
-Cross-compiled to a Windows DLL from Linux with MinGW:
+Cross-compiled to Windows DLLs from Linux/WSL with MinGW:
 
 ```
-cmake -S . -B build && cmake --build build      # -> build/TrailpackMemo.dll
+sudo apt install mingw-w64 cmake g++ make         # once
+
+cmake -S . -B build && cmake --build build        # -> build/<Addon>.dll
 ```
 
-Toolchain on Debian/Ubuntu/WSL: `sudo apt install mingw-w64 cmake g++ make`.
+Copy the DLL(s) into your Guild Wars 2 `addons` folder.
 
-Host-side unit tests for the pure logic (note model, markdown parser, task lists, editing commands, codec, chip round-trip, icon-URL helpers):
+Host-side unit tests (native compiler, no Windows needed):
 
 ```
-cmake -S . -B build-host -DTRAILPACK_HOST_TESTS=ON && cmake --build build-host && ./build-host/trailpack_host_tests
+cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host && ctest --test-dir build-host --output-on-failure
 ```
+
+## Adding an addon
+
+1. Create `<addon-name>/` with its own `CMakeLists.txt` (copy `trailpack-memo/CMakeLists.txt` as a template).
+2. Link `gw2_imgui` and `gw2_headers` for the DLL target, `gw2_headers` for host tests.
+3. Add `add_subdirectory(<addon-name>)` to the root `CMakeLists.txt` and a row to the table above.
+4. Give it a unique Nexus signature, data directory, keybind and texture identifiers.
+
+## Licenses
+
+Each addon carries its own `LICENSE`. Shared third-party code keeps its upstream license
+(`shared/imgui/LICENSE.txt`, MIT headers in `shared/include/nlohmann`).

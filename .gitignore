@@ -19,3 +19,6 @@ claude.md
 CLAUDE.md
 handover.md
 *.local.md
+
+# Local Claude Code settings
+.claude/settings.local.json
