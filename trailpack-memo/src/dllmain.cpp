@@ -10,7 +10,6 @@
 
 #include "nexus/Nexus.h"
 #include "imgui.h"
-#include <nlohmann/json.hpp>
 #include "Theme.h"
 #include "NotesWindow.h"
 #include "DecoderClient.h"
@@ -18,6 +17,7 @@
 #include "I18n.h"
 #include "FontScale.h"
 #include "SafeFile.h"
+#include "Settings.h"
 #include "IconCache.h"
 #include "EmbeddedIcon.h"   // MAGPIE_ICON[] + MAGPIE_ICON_size (generated from icon.png)
 
@@ -37,15 +37,9 @@
 // ── Globals ───────────────────────────────────────────────────────────────
 AddonAPI_t*      APIDefs         = nullptr;
 bool             g_WindowVisible = false;
-bool             g_ShowQAIcon    = true;   // show the quick-access icon (persisted; default on)
 bool             g_QAIconAdded   = false;  // tracks whether the shortcut is currently registered
-int              g_TextScalePct  = 100;    // window UI text size in percent (persisted; 100 = Nexus default)
-int              g_NoteScalePct  = 100;    // note content text size in percent (persisted; independent of UI)
-
-// UI language: Auto follows Nexus's language setting (German if Nexus is set to German,
-// English otherwise); En/De force one. Persisted as "language": "auto" | "en" | "de".
-enum class LangMode { Auto, En, De };
-LangMode         g_LangMode      = LangMode::Auto;
+Magpie::Settings g_Settings;               // settings.json (see Settings.h); colours, preview
+                                           // and list width live in Theme / g_Notes meanwhile
 NotesWindow      g_Notes;
 
 // ── Forward declarations ──────────────────────────────────────────────────
@@ -56,10 +50,6 @@ void AddonRender();
 void AddonOptions();
 
 using Magpie::I18n::Tr;
-
-static const char* LangModeKey(LangMode m) {
-    return m == LangMode::En ? "en" : m == LangMode::De ? "de" : "auto";
-}
 
 // Language Nexus is currently set to, read through a probe key registered at load
 // (Localization_Set for "en" and "de"). Any other Nexus language returns the key
@@ -73,32 +63,20 @@ static Magpie::I18n::Lang NexusLang() {
 // Resolve the setting to the language used this frame (cheap; called per render).
 static void ApplyLanguage() {
     using Magpie::I18n::Lang;
-    switch (g_LangMode) {
-        case LangMode::En:   Magpie::I18n::SetLang(Lang::En); break;
-        case LangMode::De:   Magpie::I18n::SetLang(Lang::De); break;
-        case LangMode::Auto: Magpie::I18n::SetLang(NexusLang()); break;
+    switch (g_Settings.language) {
+        case Magpie::Settings::Language::En:   Magpie::I18n::SetLang(Lang::En); break;
+        case Magpie::Settings::Language::De:   Magpie::I18n::SetLang(Lang::De); break;
+        case Magpie::Settings::Language::Auto: Magpie::I18n::SetLang(NexusLang()); break;
     }
-}
-
-static constexpr int kTextScaleMin = 70;
-static constexpr int kTextScaleMax = 200;
-
-// Colours are stored as [r, g, b, a] (0..1). An absent or null background/text
-// entry means "use Nexus's default style".
-static nlohmann::json ColorToJson(const ImVec4& c) { return { c.x, c.y, c.z, c.w }; }
-static bool ColorFromJson(const nlohmann::json& j, ImVec4& out) {
-    if (!j.is_array() || j.size() != 4) return false;
-    float v[4];
-    for (int i = 0; i < 4; ++i) {
-        if (!j[i].is_number()) return false;
-        const float f = j[i].get<float>();
-        v[i] = f < 0.0f ? 0.0f : f > 1.0f ? 1.0f : f;
-    }
-    out = ImVec4(v[0], v[1], v[2], v[3]);
-    return true;
 }
 
 // ── Settings persistence (settings.json in the addon data dir) ────────────
+// g_Settings is the file's model; the live colours (Theme::Colors), the preview toggle and
+// the list width (g_Notes) are copied in on load and collected again before saving.
+
+static ImVec4 ToImVec4(const Magpie::Rgba& c) { return ImVec4(c.r, c.g, c.b, c.a); }
+static Magpie::Rgba ToRgba(const ImVec4& c)   { return Magpie::Rgba{ c.x, c.y, c.z, c.w }; }
+
 static std::string SettingsPath() {
     if (!APIDefs) return std::string();
     const char* dir = APIDefs->Paths_GetAddonDirectory("TrailpackMemo");
@@ -108,61 +86,42 @@ static std::string SettingsPath() {
     return (std::filesystem::path(dir) / "settings.json").string();
 }
 
+static void ApplySettings() {
+    Theme::UserColors& c = Theme::Colors();
+    c.border        = ToImVec4(g_Settings.border);
+    c.hasBackground = g_Settings.background.set;
+    c.background    = ToImVec4(g_Settings.background.color);
+    c.hasText       = g_Settings.text.set;
+    c.text          = ToImVec4(g_Settings.text.color);
+    c.hasGroupName  = g_Settings.groupName.set;
+    c.groupName     = ToImVec4(g_Settings.groupName.color);
+    g_Notes.SetPreviewEnabled(g_Settings.editPreview);
+    g_Notes.SetListWidth(g_Settings.listWidth);
+}
+
+static void CollectSettings() {
+    const Theme::UserColors& c = Theme::Colors();
+    g_Settings.border      = ToRgba(c.border);
+    g_Settings.background  = { c.hasBackground, ToRgba(c.background) };
+    g_Settings.text        = { c.hasText,       ToRgba(c.text) };
+    g_Settings.groupName   = { c.hasGroupName,  ToRgba(c.groupName) };
+    g_Settings.editPreview = g_Notes.PreviewEnabled();
+    g_Settings.listWidth   = g_Notes.ListWidth();
+}
+
 static void SaveSettings() {
     const std::string path = SettingsPath();
     if (path.empty()) return;
-    nlohmann::json j;
-    j["show_qa_icon"] = g_ShowQAIcon;
-    j["edit_preview"] = g_Notes.PreviewEnabled();
-    j["text_scale"]   = g_TextScalePct;
-    j["note_text_scale"] = g_NoteScalePct;
-    j["list_width"]   = g_Notes.ListWidth();
-    j["language"]     = LangModeKey(g_LangMode);
-    const Theme::UserColors& c = Theme::Colors();
-    j["color_border"]     = ColorToJson(c.border);
-    j["color_background"] = c.hasBackground ? ColorToJson(c.background) : nlohmann::json();
-    j["color_text"]       = c.hasText       ? ColorToJson(c.text)       : nlohmann::json();
-    j["color_group_name"] = c.hasGroupName  ? ColorToJson(c.groupName)  : nlohmann::json();
-    Magpie::SafeFile::WriteAtomic(path, j.dump(2));   // crash-safe replace
+    CollectSettings();
+    Magpie::SafeFile::WriteAtomic(path, g_Settings.ToJson());   // crash-safe replace
 }
 
 static void LoadSettings() {
     const std::string path = SettingsPath();
-    if (path.empty()) return;
     std::string content;
-    if (!Magpie::SafeFile::Read(path, content)) return;
-    nlohmann::json j;
-    try { j = nlohmann::json::parse(content); }
-    catch (...) {
+    if (!path.empty() && Magpie::SafeFile::Read(path, content) && !g_Settings.FromJson(content))
         Magpie::SafeFile::SetAside(path);   // malformed: keep it for inspection, use defaults
-        return;
-    }
-    if (j.contains("show_qa_icon") && j["show_qa_icon"].is_boolean())
-        g_ShowQAIcon = j["show_qa_icon"].get<bool>();
-    if (j.contains("edit_preview") && j["edit_preview"].is_boolean())
-        g_Notes.SetPreviewEnabled(j["edit_preview"].get<bool>());
-    if (j.contains("text_scale") && j["text_scale"].is_number_integer()) {
-        const int pct = j["text_scale"].get<int>();
-        g_TextScalePct = pct < kTextScaleMin ? kTextScaleMin : pct > kTextScaleMax ? kTextScaleMax : pct;
-    }
-    if (j.contains("list_width") && j["list_width"].is_number())
-        g_Notes.SetListWidth(j["list_width"].get<float>());   // clamped to the window when drawn
-    if (j.contains("note_text_scale") && j["note_text_scale"].is_number_integer()) {
-        const int pct = j["note_text_scale"].get<int>();
-        g_NoteScalePct = pct < kTextScaleMin ? kTextScaleMin : pct > kTextScaleMax ? kTextScaleMax : pct;
-    }
-    if (j.contains("language") && j["language"].is_string()) {
-        const std::string lang = j["language"].get<std::string>();
-        g_LangMode = lang == "en" ? LangMode::En : lang == "de" ? LangMode::De : LangMode::Auto;
-    }
-    Theme::UserColors& c = Theme::Colors();
-    if (j.contains("color_border")) ColorFromJson(j["color_border"], c.border);
-    if (j.contains("color_background"))
-        c.hasBackground = ColorFromJson(j["color_background"], c.background);
-    if (j.contains("color_text"))
-        c.hasText = ColorFromJson(j["color_text"], c.text);
-    if (j.contains("color_group_name"))
-        c.hasGroupName = ColorFromJson(j["color_group_name"], c.groupName);
+    ApplySettings();
 }
 
 // Add/remove the quick-access shortcut, keeping g_QAIconAdded in sync. The icon
@@ -257,7 +216,7 @@ void AddonLoad(AddonAPI_t* aApi) {
     LoadSettings();
     ApplyLanguage();
     APIDefs->Textures_LoadFromMemory(TEX_ICON, (void*)MAGPIE_ICON, MAGPIE_ICON_size, nullptr);
-    if (g_ShowQAIcon) AddQAIcon();
+    if (g_Settings.showQaIcon) AddQAIcon();
 
     APIDefs->Log(LOGL_INFO, "TrailpackMemo", "Trailpack Memo loaded.");
 }
@@ -302,8 +261,8 @@ void AddonRender() {
 
     if (ImGui::Begin(WINDOW_NAME, &g_WindowVisible)) {
         // UI text size for everything inside the window (not the title bar).
-        Magpie::FontScaleScope uiFont(g_TextScalePct / 100.0f);
-        g_Notes.SetNoteTextScale(g_NoteScalePct / 100.0f);
+        Magpie::FontScaleScope uiFont(g_Settings.uiTextScale / 100.0f);
+        g_Notes.SetNoteTextScale(g_Settings.noteTextScale / 100.0f);
         g_Notes.Render();
         if (g_Notes.ConsumeSettingsChanged()) SaveSettings();
     }
@@ -319,9 +278,9 @@ void AddonOptions() {
     // Language: Auto (= Nexus's language) or a fixed one. Language names stay native.
     {
         const char* items[] = { Tr("Auto (Nexus language)"), "English", "Deutsch" };
-        int mode = (int)g_LangMode;
+        int mode = (int)g_Settings.language;
         if (ImGui::Combo(Tr("Language"), &mode, items, IM_ARRAYSIZE(items))) {
-            g_LangMode = (LangMode)mode;
+            g_Settings.language = (Magpie::Settings::Language)mode;
             ApplyLanguage();
             SaveSettings();
         }
@@ -343,8 +302,8 @@ void AddonOptions() {
     ImGui::Separator();
 
     // Quick-access icon toggle (persisted; default on).
-    if (ImGui::Checkbox(Tr("Show quick access icon"), &g_ShowQAIcon)) {
-        if (g_ShowQAIcon) AddQAIcon();
+    if (ImGui::Checkbox(Tr("Show quick access icon"), &g_Settings.showQaIcon)) {
+        if (g_Settings.showQaIcon) AddQAIcon();
         else              RemoveQAIcon();
         SaveSettings();
     }
@@ -353,7 +312,7 @@ void AddonOptions() {
     // and -- independently -- the note content (view, editor, preview).
     auto sizeSlider = [](const char* id, const char* label, int& pct) {
         ImGui::PushID(id);
-        ImGui::SliderInt(label, &pct, kTextScaleMin, kTextScaleMax, "%d%%");
+        ImGui::SliderInt(label, &pct, Magpie::Settings::kScaleMin, Magpie::Settings::kScaleMax, "%d%%");
         if (ImGui::IsItemDeactivatedAfterEdit()) SaveSettings();
         ImGui::SameLine();
         if (ImGui::Button(Tr("Reset")) && pct != 100) {
@@ -362,8 +321,8 @@ void AddonOptions() {
         }
         ImGui::PopID();
     };
-    sizeSlider("ui_size",   Tr("UI text size"),   g_TextScalePct);
-    sizeSlider("note_size", Tr("Note text size"), g_NoteScalePct);
+    sizeSlider("ui_size",   Tr("UI text size"),   g_Settings.uiTextScale);
+    sizeSlider("note_size", Tr("Note text size"), g_Settings.noteTextScale);
 
     // ── Colours ───────────────────────────────────────────────────────────
     // Picked live; saved once no picker is being dragged any more (not every frame).

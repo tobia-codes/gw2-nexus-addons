@@ -58,6 +58,9 @@ New identifiers that the game or Nexus can see (signature, ids, events, textures
 - **Rendered characters:** ASCII plus Latin-1 letters (German umlauts/ß — Nexus's own German
   locale uses them). No em-dashes, arrows, Unicode bullets or other symbols.
 - **No game-memory reading, no game-function hooks.** Anything that seems to need it is out of scope.
+- NotesWindow is split by area (see the header comment in `src/NotesWindow.h`). Open modals only
+  via `requestPopup_` / render them with `beginModal_`; never call `ImGui::OpenPopup` for a modal
+  from inside a child window. Settings belong in `Settings` (pure, tested), not in new globals.
 - Match the surrounding style, naming and comment density. Keep `README.md` (addon + root table)
   in sync with user-visible changes.
 

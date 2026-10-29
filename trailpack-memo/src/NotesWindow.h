@@ -1,5 +1,13 @@
 #pragma once
 // NotesWindow.h — Two-pane notes UI + JSON persistence for Trailpack Memo.
+//
+// The implementation is split by area:
+//   NotesWindow.cpp        load/save, navigation, frame layout, popup requests, caches
+//   NotesList.cpp          left column: groups, note rows, menu button, splitter
+//   NotesDetail.cpp        right pane: view / edit modes, toolbar, rendered body
+//   NotesModals.cpp        confirmations and group / bulk-delete / colour modals
+//   NotesImportExport.cpp  file dialogs, export, import selection
+// Small shared UI helpers live in NotesUi.h.
 
 #include <string>
 #include <filesystem>
@@ -35,8 +43,21 @@ public:
     bool ConsumeSettingsChanged()   { bool c = settingsChanged_; settingsChanged_ = false; return c; }
 
 private:
-    // ── Mode ──────────────────────────────────────────────────────────────
     enum class Mode { View, Edit };
+
+    // ── Popups ────────────────────────────────────────────────────────────
+    // Modals are opened through requestPopup_ from anywhere (list child, context menus,
+    // dialogs) and actually opened at the end of Render, in the window's own ID scope where
+    // their BeginPopupModal calls live.
+    enum class Popup : unsigned {
+        Unsaved, ConfirmDelete, Notice, IoResult, ImportNotes,
+        GroupName, DeleteGroup, GroupColor, BulkDelete, Count
+    };
+    unsigned popupRequests_ = 0;   // bit per Popup
+    void requestPopup_(Popup p) { popupRequests_ |= 1u << (unsigned)p; }
+    void openRequestedPopups_();
+    // Centred, auto-sized modal with its translated title; false when not open.
+    bool beginModal_(Popup p);
 
     // ── Persistent state ──────────────────────────────────────────────────
     AddonAPI_t*           api_ = nullptr;  // Nexus API (for FontBig via DataLink)
@@ -54,41 +75,42 @@ private:
     bool  showPreview_     = false;
     float noteTextScale_   = 1.0f;
     float listWidth_       = kDefaultListWidth;
-    bool settingsChanged_ = false;
+    bool  settingsChanged_ = false;
 
-    // ── Dirty-guard pending navigation ────────────────────────────────────
-    // When a navigation is requested while dirty we stash it here and open
-    // the "Unsaved Changes" modal.  Both fields are cleared after resolution.
-    std::string pendingSelectId_;  // non-empty => switch to this note after save/discard
-    bool        pendingCreate_ = false;  // true => create new note after save/discard
+    // ── Navigation requests ───────────────────────────────────────────────
+    // When a navigation is requested while the edit is dirty it is stashed here and the
+    // "Unsaved Changes" modal opens; resolvePending_ carries it out after save/discard.
+    std::string pendingSelectId_;        // switch to this note after save/discard
+    bool        pendingCreate_ = false;  // create a new note after save/discard
     std::string pendingCreateGroupId_;   // group for that new note ("" = ungrouped)
+    std::string pendingEditId_;          // open this note in the editor once selected
+
+    // Picked this frame in the list / context menus; handled at the end of Render.
+    std::string selectRequestId_;
+    std::string editRequestId_;
+    std::string deleteRequestId_;
+    bool        createRequested_ = false;
+    std::string createRequestGroupId_;
+
+    std::string pendingDeleteId_;        // the note awaiting delete confirmation
 
     // ── Export / import ───────────────────────────────────────────────────
     // The Windows file dialog runs on a worker thread so the game keeps rendering;
     // Render() polls the result and performs the file I/O on the render thread.
     enum class IoAction { None, Export, Import };
-    std::future<std::wstring> ioDialog_;      // valid while a dialog is open
+    std::future<std::wstring> ioDialog_;         // valid while a dialog is open
     IoAction                  ioAction_ = IoAction::None;
-    std::string               ioExportId_;    // Export: single note id; empty = all notes
+    std::string               ioExportId_;       // Export: single note id; empty = all notes
     std::string               ioExportGroupId_;  // Export: whole group (takes precedence)
-    std::string               ioMessage_;     // result shown in the "Import / Export" modal
-
-    // Load problem (unreadable notes.json) to tell the user once, in the "Notice" modal.
-    std::string noticeMessage_;
-    bool        noticePending_ = false;
+    std::string               ioMessage_;        // result shown in the "Import / Export" modal
 
     // Import selection: the notes read from the chosen file, awaiting the user's pick.
     std::vector<Magpie::ImportItem> importItems_;
     std::vector<char>               importChecked_;   // parallel to importItems_
     std::string                     importFile_;      // file name shown in the modal
 
-    // ── Delete-confirmation ───────────────────────────────────────────────
-    std::string pendingDeleteId_;  // non-empty => the note awaiting delete confirmation
-    std::string deleteRequestId_;  // "Delete note..." picked in a context menu; the confirm
-                                   // modal opens at the end of Render (window scope)
-    std::string editRequestId_;    // "Edit" picked in a context menu (handled end of Render)
-    std::string pendingEditId_;    // open this note in the editor once it is selected
-                                   // (survives the unsaved-changes modal)
+    // Load problem (unreadable notes.json), told once in the "Notice" modal.
+    std::string noticeMessage_;
 
     // ── Groups ────────────────────────────────────────────────────────────
     // Group-name modal: create (groupNameId_ empty) or rename (groupNameId_ = group).
@@ -101,7 +123,7 @@ private:
     float       groupColorBefore_[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
     // ── Delete several notes ("Delete notes..." modal) ────────────────────
-    std::vector<std::string> bulkSelected_;      // ids ticked in the modal
+    std::vector<std::string> bulkSelected_;         // ids ticked in the modal
     bool                     bulkConfirm_ = false;  // second step: "really delete?"
 
     // ── Per-frame caches ──────────────────────────────────────────────────
@@ -119,80 +141,58 @@ private:
     const std::vector<Magpie::Md::Line>& parsed_(ParseCache& cache, const std::string& body);
     Magpie::Md::TaskCount taskCount_(const Magpie::Note& note);
 
-    // ── Private helpers ───────────────────────────────────────────────────
-    void selectFirst_();
-    void advanceSelectionAfterDelete_(const std::string& deletedId);
-
-    // Enter edit mode for the currently selected note (seeds buffers).
-    void enterEdit_(Magpie::Note* note);
-
-    // Commit edit buffers to store and persist.
-    void commitEdit_();
-
-    // Discard edit buffers and return to View.
-    void cancelEdit_();
-
-    // Perform the stashed pending navigation after save/discard.
-    void resolvePending_();
-
-    // Request navigation: intercepts with modal if dirty, else navigates directly.
-    void requestSelect_(const std::string& id);
-    // Create a note (in `groupId`, "" = ungrouped); asks first if the edit is dirty.
-    void requestCreate_(const std::string& groupId = std::string());
-
-    // Draw the dirty-state modal.  Returns true when open (caller must not
-    // do further navigation this frame).
-    void renderUnsavedModal_();
-
-    // Draw the delete-confirmation modal (acts on pendingDeleteId_).
-    void renderDeleteModal_();
-
-    // Perform the actual deletion of `id` (handles edit-mode + selection).
-    void performDelete_(const std::string& id);
-
-    // Open the save dialog for one note (`id`) or all notes (empty id).
-    void startExport_(const std::string& id);
-    // Open the save dialog for one group and its notes.
-    void startExportGroup_(const std::string& groupId);
-    // Open the open-file dialog; the chosen file's notes are appended.
-    void startImport_();
-    // Finish a completed dialog (write/read the file) and open the result modal.
-    void pollFileDialog_();
-    // Draw the "Import / Export" result modal.
-    void renderIoModal_();
-    // Draw the one-time "Notice" modal (noticeMessage_).
-    void renderNoticeModal_();
+    // ── NotesWindow.cpp: state + navigation ───────────────────────────────
     // Load notes.json; an unreadable file is set aside (never overwritten) and the last
     // backup (notes.json.bak) is tried instead.
     void loadNotes_();
-    // Draw the "Import Notes" selection modal (one checkbox per note in the file).
-    void renderImportModal_();
+    void selectFirst_();
+    void advanceSelectionAfterDelete_(const std::string& deletedId);
+    void enterEdit_(Magpie::Note* note);   // seed the edit buffers, switch to Edit
+    void commitEdit_();                     // write the buffers back and save
+    void cancelEdit_();                     // drop the buffers, back to View
+    bool editIsDirty_();
+    // Navigation that may need the unsaved-changes modal first.
+    void requestSelect_(const std::string& id);
+    void requestCreate_(const std::string& groupId = std::string());
+    void resolvePending_();                 // carry out the stashed navigation
+    void handleRequests_();                 // the *Request* fields above, end of Render
+    void performDelete_(const std::string& id);
+    ImFont* fontBig_() const;               // Nexus's FontBig (headings), or null
 
-    // Note list: one note row (selectable, progress, context menu, drag source).
-    // `indent` shifts the title for notes inside a group.
-    void renderNoteRow_(const Magpie::Note& note, float indent, std::string& clickedId);
-    // Note list: a group header (collapse toggle, count, context menu, drop target).
-    // Returns whether the group is expanded.
-    // Popups that must open in the window scope are reported through the out params.
-    bool renderGroupHeader_(Magpie::Group& group, bool& openNameModal, bool& openDeleteModal,
-                            bool& openColorModal, std::string& createInGroup);
-    // "Type" submenu (Note / Daily / Weekly) for a note's context menus.
-    void typeMenu_(const std::string& noteId);
+    // ── NotesList.cpp ─────────────────────────────────────────────────────
+    // Left column (list, "Create New Note", menu button); returns its width.
+    float renderListColumn_();
+    void  renderSplitter_(float listWidth);
+    // One note row (selectable, badge, progress, context menu, drag source).
+    void  renderNoteRow_(const Magpie::Note& note, float indent);
+    // A group header (collapse toggle, count, context menu, drop target); true if expanded.
+    bool  renderGroupHeader_(Magpie::Group& group);
+    void  typeMenu_(const std::string& noteId);   // "Type" submenu: Note / Daily / Weekly
     // A group's name colour: its own, else the addon-wide group colour, else the border.
     ImVec4 groupColor_(const Magpie::Group& group) const;
-    void   renderGroupColorModal_();
-    // Group-name modal (create / rename) and delete-group confirmation.
+
+    // ── NotesDetail.cpp ───────────────────────────────────────────────────
+    void renderDetailPane_();
+    void renderEditMode_(Magpie::Note& note);
+    void renderViewMode_(Magpie::Note& note);
+    void renderEditToolbar_();
+    void renderViewBody_(Magpie::Note* note);
+
+    // ── NotesModals.cpp ───────────────────────────────────────────────────
+    void renderModals_();
+    void renderUnsavedModal_();
+    void renderDeleteModal_();
+    void renderNoticeModal_();
     void renderGroupNameModal_();
     void renderDeleteGroupModal_();
-    // "Delete notes" modal: tick notes (per group, Select all / None), then confirm.
+    void renderGroupColorModal_();
     void renderBulkDeleteModal_();
 
-    // Nexus's FontBig (for headings), or null.
-    ImFont* fontBig_() const;
-
-    // Markdown toolbar row above the body editor (B / I / H1 / H2 / list / task + Preview).
-    void renderEditToolbar_();
-
-    // View-mode body: rendered markdown with clickable task checkboxes + context menu.
-    void renderViewBody_(Magpie::Note* note);
+    // ── NotesImportExport.cpp ─────────────────────────────────────────────
+    void startExport_(const std::string& id);        // one note (`id`) or all (empty)
+    void startExportGroup_(const std::string& groupId);
+    void startImport_();
+    void pollFileDialog_();                           // finish a completed dialog
+    void renderIoModal_();
+    void renderImportModal_();
 };

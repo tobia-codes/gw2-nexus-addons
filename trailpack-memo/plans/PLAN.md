@@ -22,8 +22,15 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 
 | Module | Pure? | Role |
 |---|---|---|
-| `dllmain.cpp` | no | Nexus lifecycle, identity, keybind, quick access, options pane, `settings.json` (preview toggle, QA icon) |
-| `NotesWindow.{h,cpp}` | no | Two-pane UI, view/edit modes, Save/Cancel, unsaved + delete modals, edit toolbar, preview, task clicks, `notes.json` I/O |
+| `dllmain.cpp` | no | Nexus lifecycle, identity, keybind, quick access, options pane; maps `Settings` <-> live state |
+| `Settings.{h,cpp}` | yes | settings.json model with validation/clamping (`g_Settings`) |
+| `SafeFile.{h,cpp}` | yes | Atomic write (+ `.bak`), read, set aside unreadable files |
+| `NotesWindow.{h,cpp}` | no | Note state, load/save, navigation, frame layout, popup requests (`requestPopup_` / `beginModal_`), caches |
+| `NotesList.cpp` | no | Left column: groups, note rows, menu button, splitter |
+| `NotesDetail.cpp` | no | Right pane: view / edit modes, toolbar, rendered body |
+| `NotesModals.cpp` | no | Confirmations, group name / colour / delete, bulk delete, notice |
+| `NotesImportExport.cpp` | no | File dialogs (worker thread), export, import selection |
+| `NotesUi.{h,cpp}` | no | Shared UI helpers (button width, type badge / colour / countdown) |
 | `NotesStore.{h,cpp}` | yes | Note + group model, CRUD, notes.json round-trip, export/import |
 | `Markdown.{h,cpp}` | yes | Line parser (Paragraph/Heading/Bullet/Task; Text/Bold/Italic/Chip spans); task count/toggle/uncheck-all |
 | `MarkdownEdit.{h,cpp}` | yes | Toolbar commands on a cell model: wrap bold/italic, toggle line prefixes, list continuation on Enter |
@@ -49,6 +56,14 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 - Edit toolbar B / I / H1 / H2 / list / task + `Ctrl+B` / `Ctrl+I`, toggles off when reapplied.
 - Enter continues bullet/task lists; Enter on an empty item ends the list.
 - Optional side-by-side live preview, persisted in `settings.json`.
+- Persistence is crash-safe (`SafeFile`): notes.json/settings.json are replaced atomically,
+  notes.json keeps `notes.json.bak`; an unreadable notes.json is set aside as
+  `notes.corrupt-N.json` (never overwritten), the backup is loaded and a notice is shown.
+- Per-frame work is cached: markdown parse of the open note / preview (`ParseCache`), task
+  progress per note (`TaskCache`, by body hash); `Tr()` uses a string_view table.
+- UI code conventions: popups are requested with `requestPopup_(Popup::X)` from anywhere and
+  opened at the end of `Render()`; new modals add a `Popup` value + title in `PopupTitle`.
+  Child windows report clicks via the `*RequestId_` fields, handled in `handleRequests_()`.
 - Note list width: splitter between list and note (drag, double-click resets to 200 px),
   `list_width` in `settings.json`, clamped only when drawn. Clipped titles show a tooltip.
 - Note types Note/Daily/Weekly (`Note::type`, `Note::resetStamp` = last reset applied, both in

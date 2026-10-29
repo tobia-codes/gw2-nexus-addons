@@ -9,6 +9,7 @@
 #include "I18n.h"
 #include "Reset.h"
 #include "SafeFile.h"
+#include "Settings.h"
 #include <filesystem>
 #include <set>
 #include <vector>
@@ -660,6 +661,53 @@ static void test_safe_file_write_backup_and_set_aside()
     CHECK_EQ(SetAside(file).filename().string(), std::string("notes.corrupt-2.json"));
 
     fs::remove_all(dir);
+}
+
+// ── Settings ───────────────────────────────────────────────────────────────────
+
+static void test_settings_roundtrip()
+{
+    Magpie::Settings a;
+    a.showQaIcon    = false;
+    a.editPreview   = true;
+    a.uiTextScale   = 150;
+    a.noteTextScale = 80;
+    a.listWidth     = 333.0f;
+    a.language      = Magpie::Settings::Language::De;
+    a.border        = Magpie::Rgba{ 0.5f, 0.25f, 1.0f, 1.0f };
+    a.groupName     = { true, Magpie::Rgba{ 1.0f, 0.0f, 0.0f, 1.0f } };
+
+    Magpie::Settings b;
+    CHECK(b.FromJson(a.ToJson()));
+    CHECK(!b.showQaIcon);
+    CHECK(b.editPreview);
+    CHECK_EQ(b.uiTextScale, 150);
+    CHECK_EQ(b.noteTextScale, 80);
+    CHECK(b.listWidth == 333.0f);
+    CHECK(b.language == Magpie::Settings::Language::De);
+    CHECK(b.border.g == 0.25f);
+    CHECK(b.groupName.set && b.groupName.color.r == 1.0f);
+    CHECK(!b.background.set && !b.text.set);         // null stays unset
+}
+
+static void test_settings_validation()
+{
+    Magpie::Settings s;
+    CHECK(!s.FromJson("not json"));
+    CHECK(!s.FromJson("[1,2]"));
+    CHECK_EQ(s.uiTextScale, 100);                       // untouched on failure
+
+    // Out-of-range / wrong types: clamped or ignored, everything else keeps defaults.
+    CHECK(s.FromJson("{\"text_scale\": 999, \"note_text_scale\": 5, \"show_qa_icon\": \"yes\","
+                     " \"language\": \"fr\", \"color_border\": [2, -1, 0.5],"
+                     " \"color_text\": [0.1, 0.2, 0.3, 7], \"list_width\": -5}"));
+    CHECK_EQ(s.uiTextScale, Magpie::Settings::kScaleMax);
+    CHECK_EQ(s.noteTextScale, Magpie::Settings::kScaleMin);
+    CHECK(s.showQaIcon);
+    CHECK(s.language == Magpie::Settings::Language::Auto);
+    CHECK(s.border.r == 0.90f);                         // 3 components: ignored
+    CHECK(s.text.set && s.text.color.a == 1.0f);        // clamped
+    CHECK(s.listWidth == Magpie::Settings::kDefaultListWidth);
 }
 
 static void test_delete_many()
@@ -1539,6 +1587,8 @@ int main()
     test_reset_skips_note_in_editor();
     test_type_persists_and_travels();
     test_safe_file_write_backup_and_set_aside();
+    test_settings_roundtrip();
+    test_settings_validation();
     test_delete_many();
     test_i18n_lookup_and_fallback();
     test_i18n_table_is_consistent();

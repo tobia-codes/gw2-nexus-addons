@@ -1,0 +1,206 @@
+// NotesDetail.cpp — NotesWindow's right pane: view and edit modes.
+
+#include "NotesWindow.h"
+
+#include <ctime>
+#include "imgui.h"
+#include "imgui_stdlib.h"
+#include "Theme.h"
+#include "I18n.h"
+#include "FontScale.h"
+#include "MarkdownEdit.h"
+#include "MarkdownRender.h"
+#include "NotesUi.h"
+
+using Magpie::I18n::Tr;
+using namespace NotesUi;
+
+void NotesWindow::renderDetailPane_()
+{
+    ImGui::BeginChild("##notes_detail", ImVec2(0, 0), true);
+
+    Magpie::Note* note = selectedId_.empty() ? nullptr : store_.Get(selectedId_);
+    if (note == nullptr) {
+        // Empty state — light magpie flavour.
+        ImGui::Spacing();
+        ImGui::TextDisabled("%s", Tr("Your nest is empty."));
+        ImGui::TextDisabled("%s", Tr("Click 'Create New Note' to start collecting."));
+    } else if (mode_ == Mode::Edit) {
+        renderEditMode_(*note);
+    } else {
+        renderViewMode_(*note);
+    }
+
+    ImGui::EndChild();
+}
+
+void NotesWindow::renderEditMode_(Magpie::Note& note)
+{
+    // Save / Cancel on the left, Delete on the far right.
+    Theme::PushGreenButton();
+    if (ImGui::Button(Tr("Save"), ImVec2(ButtonWidth(Tr("Save"), 70), 0))) commitEdit_();
+    Theme::PopButton();
+    ImGui::SameLine();
+    Theme::PushAmberButton();
+    if (ImGui::Button(Tr("Cancel"), ImVec2(ButtonWidth(Tr("Cancel"), 70), 0))) cancelEdit_();
+    Theme::PopButton();
+
+    const float deleteW = ButtonWidth(Tr("Delete"), 60.0f);
+    ImGui::SameLine(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - deleteW);
+    Theme::PushAmberButton();
+    if (ImGui::Button(Tr("Delete"), ImVec2(deleteW, 0))) deleteRequestId_ = note.id;   // confirm first
+    Theme::PopButton();
+
+    ImGui::Separator();
+    if (mode_ != Mode::Edit) return;   // Save / Cancel just ended the edit
+
+    // Editable title, with the note's type (applies at once) beside it.
+    const float typeW = ButtonWidth(Tr("Weekly"), 60.0f) + ImGui::GetFrameHeight();
+    Theme::PushEditBg();
+    ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - typeW - ImGui::GetStyle().ItemSpacing.x);
+    ImGui::InputText("##title", &titleBuffer_);
+    Theme::PopFrameBg();
+    ImGui::SameLine();
+    ImGui::SetNextItemWidth(typeW);
+    int type = (int)note.type;
+    const char* types[] = { Tr("Note"), Tr("Daily"), Tr("Weekly") };
+    if (ImGui::Combo("##type", &type, types, IM_ARRAYSIZE(types)) &&
+        store_.SetType(note.id, (Magpie::NoteType)type, (int64_t)std::time(nullptr)))
+        Save();
+    if (ImGui::IsItemHovered())
+        ImGui::SetTooltip("%s", Tr("Daily / Weekly: checkboxes are unchecked after the reset."));
+
+    ImGui::Spacing();
+    renderEditToolbar_();
+
+    // Editable body: chat codes are atomic chip cells, markdown stays raw (edit = source).
+    const ImU32 border = ImGui::GetColorU32(Theme::Colors().border);
+    if (!showPreview_) {
+        Magpie::FontScaleScope noteFont(noteTextScale_);
+        bodyEditor_.Render("##body_edit", ImGui::GetContentRegionAvail().x, border, /*minLines=*/6);
+        return;
+    }
+
+    // Source on the left, live rendered preview on the right.
+    const float half = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
+    ImGui::BeginChild("##edit_col", ImVec2(half, 0), false);
+    {
+        Magpie::FontScaleScope noteFont(noteTextScale_);
+        bodyEditor_.Render("##body_edit", ImGui::GetContentRegionAvail().x, border, /*minLines=*/6);
+    }
+    ImGui::EndChild();
+
+    ImGui::SameLine();
+    ImGui::BeginChild("##preview_col", ImVec2(0, 0), true);
+    {
+        const std::vector<Magpie::Md::Line>& lines = parsed_(previewParse_, bodyEditor_.GetText());
+        Magpie::FontScaleScope noteFont(noteTextScale_);
+        Magpie::RenderMarkdown(lines, fontBig_(), ImGui::GetContentRegionAvail().x);
+    }
+    ImGui::EndChild();
+}
+
+void NotesWindow::renderViewMode_(Magpie::Note& note)
+{
+    // Title (+ type and reset countdown), Edit on the right. Deleting lives in the
+    // right-click menus and "Delete notes...".
+    ImGui::Text("%s", note.title.c_str());
+    if (note.type != Magpie::NoteType::Note) {
+        ImGui::SameLine();
+        ImGui::TextColored(TypeColor(note.type), "[%s]", ResetText(note.type).c_str());
+    }
+
+    const float editW = ButtonWidth(Tr("Edit"), 60.0f);
+    ImGui::SameLine(ImGui::GetCursorPosX() + ImGui::GetContentRegionAvail().x - editW);
+    Theme::PushGreenButton();
+    if (ImGui::Button(Tr("Edit"), ImVec2(editW, 0))) enterEdit_(&note);
+    Theme::PopButton();
+
+    ImGui::Separator();
+    if (mode_ == Mode::View) renderViewBody_(&note);
+}
+
+void NotesWindow::renderEditToolbar_()
+{
+    using namespace Magpie::Md;
+
+    // Labels stay ASCII: Nexus's font has no symbol glyphs.
+    auto toolButton = [](const char* label, const char* tip) {
+        const bool pressed = ImGui::Button(label);
+        if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", tip);
+        ImGui::SameLine();
+        return pressed;
+    };
+
+    // Selection is read before the buttons: clicking one blurs the editor but
+    // stb keeps the selection, and ApplyEdit refocuses it.
+    int selA = 0, selB = 0;
+    bodyEditor_.GetSelection(selA, selB);
+
+    EditResult r;
+    if (toolButton(" B ",     Tr("Bold (Ctrl+B)")))
+        r = WrapSelection(bodyEditor_.Codepoints(), selA, selB, "**");
+    if (toolButton(" I ",     Tr("Italic (Ctrl+I)")))
+        r = WrapSelection(bodyEditor_.Codepoints(), selA, selB, "*");
+    if (toolButton("H1",      Tr("Heading 1")))
+        r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Heading1);
+    if (toolButton("H2",      Tr("Heading 2")))
+        r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Heading2);
+    if (toolButton(Tr("- List"),  Tr("Bullet list")))
+        r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Bullet);
+    if (toolButton(Tr("[ ] Task"), Tr("Checkbox (task list)")))
+        r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Task);
+    bodyEditor_.ApplyEdit(r);
+
+    // Preview toggle, right-aligned on the same row.
+    const char* previewLabel = Tr("Preview");
+    const float boxW = ImGui::GetFrameHeight() + ImGui::GetStyle().ItemInnerSpacing.x +
+                       ImGui::CalcTextSize(previewLabel).x;
+    const float avail = ImGui::GetContentRegionAvail().x;
+    if (avail > boxW) ImGui::SameLine(ImGui::GetCursorPosX() + avail - boxW);
+    else              ImGui::NewLine();
+    if (ImGui::Checkbox(previewLabel, &showPreview_)) settingsChanged_ = true;
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", Tr("Show a live preview beside the editor"));
+}
+
+void NotesWindow::renderViewBody_(Magpie::Note* note)
+{
+    // Rendered markdown inside a scrollable child so long notes scroll.
+    // EDIT mode shows the raw source; VIEW shows this.
+    ImGui::BeginChild("##view_body", ImVec2(0, 0), false);
+
+    const std::vector<Magpie::Md::Line>& lines = parsed_(viewParse_, note->body);
+    int clickedTask = -1;
+    {
+        Magpie::FontScaleScope noteFont(noteTextScale_);
+        clickedTask = Magpie::RenderMarkdown(lines, fontBig_(),
+                                             ImGui::GetContentRegionAvail().x,
+                                             /*interactiveTasks=*/true);
+    }
+    if (clickedTask >= 0 && Magpie::Md::ToggleTask(note->body, clickedTask)) {
+        Save();
+    }
+
+    // Right-click on the body (but not on a chip, which opens its own menu
+    // during RenderMarkdown) -> note context menu.
+    if (ImGui::IsWindowHovered() && ImGui::IsMouseClicked(ImGuiMouseButton_Right) &&
+        !ImGui::IsPopupOpen(nullptr, ImGuiPopupFlags_AnyPopupId)) {
+        ImGui::OpenPopup("##view_ctx");
+    }
+    if (ImGui::BeginPopup("##view_ctx")) {
+        if (ImGui::MenuItem(Tr("Edit"))) editRequestId_ = note->id;
+        ImGui::Separator();
+        const Magpie::Md::TaskCount tc = Magpie::Md::CountTasks(note->body);
+        if (ImGui::MenuItem(Tr("Uncheck all tasks"), nullptr, false, tc.done > 0)) {
+            Magpie::Md::UncheckAllTasks(note->body);
+            Save();
+        }
+        typeMenu_(note->id);
+        if (ImGui::MenuItem(Tr("Export note..."))) startExport_(note->id);
+        ImGui::Separator();
+        if (ImGui::MenuItem(Tr("Delete note..."))) deleteRequestId_ = note->id;
+        ImGui::EndPopup();
+    }
+
+    ImGui::EndChild();
+}
