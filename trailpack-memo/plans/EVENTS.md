@@ -34,41 +34,44 @@ are static, so start times are computed locally from UTC — like the daily / we
 | D13 | Colours | New "Events" section in Colour options: "Upcoming" (default teal) and "Active" (default green). Part of `ColorSet`, so themes and backups include them. |
 | D14 | Delivery | Six stages below, each its own feature branch + PR, each buildable, host-tested and checkable in game on its own. |
 
-## Data model (target)
+## Data model (as generated in stage 1)
 
-`src/events/EventData.h` — generated, pure (no ImGui / Nexus / Win32), sorted by category then
-wiki order:
+`src/events/EventData.h` (types) + `src/events/EventData.cpp` (tables) — generated, pure (no
+ImGui / Nexus / Win32), in wiki order (category, then meta, then segment):
 
 ```cpp
 namespace Magpie { namespace Events {
 
-enum class Category : uint8_t { CoreBosses, HardcoreBosses, LivingWorld2, ..., JanthirWilds };
+constexpr int kDayMinutes = 1440;
+
+struct CategoryDef { const char* nameEn; const char* nameDe; };   // nameDe nullptr: expansion name
 
 struct EventDef {
-    const char* id;          // stable English slug, used in {{event:<id>}}
-    const char* nameEn;
-    const char* nameDe;      // nullptr = use nameEn
-    const char* mapEn;
-    const char* mapDe;       // nullptr = use mapEn
-    Category    category;
-    const char* waypoint;    // chat code "[&BN...]" or nullptr if unknown
-    const char* waypointName;
-    const char* wikiPage;    // English wiki page title
-    uint16_t    cycleMinutes;   // schedule repeats every N minutes (e.g. 120, 180, 1440)
-    uint16_t    durationMinutes;
-    uint8_t     startCount;
-    uint16_t    starts[24];     // start offsets in minutes after 00:00 UTC within one cycle
+    const char*     id;              // stable English slug, used in {{event:<id>}}
+    const char*     nameEn;
+    const char*     nameDe;          // nullptr = use nameEn
+    const char*     mapEn;           // nullptr = none known
+    const char*     mapDe;
+    uint8_t         category;        // index into kCategories
+    const char*     waypoint;        // chat code "[&B...]", nullptr = none
+    const char*     waypointNameEn;
+    const char*     waypointNameDe;
+    const char*     wikiPage;        // English wiki page (may contain "#section")
+    uint8_t         count;           // occurrences per day
+    const uint16_t* starts;          // minutes after 00:00 UTC, ascending
+    const uint16_t* durations;       // minutes, parallel to starts
 };
 
-extern const EventDef kEvents[];
-extern const size_t   kEventCount;
+extern const CategoryDef kCategories[]; extern const size_t kCategoryCount;
+extern const EventDef    kEvents[];     extern const size_t kEventCount;
 
 }} // namespace Magpie::Events
 ```
 
-`cycleMinutes` + `starts[]` covers both evenly repeating metas (one offset, 120-min cycle) and
-irregular world-boss rotations (several offsets, 1440-min cycle). If the wiki data needs more
-(e.g. weekday-only events), extend the model in stage 1 and record it here.
+Every event repeats **daily** (the wiki widget restarts its sequence at 00:00 UTC), so a plain
+list of start minutes per day fits every event; no cycle field is needed. An occurrence may run
+past midnight (`start + duration > 1440`, e.g. Dragon's Stand at 23:30 for 120 min). Durations
+are per occurrence because they can differ within one event.
 
 ## Code map (where things go)
 
@@ -92,21 +95,38 @@ popup-id scoping inside the view child and the wiki-open helper; `Theme::TextCol
 ## Stages
 
 ### Stage 1 — Generator and data
-- [ ] Inspect the wiki source of "Event timers" (MediaWiki API, `action=parse` / raw wikitext and
-      the templates it uses) and record its structure under "Open points / findings".
-- [ ] Write `tools/gen_events.py` (stdlib only): parse schedules, categories, durations, waypoint
-      names and wiki page per event; German names via `prop=langlinks&lllang=de`; waypoint chat
-      codes from `/v2/continents/1/floors/1` (`points_of_interest[].chat_link`, type `waypoint`)
-      matched by name + map; derive stable ids (slug of the English name, unique).
-- [ ] `tools/event_overrides.json` for fixes; generator applies it and prints the summary (D4).
-- [ ] Generate `src/events/EventData.h`; decide header-only vs `.h`+`.cpp` by size.
-- [ ] Short "how to re-run" note in this file and in `README.md` (developer section).
+- [x] Inspect the wiki source of "Event timers" and record its structure (see findings).
+- [x] Write `tools/gen_events.py` (stdlib only): schedules, categories, names, waypoint chat codes
+      and wiki page from the widget's `data.json`; German names from the German widget script
+      (matched by chat code); waypoint + map names (EN/DE) from `/v2/continents/1/floors/*`;
+      ids = slug of the English event name (unique, else an override).
+- [x] `tools/event_overrides.json` for fixes; generator applies it and prints the summary (D4).
+- [x] Generate `src/events/EventData.{h,cpp}` (`.h` + `.cpp`: ~100 events); both CMake targets.
+- [x] Host test `test_event_data` (ids unique, starts ascending, Tequatl and Dragon's Stand
+      pinned to the wiki schedule).
+- [x] "How to re-run" note (below) and in `README.md` (Building).
+
+**Re-run the generator** (from the repo root; downloads are cached in `tools/.cache/`, delete it
+to refetch):
+
+```
+python3 trailpack-memo/tools/gen_events.py            # live wiki + API
+python3 trailpack-memo/tools/gen_events.py \
+  --en-data   "http://web.archive.org/web/20260920230502id_/https://wiki.guildwars2.com/index.php?title=Widget:Event_timer/data.json&action=raw" \
+  --de-script "http://web.archive.org/web/20250909200816id_/https://wiki-de.guildwars2.com/wiki/Widget:Event-Timer/script.js"
+```
+
+Then check the summary, run the host tests, and review the diff of `src/events/`.
 
 ### Stage 2 — Schedule maths (pure, host-tested)
 - [ ] `src/Events.{h,cpp}`: `Find`, `State`, `NextStarts`, `Search` (case-insensitive substring
       over name / map / id in both languages), `FormatEventTime` (D10 formats, EN + DE).
 - [ ] Host tests: known starts (Tequatl and two more, pinned to wiki values), active window
       edges (start, start + duration - 1 s, end), cycle wrap at 00:00 UTC, search hits, unknown id.
+- [ ] Daylight saving: all schedule maths in UTC only (`int64_t` Unix seconds, like `Reset.cpp`;
+      no `localtime` / `mktime` / TZ in `Events.cpp`). Host test: the same results with the
+      process time zone set to a DST zone (e.g. `TZ=Europe/Berlin`) and to UTC, across both
+      2026 switch dates (29 Mar, 25 Oct).
 - [ ] Add the new files to both CMake targets; list `Events` as a pure unit in `AGENTS.md`.
 
 ### Stage 3 — Chip in view, preview and editor
@@ -115,6 +135,9 @@ popup-id scoping inside the view child and the wiki-open helper; `Theme::TextCol
       name only (D10); round-trip host tests.
 - [ ] `EventChip`: view / preview text with live countdown, unknown-id chip, tooltip (D11),
       left-click copy + "Waypoint copied" hint, right-click menu (D12).
+- [ ] Tooltip local times: convert **each** start's Unix time on its own with `localtime`
+      (Windows applies DST per date), never a fixed UTC offset -- so a start after the next
+      daylight-saving switch shows the right hour. Countdowns stay UTC-only.
 - [ ] Guide + README lines; German texts.
 - [ ] User test: write `{{event:tequatl}}` by hand, check view, preview, editor, click, menu.
 
@@ -143,5 +166,28 @@ popup-id scoping inside the view child and the wiki-open helper; `Theme::TextCol
 - User-defined category order in the picker.
 
 ## Open points / findings
-- (Stage 1) Wiki source structure of "Event timers": _to be recorded_.
-- (Stage 1) Events that don't fit `cycleMinutes` + `starts[]` (if any): _to be recorded_.
+- (Stage 1, 2026-10-29) **Source structure.** The page "Event timers" renders a JS widget; all
+  data is in `Widget:Event_timer/data.json` (`config.version`, `events.<metaKey>` with
+  `category`, `name`, `segments.<r>` {`name`, `chatlink`, `link`} and `sequences` {`partial`,
+  `pattern`} of `{r, d}`). Each UTC day starts with `partial`, then `pattern` repeats; segment
+  `0` / empty names are fillers. The German wiki has its own widget (`Widget:Event-Timer/
+  script.js`, JS object literal) with German names and the same chat codes.
+- (Stage 1) **Wiki down.** Both wikis showed "The Guild Wars Wikis are undergoing maintenance"
+  (still on 2026-10-29). The data was generated from Wayback Machine snapshots: English
+  `data.json` of **2026-09-20** (version v5.4), German script of **2025-09-09**. Re-run against
+  the live wiki once it is back and review the diff.
+- (Stage 1) **Result:** 101 events in 13 categories (wiki order: Core Tyria, LW2, HoT, LW3, PoF,
+  LW4, Icebrood Saga, EoD, SotO, JW, Visions of Eternity, Public Instances, Special Events).
+  Hard world bosses are inside "Core Tyria". 13 events have no waypoint in the wiki (PvP
+  tournaments, Awakened invasion, Crash Site, Verdant Brink day/night, Tangled Depths outposts).
+  52 have no German name yet (newer content and the formatted names the old German script
+  doesn't cover) -- English is shown (D6); add `name_de` overrides or re-run on the live German
+  wiki later.
+- (Stage 1) **Selection (D1) as applied in the overrides:** left out the time ruler and the three
+  day/night rows, Auric Basin "Reset", Tangled Depths "Prep", Dragon's End "Preparations";
+  Dragon's Stand "(continued)" joins the running event (id `dragons-stand`). Location-named
+  segments are formatted with their meta ("Ley-Line Anomaly (Timberline Falls)"). PvP automated
+  tournaments (EU / NA) and festival events (Special Events) are included -- they have a fixed
+  time; festivals only run during their festival.
+- (Stage 1) The model is daily lists of starts + durations (see Data model); no event needed
+  more.
