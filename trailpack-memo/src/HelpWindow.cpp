@@ -136,7 +136,7 @@ void Render(bool* open, float uiScale)
 
     const std::string title = std::string("Trailpack Memo - ") + Tr("Guide") + "###tpm_help";
     ImGui::SetNextWindowSize(ImVec2(460.0f, 520.0f), ImGuiCond_FirstUseEver);
-    Theme::PushWindowStyle();
+    // Plain Nexus style (no user colours), so the guide stays readable with any theme.
     if (ImGui::Begin(title.c_str(), open)) {
         Magpie::FontScaleScope uiFont(uiScale);
         for (size_t i = 0; i < sizeof kSections / sizeof kSections[0]; ++i) {
@@ -149,7 +149,6 @@ void Render(bool* open, float uiScale)
         }
     }
     ImGui::End();
-    Theme::PopWindowStyle();
 }
 
 } // namespace Help

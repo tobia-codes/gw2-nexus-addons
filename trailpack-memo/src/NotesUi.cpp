@@ -48,6 +48,18 @@ ImVec4 ListTextColor()
     return c.hasListText ? c.listText : ImGui::GetStyle().Colors[ImGuiCol_Text];
 }
 
+ImVec4 NoteTextColor()
+{
+    const Theme::UserColors& c = Theme::Colors();
+    return c.hasNoteText ? c.noteText : ImGui::GetStyle().Colors[ImGuiCol_Text];
+}
+
+ImVec4 Dimmed(ImVec4 c)
+{
+    c.w *= 0.6f;
+    return c;
+}
+
 std::string ResetText(Magpie::NoteType t)
 {
     if (t == Magpie::NoteType::Note) return std::string();

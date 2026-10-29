@@ -219,7 +219,7 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
         progressW = ImGui::CalcTextSize(progress).x;
         const ImU32 col = (tc.done == tc.total)
             ? ImGui::GetColorU32(Theme::BTN_GREEN_ACTIVE)
-            : ImGui::GetColorU32(ImGuiCol_TextDisabled);
+            : ImGui::GetColorU32(Dimmed(ListTextColor()));
         dl->AddText(ImVec2(rowRight - progressW, rowPos.y), col, progress);
     }
 
@@ -302,7 +302,7 @@ bool NotesWindow::renderGroupHeader_(Magpie::Group& group)
     // Disclosure triangle (drawn: no symbol glyphs), name, note count right-aligned.
     ImDrawList* dl   = ImGui::GetWindowDrawList();
     const float  sz  = ImGui::GetFontSize();
-    const ImU32  col = ImGui::GetColorU32(ImGuiCol_Text);
+    const ImU32  col = ImGui::GetColorU32(ListTextColor());
     const ImVec2 c(rowPos.x + sz * 0.4f, rowPos.y + rowH * 0.5f);
     const float  r = sz * 0.25f;
     if (group.collapsed)
@@ -317,7 +317,7 @@ bool NotesWindow::renderGroupHeader_(Magpie::Group& group)
     char countText[16];
     snprintf(countText, sizeof countText, "%d", count);
     const float countW = ImGui::CalcTextSize(countText).x;
-    dl->AddText(ImVec2(rowRight - countW, rowPos.y), ImGui::GetColorU32(ImGuiCol_TextDisabled),
+    dl->AddText(ImVec2(rowRight - countW, rowPos.y), ImGui::GetColorU32(Dimmed(ListTextColor())),
                 countText);
 
     const float nameX = rowPos.x + sz * 0.9f;

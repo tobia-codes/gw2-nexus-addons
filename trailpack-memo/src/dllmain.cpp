@@ -432,16 +432,15 @@ void AddonRender() {
     Help::Render(&g_HelpVisible, g_Settings.uiTextScale / 100.0f);
 
     // Own settings window: the same options as in Nexus (RenderOptions), so both stay in sync.
+    // Plain Nexus style (no user colours), so it stays readable whatever theme is picked.
     if (g_SettingsVisible) {
         const std::string title = std::string(WINDOW_NAME) + " - " + Tr("Settings") + "###tpm_settings";
         ImGui::SetNextWindowSize(ImVec2(480.0f, 420.0f), ImGuiCond_FirstUseEver);
-        Theme::PushWindowStyle();
         if (ImGui::Begin(title.c_str(), &g_SettingsVisible)) {
             Magpie::FontScaleScope uiFont(g_Settings.uiTextScale / 100.0f);
             RenderOptions();
         }
         ImGui::End();
-        Theme::PopWindowStyle();
     }
 }
 

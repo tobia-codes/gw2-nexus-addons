@@ -33,8 +33,9 @@ void NotesWindow::renderDetailPane_()
     if (note == nullptr) {
         // Empty state — light magpie flavour.
         ImGui::Spacing();
-        ImGui::TextDisabled("%s", Tr("Your nest is empty."));
-        ImGui::TextDisabled("%s", Tr("Click 'Create New Note' to start collecting."));
+        const ImVec4 hint = Dimmed(NoteTextColor());
+        ImGui::TextColored(hint, "%s", Tr("Your nest is empty."));
+        ImGui::TextColored(hint, "%s", Tr("Click 'Create New Note' to start collecting."));
     } else if (mode_ == Mode::Edit) {
         renderEditMode_(*note);
     } else {
@@ -189,7 +190,13 @@ void NotesWindow::renderEditToolbar_()
     const float avail = ImGui::GetContentRegionAvail().x;
     if (avail > boxW) ImGui::SameLine(ImGui::GetCursorPosX() + avail - boxW);
     else              ImGui::NewLine();
-    if (ImGui::Checkbox(previewLabel, &showPreview_)) settingsChanged_ = true;
+    bool toggled;
+    {
+        // The label sits on the note background: note text colour (the tooltip below doesn't).
+        Theme::TextColorScope noteText(Theme::Colors().hasNoteText, Theme::Colors().noteText);
+        toggled = ImGui::Checkbox(previewLabel, &showPreview_);
+    }
+    if (toggled) settingsChanged_ = true;
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", Tr("Show a live preview beside the editor"));
 }
 
