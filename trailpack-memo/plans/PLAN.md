@@ -99,7 +99,9 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   and stay English; Decoder Ring names come in whatever language it delivers.
 - User colours (border / background / text) in `Theme::Colors()`, pushed for the whole window by
   `Theme::PushWindowStyle()`; background/text only override Nexus's style once picked
-  (`color_*` in `settings.json`, null = Nexus default).
+  (`color_*` in `settings.json`, null = Nexus default). Daily / weekly badge background and letter
+  colours (`color_daily_badge[_text]`, `color_weekly_badge[_text]`, defaults in `Theme::BADGE_*`)
+  are read by `NotesUi::TypeColor` / `TypeTextColor`; the badge colour also tints the countdown.
 - Two text sizes (70-200 %, Nexus options > "Font options"; colours under "Colour options", both
   collapsible sections in `AddonOptions`): UI = `text_scale`, note content = `note_text_scale`,
   both applied with `Magpie::FontScaleScope` (`FontScale.{h,cpp}`) -- the UI scope right after

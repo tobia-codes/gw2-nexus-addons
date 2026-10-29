@@ -97,6 +97,10 @@ static void ApplySettings() {
     c.text          = ToImVec4(g_Settings.text.color);
     c.hasGroupName  = g_Settings.groupName.set;
     c.groupName     = ToImVec4(g_Settings.groupName.color);
+    c.dailyBadge      = ToImVec4(g_Settings.dailyBadge);
+    c.dailyBadgeText  = ToImVec4(g_Settings.dailyBadgeText);
+    c.weeklyBadge     = ToImVec4(g_Settings.weeklyBadge);
+    c.weeklyBadgeText = ToImVec4(g_Settings.weeklyBadgeText);
     g_Notes.SetPreviewEnabled(g_Settings.editPreview);
     g_Notes.SetListWidth(g_Settings.listWidth);
 }
@@ -107,6 +111,10 @@ static void CollectSettings() {
     g_Settings.background  = { c.hasBackground, ToRgba(c.background) };
     g_Settings.text        = { c.hasText,       ToRgba(c.text) };
     g_Settings.groupName   = { c.hasGroupName,  ToRgba(c.groupName) };
+    g_Settings.dailyBadge      = ToRgba(c.dailyBadge);
+    g_Settings.dailyBadgeText  = ToRgba(c.dailyBadgeText);
+    g_Settings.weeklyBadge     = ToRgba(c.weeklyBadge);
+    g_Settings.weeklyBadgeText = ToRgba(c.weeklyBadgeText);
     g_Settings.editPreview = g_Notes.PreviewEnabled();
     g_Settings.listWidth   = g_Notes.ListWidth();
 }
@@ -382,6 +390,20 @@ void AddonOptions() {
 
         ImGui::TextDisabled("%s", Tr("Reset uses the Nexus default (gold for the border)."));
         ImGui::TextDisabled("%s", Tr("Group names follow the border until set; right-click a group for its own colour."));
+
+        // Daily / weekly badges in the note list: background and letter, each separately.
+        ImGui::Separator();
+        auto badgeColor = [&](const char* id, const char* label, ImVec4& col, const ImVec4& def) {
+            ImGui::PushID(id);
+            if (ImGui::ColorEdit4(label, &col.x, flags)) s_ColorsDirty = true;
+            ImGui::SameLine();
+            if (ImGui::Button(Tr("Reset"))) { col = def; s_ColorsDirty = true; }
+            ImGui::PopID();
+        };
+        badgeColor("daily_badge",       Tr("Daily badge"),        c.dailyBadge,      Theme::BADGE_DAILY);
+        badgeColor("daily_badge_text",  Tr("Daily badge text"),   c.dailyBadgeText,  Theme::BADGE_TEXT);
+        badgeColor("weekly_badge",      Tr("Weekly badge"),       c.weeklyBadge,     Theme::BADGE_WEEKLY);
+        badgeColor("weekly_badge_text", Tr("Weekly badge text"),  c.weeklyBadgeText, Theme::BADGE_TEXT);
     }
 
     if (s_ColorsDirty && !ImGui::IsAnyItemActive()) {

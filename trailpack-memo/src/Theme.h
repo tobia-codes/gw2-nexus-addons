@@ -29,6 +29,11 @@ inline const ImVec4 FRAME_BG_DARK      = { 0.10f, 0.10f, 0.13f, 1.00f };
 // Visually distinct from FRAME_BG_DARK so the user knows they are editing.
 inline const ImVec4 EDIT_BG            = { 0.08f, 0.11f, 0.20f, 1.00f };
 
+// ── Daily / weekly note badge defaults ────────────────────────────────────
+inline const ImVec4 BADGE_DAILY        = { 0.90f, 0.62f, 0.20f, 1.00f };   // amber
+inline const ImVec4 BADGE_WEEKLY       = { 0.40f, 0.60f, 0.95f, 1.00f };   // blue
+inline const ImVec4 BADGE_TEXT         = { 0.08f, 0.08f, 0.08f, 1.00f };
+
 // ── User colours (Options pane, persisted in settings.json) ───────────────
 // Border defaults to BORDER_GOLD. Background and text default to Nexus's own style;
 // they only override it once the user picks a colour (has* = true).
@@ -41,6 +46,11 @@ struct UserColors {
     // Group names in the note list: default follows `border`; a group can override it.
     bool   hasGroupName  = false;
     ImVec4 groupName     = { 0.0f, 0.0f, 0.0f, 0.0f };
+    // Daily / weekly badge in the note list (the badge colour also tints the countdown).
+    ImVec4 dailyBadge      = BADGE_DAILY;
+    ImVec4 dailyBadgeText  = BADGE_TEXT;
+    ImVec4 weeklyBadge     = BADGE_WEEKLY;
+    ImVec4 weeklyBadgeText = BADGE_TEXT;
 };
 UserColors& Colors();   // the live, mutable set (Theme.cpp)
 
