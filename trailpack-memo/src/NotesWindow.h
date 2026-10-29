@@ -23,6 +23,11 @@ public:
     // independent of the window's UI text size (set by dllmain from settings.json).
     // Applied with Magpie::FontScaleScope (FontScale.h).
     void SetNoteTextScale(float scale) { noteTextScale_ = scale; }
+
+    // Width of the note list in px (drag the splitter; persisted by dllmain's settings.json).
+    static constexpr float kDefaultListWidth = 200.0f;
+    float ListWidth() const         { return listWidth_; }
+    void  SetListWidth(float w)     { listWidth_ = w; }
     // True once after the user changed a persisted UI setting (caller saves settings).
     bool ConsumeSettingsChanged()   { bool c = settingsChanged_; settingsChanged_ = false; return c; }
 
@@ -45,6 +50,7 @@ private:
     // ── UI settings ───────────────────────────────────────────────────────
     bool  showPreview_     = false;
     float noteTextScale_   = 1.0f;
+    float listWidth_       = kDefaultListWidth;
     bool settingsChanged_ = false;
 
     // ── Dirty-guard pending navigation ────────────────────────────────────

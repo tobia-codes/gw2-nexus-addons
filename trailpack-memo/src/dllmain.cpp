@@ -115,6 +115,7 @@ static void SaveSettings() {
     j["edit_preview"] = g_Notes.PreviewEnabled();
     j["text_scale"]   = g_TextScalePct;
     j["note_text_scale"] = g_NoteScalePct;
+    j["list_width"]   = g_Notes.ListWidth();
     j["language"]     = LangModeKey(g_LangMode);
     const Theme::UserColors& c = Theme::Colors();
     j["color_border"]     = ColorToJson(c.border);
@@ -140,6 +141,8 @@ static void LoadSettings() {
         const int pct = j["text_scale"].get<int>();
         g_TextScalePct = pct < kTextScaleMin ? kTextScaleMin : pct > kTextScaleMax ? kTextScaleMax : pct;
     }
+    if (j.contains("list_width") && j["list_width"].is_number())
+        g_Notes.SetListWidth(j["list_width"].get<float>());   // clamped to the window when drawn
     if (j.contains("note_text_scale") && j["note_text_scale"].is_number_integer()) {
         const int pct = j["note_text_scale"].get<int>();
         g_NoteScalePct = pct < kTextScaleMin ? kTextScaleMin : pct > kTextScaleMax ? kTextScaleMax : pct;

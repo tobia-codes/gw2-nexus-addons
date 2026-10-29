@@ -14,6 +14,8 @@
 - **Markdown toolbar** in edit mode: **B**, *I*, H1, H2, bullet list, task -- works on the
   selection or the current line(s), and toggles off when applied again. `Ctrl+B` / `Ctrl+I` too.
 - **Live preview** beside the editor (`Preview` checkbox, remembered across sessions).
+- **Resizable note list**: drag the divider between list and note (double-click resets); long
+  titles show in full on hover.
 - **Groups**: collapsible groups to structure notes (menu button -> *New group...*). Right-click a
   group to rename, export or delete it (its notes are kept) or add a note to it; move notes via
   right-click -> *Move to group* or by dragging them onto a group. Groups have unique ids too.

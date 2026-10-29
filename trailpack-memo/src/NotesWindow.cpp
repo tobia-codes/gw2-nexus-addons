@@ -291,7 +291,13 @@ void NotesWindow::Render()
     //    beneath it. Grouped so the right-hand panel (added with SameLine below)
     //    sits beside the FULL height of this column — not squished under the
     //    button at the bottom of the window. ─────────────────────────────────
-    const float leftWidth  = 200.0f;
+    // The list width is user-resizable (splitter below); keep room for the detail pane.
+    const float minList   = 120.0f;
+    const float maxList   = ImGui::GetContentRegionAvail().x - 200.0f;
+    // Clamped for drawing only: the saved width survives a temporarily narrow window.
+    const float leftWidth  = maxList > minList
+        ? (listWidth_ < minList ? minList : listWidth_ > maxList ? maxList : listWidth_)
+        : minList;
     const float createBtnH = ImGui::GetFrameHeightWithSpacing();
 
     ImGui::BeginGroup();
@@ -400,8 +406,32 @@ void NotesWindow::Render()
         requestSelect_(clickedId);
     }
 
+    // ── Splitter: drag to resize the list, double-click to reset. ───────────
+    {
+        const float splitW = 6.0f;
+        const float gap    = ImGui::GetStyle().ItemSpacing.x;
+        ImGui::SameLine(0.0f, (gap - splitW) * 0.5f > 0.0f ? (gap - splitW) * 0.5f : 0.0f);
+        ImGui::InvisibleButton("##list_splitter", ImVec2(splitW, ImGui::GetContentRegionAvail().y));
+        const bool hovered = ImGui::IsItemHovered();
+        const bool active  = ImGui::IsItemActive();
+        if (hovered || active) ImGui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+        if (active) listWidth_ = leftWidth + ImGui::GetIO().MouseDelta.x;
+        if (ImGui::IsItemDeactivated()) settingsChanged_ = true;   // save once, on release
+        if (hovered && ImGui::IsMouseDoubleClicked(ImGuiMouseButton_Left)) {
+            listWidth_       = kDefaultListWidth;
+            settingsChanged_ = true;
+        }
+        if (hovered || active) {
+            const ImVec2 a = ImGui::GetItemRectMin(), b = ImGui::GetItemRectMax();
+            const float  x = (a.x + b.x) * 0.5f;
+            ImGui::GetWindowDrawList()->AddLine(ImVec2(x, a.y), ImVec2(x, b.y),
+                                                ImGui::GetColorU32(Theme::Colors().border), 2.0f);
+        }
+    }
+
     // ── Right panel: the note view/editor, beside the list at full height. ──
-    ImGui::SameLine();
+    ImGui::SameLine(0.0f, (ImGui::GetStyle().ItemSpacing.x - 6.0f) * 0.5f > 0.0f
+                              ? (ImGui::GetStyle().ItemSpacing.x - 6.0f) * 0.5f : 0.0f);
 
     ImGui::BeginChild("##notes_detail", ImVec2(0, 0), true);
 
@@ -1049,6 +1079,11 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent, std::st
     dl->AddText(ImVec2(rowPos.x + indent, rowPos.y), ImGui::GetColorU32(ImGuiCol_Text),
                 note.title.c_str());
     dl->PopClipRect();
+
+    // Clipped title -> full title on hover.
+    if (ImGui::IsItemHovered() && !ImGui::IsMouseDragging(ImGuiMouseButton_Left) &&
+        rowPos.x + indent + ImGui::CalcTextSize(note.title.c_str()).x > titleRight)
+        ImGui::SetTooltip("%s", note.title.c_str());
 }
 
 bool NotesWindow::renderGroupHeader_(Magpie::Group& group, bool& openNameModal,
@@ -1114,9 +1149,11 @@ bool NotesWindow::renderGroupHeader_(Magpie::Group& group, bool& openNameModal,
 
     const float nameX = rowPos.x + sz * 0.9f;
     dl->PushClipRect(ImVec2(nameX, rowPos.y), ImVec2(rowRight - countW - 6.0f, rowPos.y + rowH), true);
-    dl->AddText(ImVec2(nameX, rowPos.y), ImGui::GetColorU32(Theme::Colors().border),
-                group.name.empty() ? Tr("(untitled)") : group.name.c_str());
+    const char* groupName = group.name.empty() ? Tr("(untitled)") : group.name.c_str();
+    dl->AddText(ImVec2(nameX, rowPos.y), ImGui::GetColorU32(Theme::Colors().border), groupName);
     dl->PopClipRect();
+    if (ImGui::IsItemHovered() && nameX + ImGui::CalcTextSize(groupName).x > rowRight - countW - 6.0f)
+        ImGui::SetTooltip("%s", groupName);
 
     return !group.collapsed;
 }

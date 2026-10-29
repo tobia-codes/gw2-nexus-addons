@@ -48,6 +48,8 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 - Edit toolbar B / I / H1 / H2 / list / task + `Ctrl+B` / `Ctrl+I`, toggles off when reapplied.
 - Enter continues bullet/task lists; Enter on an empty item ends the list.
 - Optional side-by-side live preview, persisted in `settings.json`.
+- Note list width: splitter between list and note (drag, double-click resets to 200 px),
+  `list_width` in `settings.json`, clamped only when drawn. Clipped titles show a tooltip.
 - Groups (`Magpie::Group`: id, name, collapsed; one level): `Note::groupId`. notes.json is now
   `{"format":"trailpack-memo-notes","version":2,groups,notes}` (v1 plain array still loads).
   Export v2 carries `groups` + per-note `group`; `ExportGroupJson` for one group; import reuses a
