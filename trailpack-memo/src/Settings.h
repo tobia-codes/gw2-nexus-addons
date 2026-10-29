@@ -34,6 +34,7 @@ struct Settings {
     OptionalColor background;   // unset: Nexus style
     OptionalColor text;         // unset: Nexus style
     OptionalColor groupName;    // unset: follow `border`
+    OptionalColor noGroup;      // "No group" label; unset: Nexus disabled text
     Rgba          dailyBadge     { 0.90f, 0.62f, 0.20f, 1.0f };   // amber
     Rgba          dailyBadgeText { 0.08f, 0.08f, 0.08f, 1.0f };
     Rgba          weeklyBadge    { 0.40f, 0.60f, 0.95f, 1.0f };   // blue

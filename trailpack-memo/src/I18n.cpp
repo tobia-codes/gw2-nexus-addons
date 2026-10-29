@@ -244,12 +244,12 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
       "- Language (Auto follows Nexus), quick access icon.\n"
       "- 'Font options': UI and note text size.\n"
-      "- 'Colour options': border, background, text, group names and the daily / weekly badges.\n"
+      "- 'Colour options': window (border, background, text), note list (group names, 'No group') and the daily / weekly badges.\n"
       "- Drag the divider between list and note to change the list width.",
       "Nexus-Addon-Optionen > Trailpack Memo, oder Menü-Knopf > 'Einstellungen...':\n"
       "- Sprache (Automatisch folgt Nexus), Schnellzugriff-Icon.\n"
       "- 'Schriftoptionen': UI- und Notiz-Textgröße.\n"
-      "- 'Farboptionen': Rahmen, Hintergrund, Text, Gruppennamen und die Täglich-/Wöchentlich-Badges.\n"
+      "- 'Farboptionen': Fenster (Rahmen, Hintergrund, Text), Notizliste (Gruppennamen, 'Ohne Gruppe') und die Täglich-/Wöchentlich-Badges.\n"
       "- Den Trenner zwischen Liste und Notiz ziehen ändert die Breite der Liste." },
     { "Your data",                         "Deine Daten" },
     { "Notes are saved in addons/TrailpackMemo/notes.json; the previous version is kept as "
@@ -281,10 +281,10 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Group names",                       "Gruppennamen" },
     { "Group names follow the border until set; right-click a group for its own colour.",
       "Gruppennamen folgen dem Rahmen, bis gesetzt; Rechtsklick auf eine Gruppe für eine eigene Farbe." },
-    { "Daily badge",                       "Täglich-Badge" },
-    { "Daily badge text",                  "Täglich-Badge Schrift" },
-    { "Weekly badge",                      "Wöchentlich-Badge" },
-    { "Weekly badge text",                 "Wöchentlich-Badge Schrift" },
+    { "Window",                            "Fenster" },
+    { "Note list",                         "Notizliste" },
+    { "Daily / weekly badges",             "Täglich-/Wöchentlich-Badges" },
+    { "Reset all colours",                 "Alle Farben zurücksetzen" },
     { "Reset uses the Nexus default (gold for the border).",
       "Zurücksetzen nutzt den Nexus-Standard (Gold für den Rahmen)." },
 };

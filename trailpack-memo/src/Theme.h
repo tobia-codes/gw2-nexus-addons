@@ -46,6 +46,9 @@ struct UserColors {
     // Group names in the note list: default follows `border`; a group can override it.
     bool   hasGroupName  = false;
     ImVec4 groupName     = { 0.0f, 0.0f, 0.0f, 0.0f };
+    // "No group" label in the note list: default is Nexus's disabled-text colour.
+    bool   hasNoGroup    = false;
+    ImVec4 noGroup       = { 0.0f, 0.0f, 0.0f, 0.0f };
     // Daily / weekly badge in the note list (the badge colour also tints the countdown).
     ImVec4 dailyBadge      = BADGE_DAILY;
     ImVec4 dailyBadgeText  = BADGE_TEXT;

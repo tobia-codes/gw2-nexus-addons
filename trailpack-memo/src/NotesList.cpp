@@ -70,7 +70,7 @@ float NotesWindow::renderListColumn_()
     if (!groupIds.empty() && (anyUngrouped || ImGui::GetDragDropPayload() != nullptr)) {
         // Section label; also the drop target that takes a note out of its group.
         ImGui::Spacing();
-        ImGui::TextDisabled("%s", Tr("No group"));
+        ImGui::TextColored(NoGroupColor(), "%s", Tr("No group"));
         if (ImGui::BeginDragDropTarget()) {
             if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("TPM_NOTE")) {
                 const std::string id(static_cast<const char*>(p->Data), (size_t)p->DataSize);

@@ -37,9 +37,10 @@
   `addons/TrailpackMemo/exports/`.
 - **English and German UI**: follows the Nexus language by default, or set it in the addon
   options (Auto / English / Deutsch).
-- **Custom colours** for the window border, background, text, group names and the daily / weekly
-  badges (background and letter, each separately; colour pickers with alpha in
-  the Nexus addon options under "Colour options", each with a Reset).
+- **Custom colours** under "Colour options", grouped as window (border, background, text), note
+  list (group names, the "No group" label) and daily / weekly badges (background and letter, each
+  separately, with a live preview). Each row is a swatch that opens a picker with alpha, plus a
+  Reset; "Reset all colours" restores every default.
 - **Settings window**: menu button -> *Settings...* opens the same options as the Nexus addon
   options in a window of its own.
 - **Two text sizes** (70-200 %) in the Nexus addon options under "Font options": one for the window's UI, one for the

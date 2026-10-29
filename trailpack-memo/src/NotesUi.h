@@ -18,6 +18,9 @@ ImVec4      TypeColor(Magpie::NoteType t);
 ImVec4      TypeTextColor(Magpie::NoteType t);
 std::string ResetText(Magpie::NoteType t);
 
+// Colour of the "No group" label (user-set, else Nexus's disabled text).
+ImVec4      NoGroupColor();
+
 // Small coloured badge ("D" / "W") at `pos`; returns its width (0 for a plain note).
 float DrawTypeBadge(ImDrawList* dl, ImVec2 pos, float height, Magpie::NoteType t);
 
