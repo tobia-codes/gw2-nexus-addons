@@ -634,6 +634,9 @@ void NotesWindow::Render()
 
     // Open the delete-confirmation modal in the parent-window scope (matches the
     // BeginPopupModal in renderDeleteModal_).
+    if (deleteClickedId.empty() && !deleteRequestId_.empty())
+        deleteClickedId = deleteRequestId_;
+    deleteRequestId_.clear();
     if (!deleteClickedId.empty()) {
         pendingDeleteId_ = deleteClickedId;
         ImGui::OpenPopup(PopupName("Confirm Delete", "confirm_delete").c_str());
@@ -724,6 +727,8 @@ void NotesWindow::renderViewBody_(Magpie::Note* note)
         }
         typeMenu_(note->id);
         if (ImGui::MenuItem(Tr("Export note..."))) startExport_(note->id);
+        ImGui::Separator();
+        if (ImGui::MenuItem(Tr("Delete note..."))) deleteRequestId_ = note->id;
         ImGui::EndPopup();
     }
 
@@ -735,8 +740,12 @@ void NotesWindow::renderViewBody_(Magpie::Note* note)
 void NotesWindow::performDelete_(const std::string& id)
 {
     if (id.empty()) return;
-    if (mode_ == Mode::Edit) cancelEdit_();      // drop any edit state first
-    advanceSelectionAfterDelete_(id);            // pick a neighbour (note still present)
+    // Only deleting the OPEN note touches the editor / selection; a note deleted from
+    // the list's context menu may be another one.
+    if (id == selectedId_) {
+        if (mode_ == Mode::Edit) cancelEdit_();  // drop any edit state first
+        advanceSelectionAfterDelete_(id);        // pick a neighbour (note still present)
+    }
     store_.Delete(id);
     Save();
 }
@@ -1136,6 +1145,8 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent, std::st
             ImGui::EndMenu();
             if (move && store_.MoveToGroup(note.id, target)) Save();
         }
+        ImGui::Separator();
+        if (ImGui::MenuItem(Tr("Delete note..."))) deleteRequestId_ = note.id;
         ImGui::EndPopup();
     }
     ImGui::PopID();

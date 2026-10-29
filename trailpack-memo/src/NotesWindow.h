@@ -77,6 +77,8 @@ private:
 
     // ── Delete-confirmation ───────────────────────────────────────────────
     std::string pendingDeleteId_;  // non-empty => the note awaiting delete confirmation
+    std::string deleteRequestId_;  // "Delete note..." picked in a context menu; the confirm
+                                   // modal opens at the end of Render (window scope)
 
     // ── Groups ────────────────────────────────────────────────────────────
     // Group-name modal: create (groupNameId_ empty) or rename (groupNameId_ = group).

@@ -83,6 +83,7 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Weekly reset in %s",                "Wöchentlicher Reset in %s" },
     { "Daily / Weekly: checkboxes are unchecked after the reset.",
       "Täglich / Wöchentlich: Haken werden nach dem Reset entfernt." },
+    { "Delete note...",                    "Notiz löschen..." },
     { "Delete notes...",                   "Notizen löschen..." },
     { "Delete Notes",                      "Notizen löschen" },
     { "Select the notes to delete:",       "Notizen zum Löschen auswählen:" },
