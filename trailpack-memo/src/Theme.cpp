@@ -5,11 +5,14 @@ namespace Theme {
 
 static UserColors s_Colors;
 static int        s_PushedColors = 0;
+static ImVec4     s_WindowText   = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 UserColors& Colors() { return s_Colors; }
+ImVec4      WindowText() { return s_WindowText; }
 
 void PushWindowStyle() {
     s_PushedColors = 0;
+    s_WindowText = s_Colors.hasText ? s_Colors.text : ImGui::GetStyle().Colors[ImGuiCol_Text];
     ImGui::PushStyleColor(ImGuiCol_Border, s_Colors.border);
     ++s_PushedColors;
     if (s_Colors.hasBackground) {

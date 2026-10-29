@@ -104,6 +104,14 @@ static void ApplySettings() {
     c.groupName     = ToImVec4(g_Settings.groupName.color);
     c.hasNoGroup    = g_Settings.noGroup.set;
     c.noGroup       = ToImVec4(g_Settings.noGroup.color);
+    c.hasListBg     = g_Settings.listBackground.set;
+    c.listBg        = ToImVec4(g_Settings.listBackground.color);
+    c.hasListText   = g_Settings.listText.set;
+    c.listText      = ToImVec4(g_Settings.listText.color);
+    c.hasNoteBg     = g_Settings.noteBackground.set;
+    c.noteBg        = ToImVec4(g_Settings.noteBackground.color);
+    c.hasNoteText   = g_Settings.noteText.set;
+    c.noteText      = ToImVec4(g_Settings.noteText.color);
     c.dailyBadge      = ToImVec4(g_Settings.dailyBadge);
     c.dailyBadgeText  = ToImVec4(g_Settings.dailyBadgeText);
     c.weeklyBadge     = ToImVec4(g_Settings.weeklyBadge);
@@ -120,6 +128,10 @@ static void CollectSettings() {
     g_Settings.text        = { c.hasText,       ToRgba(c.text) };
     g_Settings.groupName   = { c.hasGroupName,  ToRgba(c.groupName) };
     g_Settings.noGroup     = { c.hasNoGroup,    ToRgba(c.noGroup) };
+    g_Settings.listBackground = { c.hasListBg,   ToRgba(c.listBg) };
+    g_Settings.listText       = { c.hasListText, ToRgba(c.listText) };
+    g_Settings.noteBackground = { c.hasNoteBg,   ToRgba(c.noteBg) };
+    g_Settings.noteText       = { c.hasNoteText, ToRgba(c.noteText) };
     g_Settings.dailyBadge      = ToRgba(c.dailyBadge);
     g_Settings.dailyBadgeText  = ToRgba(c.dailyBadgeText);
     g_Settings.weeklyBadge     = ToRgba(c.weeklyBadge);
@@ -440,8 +452,14 @@ static void RenderOptions() {
         optionalRow("text",       Tr("Text"),       c.hasText,       c.text,       style.Colors[ImGuiCol_Text]);
         ImGui::Unindent();
 
+        // List / note panes: Nexus's child background and the window text until picked.
+        const ImVec4 paneBg   = style.Colors[ImGuiCol_ChildBg];
+        const ImVec4 paneText = style.Colors[ImGuiCol_Text];
+
         heading(Tr("Note list"));
         ImGui::Indent();
+        optionalRow("list_bg",   Tr("Background"), c.hasListBg,   c.listBg,   paneBg);
+        optionalRow("list_text", Tr("Text"),       c.hasListText, c.listText, paneText);
         // Group names: follow the border colour until picked; single groups can override
         // this via right-click -> "Group colour...".
         optionalRow("group_name", Tr("Group names"), c.hasGroupName, c.groupName, c.border);
@@ -454,6 +472,12 @@ static void RenderOptions() {
         ImGui::Unindent();
 
         // Daily / weekly badges: preview + name | background | letter | Reset (both).
+        heading(Tr("Note"));
+        ImGui::Indent();
+        optionalRow("note_bg",   Tr("Background"), c.hasNoteBg,   c.noteBg,   paneBg);
+        optionalRow("note_text", Tr("Text"),       c.hasNoteText, c.noteText, paneText);
+        ImGui::Unindent();
+
         heading(Tr("Daily / weekly badges"));
         ImGui::Indent();
         ImGui::SetCursorPosX(colSwatch); ImGui::TextDisabled("%s", Tr("Background"));

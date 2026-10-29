@@ -678,6 +678,8 @@ static void test_settings_roundtrip()
     a.border        = Magpie::Rgba{ 0.5f, 0.25f, 1.0f, 1.0f };
     a.groupName     = { true, Magpie::Rgba{ 1.0f, 0.0f, 0.0f, 1.0f } };
     a.noGroup       = { true, Magpie::Rgba{ 0.0f, 0.5f, 0.0f, 1.0f } };
+    a.listBackground = { true, Magpie::Rgba{ 0.2f, 0.2f, 0.2f, 1.0f } };
+    a.noteText       = { true, Magpie::Rgba{ 0.9f, 0.9f, 0.1f, 1.0f } };
     a.dailyBadge      = Magpie::Rgba{ 0.1f, 0.2f, 0.3f, 1.0f };
     a.dailyBadgeText  = Magpie::Rgba{ 1.0f, 1.0f, 1.0f, 0.5f };
     a.weeklyBadge     = Magpie::Rgba{ 0.0f, 1.0f, 0.0f, 1.0f };
@@ -696,6 +698,9 @@ static void test_settings_roundtrip()
     CHECK(b.groupName.set && b.groupName.color.r == 1.0f);
     CHECK(!b.background.set && !b.text.set);         // null stays unset
     CHECK(b.noGroup.set && b.noGroup.color.g == 0.5f);
+    CHECK(b.listBackground.set && b.listBackground.color.r == 0.2f);
+    CHECK(b.noteText.set && b.noteText.color.b == 0.1f);
+    CHECK(!b.listText.set && !b.noteBackground.set);
     CHECK(b.dailyBadge.b == 0.3f);
     CHECK(b.dailyBadgeText.a == 0.5f);
     CHECK(b.weeklyBadge.g == 1.0f && b.weeklyBadge.r == 0.0f);
