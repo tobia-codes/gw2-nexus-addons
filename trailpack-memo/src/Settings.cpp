@@ -39,6 +39,10 @@ std::string Settings::ToJson() const
     j["color_background"] = optional(background);
     j["color_text"]       = optional(text);
     j["color_group_name"] = optional(groupName);
+    j["color_daily_badge"]       = colorJson(dailyBadge);
+    j["color_daily_badge_text"]  = colorJson(dailyBadgeText);
+    j["color_weekly_badge"]      = colorJson(weeklyBadge);
+    j["color_weekly_badge_text"] = colorJson(weeklyBadgeText);
     return j.dump(2);
 }
 
@@ -77,7 +81,14 @@ bool Settings::FromJson(const std::string& json)
         const std::string l = j["language"].get<std::string>();
         language = l == "en" ? Language::En : l == "de" ? Language::De : Language::Auto;
     }
-    if (j.contains("color_border")) colorFrom(j["color_border"], border);
+    auto color = [&](const char* key, Rgba& out) {
+        if (j.contains(key)) colorFrom(j[key], out);
+    };
+    color("color_border", border);
+    color("color_daily_badge", dailyBadge);
+    color("color_daily_badge_text", dailyBadgeText);
+    color("color_weekly_badge", weeklyBadge);
+    color("color_weekly_badge_text", weeklyBadgeText);
     optional("color_background", background);
     optional("color_text", text);
     optional("color_group_name", groupName);

@@ -6,6 +6,7 @@
 #include <ctime>
 #include "I18n.h"
 #include "Reset.h"
+#include "Theme.h"
 
 using Magpie::I18n::Tr;
 
@@ -25,8 +26,14 @@ const char* TypeName(Magpie::NoteType t)
 
 ImVec4 TypeColor(Magpie::NoteType t)
 {
-    return t == Magpie::NoteType::Daily ? ImVec4(0.90f, 0.62f, 0.20f, 1.0f)    // amber
-                                        : ImVec4(0.40f, 0.60f, 0.95f, 1.0f);   // blue
+    const Theme::UserColors& c = Theme::Colors();
+    return t == Magpie::NoteType::Daily ? c.dailyBadge : c.weeklyBadge;
+}
+
+ImVec4 TypeTextColor(Magpie::NoteType t)
+{
+    const Theme::UserColors& c = Theme::Colors();
+    return t == Magpie::NoteType::Daily ? c.dailyBadgeText : c.weeklyBadgeText;
 }
 
 std::string ResetText(Magpie::NoteType t)
@@ -62,7 +69,7 @@ float DrawTypeBadge(ImDrawList* dl, ImVec2 pos, float height, Magpie::NoteType t
         textPos.y = pos.y + (height - (g->Y1 - g->Y0) * s) * 0.5f - g->Y0 * s;
     }
     textPos = ImVec2(std::floor(textPos.x + 0.5f), std::floor(textPos.y + 0.5f));   // pixel-snap
-    dl->AddText(textPos, IM_COL32(20, 20, 20, 255), letter);
+    dl->AddText(textPos, ImGui::GetColorU32(TypeTextColor(t)), letter);
     return w;
 }
 

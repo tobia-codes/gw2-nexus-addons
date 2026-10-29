@@ -34,6 +34,10 @@ struct Settings {
     OptionalColor background;   // unset: Nexus style
     OptionalColor text;         // unset: Nexus style
     OptionalColor groupName;    // unset: follow `border`
+    Rgba          dailyBadge     { 0.90f, 0.62f, 0.20f, 1.0f };   // amber
+    Rgba          dailyBadgeText { 0.08f, 0.08f, 0.08f, 1.0f };
+    Rgba          weeklyBadge    { 0.40f, 0.60f, 0.95f, 1.0f };   // blue
+    Rgba          weeklyBadgeText{ 0.08f, 0.08f, 0.08f, 1.0f };
 
     // settings.json. Colours are [r,g,b,a] (0..1); an unset optional colour is null.
     std::string ToJson() const;

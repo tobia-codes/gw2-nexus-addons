@@ -676,6 +676,10 @@ static void test_settings_roundtrip()
     a.language      = Magpie::Settings::Language::De;
     a.border        = Magpie::Rgba{ 0.5f, 0.25f, 1.0f, 1.0f };
     a.groupName     = { true, Magpie::Rgba{ 1.0f, 0.0f, 0.0f, 1.0f } };
+    a.dailyBadge      = Magpie::Rgba{ 0.1f, 0.2f, 0.3f, 1.0f };
+    a.dailyBadgeText  = Magpie::Rgba{ 1.0f, 1.0f, 1.0f, 0.5f };
+    a.weeklyBadge     = Magpie::Rgba{ 0.0f, 1.0f, 0.0f, 1.0f };
+    a.weeklyBadgeText = Magpie::Rgba{ 0.0f, 0.0f, 1.0f, 1.0f };
 
     Magpie::Settings b;
     CHECK(b.FromJson(a.ToJson()));
@@ -688,6 +692,10 @@ static void test_settings_roundtrip()
     CHECK(b.border.g == 0.25f);
     CHECK(b.groupName.set && b.groupName.color.r == 1.0f);
     CHECK(!b.background.set && !b.text.set);         // null stays unset
+    CHECK(b.dailyBadge.b == 0.3f);
+    CHECK(b.dailyBadgeText.a == 0.5f);
+    CHECK(b.weeklyBadge.g == 1.0f && b.weeklyBadge.r == 0.0f);
+    CHECK(b.weeklyBadgeText.b == 1.0f && b.weeklyBadgeText.r == 0.0f);
 }
 
 static void test_settings_validation()
@@ -708,6 +716,11 @@ static void test_settings_validation()
     CHECK(s.border.r == 0.90f);                         // 3 components: ignored
     CHECK(s.text.set && s.text.color.a == 1.0f);        // clamped
     CHECK(s.listWidth == Magpie::Settings::kDefaultListWidth);
+
+    // Badge colours: a missing or malformed value keeps the default.
+    CHECK(s.FromJson("{\"color_daily_badge\": null, \"color_weekly_badge_text\": [1, 1]}"));
+    CHECK(s.dailyBadge.r == 0.90f && s.dailyBadge.g == 0.62f);
+    CHECK(s.weeklyBadgeText.r == 0.08f);
 }
 
 static void test_delete_many()
