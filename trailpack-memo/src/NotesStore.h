@@ -18,6 +18,8 @@ struct Group {
     std::string id;
     std::string name;
     bool        collapsed = false;  // UI state; saved in notes.json, not exported
+    bool        hasColor  = false;  // own name colour; false = the addon-wide group colour
+    float       color[4]  = { 1.0f, 1.0f, 1.0f, 1.0f };   // RGBA 0..1 (when hasColor)
 };
 
 // One note read from an import file (see NotesStore::PrepareImport).
@@ -30,6 +32,8 @@ struct ImportItem {
                                     // note -> can be offered as an update (UpdateImported)
     std::string groupId;            // the note's group in the file (valid id), or empty
     std::string groupName;          // that group's name in the file
+    bool        groupHasColor = false;  // that group's own colour in the file, if any
+    float       groupColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 };
 
 // True if `id` has the globally unique format (32 lowercase hex chars). Used for note and
@@ -58,7 +62,8 @@ public:
 
     // notes.json:
     //   {"format":"trailpack-memo-notes","version":2,
-    //    "groups":[{id,name,collapsed},...],"notes":[{id,title,body,group},...]}
+    //    "groups":[{id,name,collapsed,color},...],"notes":[{id,title,body,group},...]}
+    //   (color = [r,g,b,a] or null)
     std::string ToJson() const;
     // Replace all notes and groups. Accepts the format above or the version-1 plain array
     // of notes (older Trailpack / Magpie Memo). Ids that are missing, not in IsNoteId format
@@ -68,7 +73,7 @@ public:
 
     // Export/import for sharing and backups. Export file:
     //   {"format":"trailpack-memo-export","version":2,
-    //    "groups":[{id,name},...],"notes":[{id,title,body,group},...]}
+    //    "groups":[{id,name,color},...],"notes":[{id,title,body,group},...]}
     // `ids` empty -> every note and every group (incl. empty ones); otherwise just those
     // notes, plus the groups they belong to. Unknown ids are skipped.
     std::string ExportJson(const std::vector<std::string>& ids = {}) const;
@@ -82,7 +87,8 @@ public:
     bool        PrepareImport(const std::string& json, std::vector<ImportItem>& out) const;
     // Append `items` as new notes, skipping duplicates (re-checked against the store). An
     // item keeps its id when it has one; otherwise it gets a fresh id. An item's group is
-    // reused when a group with that id exists, else created (same id + name from the file).
+    // reused when a group with that id exists (keeping its local name/colour), else created
+    // with the file's id, name and colour.
     // Returns the count added.
     int         AddImported(const std::vector<ImportItem>& items);
     // Overwrite title + body of the local notes that share an item's id (the "changed"

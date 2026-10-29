@@ -38,6 +38,9 @@ struct UserColors {
     ImVec4 background    = { 0.0f, 0.0f, 0.0f, 0.0f };
     bool   hasText       = false;
     ImVec4 text          = { 0.0f, 0.0f, 0.0f, 0.0f };
+    // Group names in the note list: default follows `border`; a group can override it.
+    bool   hasGroupName  = false;
+    ImVec4 groupName     = { 0.0f, 0.0f, 0.0f, 0.0f };
 };
 UserColors& Colors();   // the live, mutable set (Theme.cpp)
 

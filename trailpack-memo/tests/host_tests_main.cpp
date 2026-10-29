@@ -498,6 +498,36 @@ static void test_import_v1_export_without_groups()
     CHECK(dst.Notes()[0].groupId.empty());
 }
 
+static void test_group_color_persists_and_travels()
+{
+    Magpie::NotesStore src;
+    Magpie::Group& g = src.CreateGroup("Coloured");
+    g.hasColor = true;
+    g.color[0] = 1.0f; g.color[1] = 0.5f; g.color[2] = 0.0f; g.color[3] = 1.0f;
+    const std::string gid = g.id;
+    src.Create("A", gid);
+    src.CreateGroup("Plain");
+
+    Magpie::NotesStore loaded;
+    CHECK(loaded.FromJson(src.ToJson()));
+    CHECK(loaded.GetGroup(gid)->hasColor);
+    CHECK(loaded.GetGroup(gid)->color[1] == 0.5f);
+    CHECK(!loaded.Groups()[1].hasColor);
+
+    Magpie::NotesStore imported;
+    CHECK_EQ(imported.ImportJson(src.ExportJson()), 1);
+    CHECK(imported.GetGroup(gid)->hasColor);           // new group takes the file's colour
+    CHECK(imported.GetGroup(gid)->color[0] == 1.0f);
+
+    // An existing group keeps its local colour.
+    Magpie::NotesStore local;
+    local.ImportJson(src.ExportJson());
+    local.GetGroup(gid)->hasColor = false;
+    src.Create("B", gid);
+    local.ImportJson(src.ExportJson());
+    CHECK(!local.GetGroup(gid)->hasColor);
+}
+
 static void test_delete_many()
 {
     Magpie::NotesStore store;
@@ -1368,6 +1398,7 @@ int main()
     test_import_reuses_existing_group_by_id();
     test_export_single_note_and_group();
     test_import_v1_export_without_groups();
+    test_group_color_persists_and_travels();
     test_delete_many();
     test_i18n_lookup_and_fallback();
     test_i18n_table_is_consistent();

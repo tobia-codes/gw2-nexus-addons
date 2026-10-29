@@ -83,6 +83,10 @@ private:
     std::string groupNameId_;
     std::string groupNameBuffer_;
     std::string pendingDeleteGroupId_;   // group awaiting delete confirmation
+    // Group-colour modal: the group being edited + its colour before (for Cancel).
+    std::string groupColorId_;
+    bool        groupColorHadOwn_ = false;
+    float       groupColorBefore_[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 
     // ── Delete several notes ("Delete notes..." modal) ────────────────────
     std::vector<std::string> bulkSelected_;      // ids ticked in the modal
@@ -139,7 +143,10 @@ private:
     // Returns whether the group is expanded.
     // Popups that must open in the window scope are reported through the out params.
     bool renderGroupHeader_(Magpie::Group& group, bool& openNameModal, bool& openDeleteModal,
-                            std::string& createInGroup);
+                            bool& openColorModal, std::string& createInGroup);
+    // A group's name colour: its own, else the addon-wide group colour, else the border.
+    ImVec4 groupColor_(const Magpie::Group& group) const;
+    void   renderGroupColorModal_();
     // Group-name modal (create / rename) and delete-group confirmation.
     void renderGroupNameModal_();
     void renderDeleteGroupModal_();

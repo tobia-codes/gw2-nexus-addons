@@ -280,6 +280,7 @@ void NotesWindow::Render()
     renderGroupNameModal_();
     renderDeleteGroupModal_();
     renderBulkDeleteModal_();
+    renderGroupColorModal_();
 
     const auto& notes = store_.Notes();
 
@@ -315,6 +316,7 @@ void NotesWindow::Render()
     std::string clickedId;
     std::string createInGroup;
     bool openGroupName = false, openDeleteGroup = false, openBulkDelete = false;
+    bool openGroupColor = false;
     const float groupIndent = ImGui::GetFontSize() * 0.9f;
 
     // Groups first (each followed by its notes unless collapsed), then ungrouped notes.
@@ -324,7 +326,8 @@ void NotesWindow::Render()
     for (const auto& gid : groupIds) {
         Magpie::Group* group = store_.GetGroup(gid);
         if (group == nullptr) continue;
-        if (!renderGroupHeader_(*group, openGroupName, openDeleteGroup, createInGroup)) continue;
+        if (!renderGroupHeader_(*group, openGroupName, openDeleteGroup, openGroupColor, createInGroup))
+            continue;
         for (const auto& note : notes)
             if (note.groupId == gid) renderNoteRow_(note, groupIndent, clickedId);
     }
@@ -408,6 +411,7 @@ void NotesWindow::Render()
     if (openGroupName)   ImGui::OpenPopup(PopupName("Group", "group_name").c_str());
     if (openDeleteGroup) ImGui::OpenPopup(PopupName("Delete Group", "delete_group").c_str());
     if (openBulkDelete)  ImGui::OpenPopup(PopupName("Delete Notes", "bulk_delete").c_str());
+    if (openGroupColor)  ImGui::OpenPopup(PopupName("Group Colour", "group_color").c_str());
     if (!createInGroup.empty()) requestCreate_(createInGroup);
 
     if (!clickedId.empty()) {
@@ -1094,8 +1098,17 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent, std::st
         ImGui::SetTooltip("%s", note.title.c_str());
 }
 
+ImVec4 NotesWindow::groupColor_(const Magpie::Group& group) const
+{
+    if (group.hasColor)
+        return ImVec4(group.color[0], group.color[1], group.color[2], group.color[3]);
+    const Theme::UserColors& c = Theme::Colors();
+    return c.hasGroupName ? c.groupName : c.border;
+}
+
 bool NotesWindow::renderGroupHeader_(Magpie::Group& group, bool& openNameModal,
-                                     bool& openDeleteModal, std::string& createInGroup)
+                                     bool& openDeleteModal, bool& openColorModal,
+                                     std::string& createInGroup)
 {
     ImGui::PushID(group.id.c_str());
     const ImVec2 rowPos = ImGui::GetCursorScreenPos();
@@ -1123,6 +1136,12 @@ bool NotesWindow::renderGroupHeader_(Magpie::Group& group, bool& openNameModal,
             groupNameId_     = group.id;
             groupNameBuffer_ = group.name;
             openNameModal    = true;
+        }
+        if (ImGui::MenuItem(Tr("Group colour..."))) {
+            groupColorId_     = group.id;
+            groupColorHadOwn_ = group.hasColor;
+            std::copy(group.color, group.color + 4, groupColorBefore_);
+            openColorModal    = true;
         }
         if (ImGui::MenuItem(Tr("Export group..."))) startExportGroup_(group.id);
         ImGui::Separator();
@@ -1158,7 +1177,7 @@ bool NotesWindow::renderGroupHeader_(Magpie::Group& group, bool& openNameModal,
     const float nameX = rowPos.x + sz * 0.9f;
     dl->PushClipRect(ImVec2(nameX, rowPos.y), ImVec2(rowRight - countW - 6.0f, rowPos.y + rowH), true);
     const char* groupName = group.name.empty() ? Tr("(untitled)") : group.name.c_str();
-    dl->AddText(ImVec2(nameX, rowPos.y), ImGui::GetColorU32(Theme::Colors().border), groupName);
+    dl->AddText(ImVec2(nameX, rowPos.y), ImGui::GetColorU32(groupColor_(group)), groupName);
     dl->PopClipRect();
     if (ImGui::IsItemHovered() && nameX + ImGui::CalcTextSize(groupName).x > rowRight - countW - 6.0f)
         ImGui::SetTooltip("%s", groupName);
@@ -1288,7 +1307,7 @@ void NotesWindow::renderBulkDeleteModal_()
             bool all = std::all_of(members.begin(), members.end(),
                                    [&](const Magpie::Note* n) { return isSelected(n->id); });
             ImGui::PushID(g.id.c_str());
-            ImGui::PushStyleColor(ImGuiCol_Text, Theme::Colors().border);
+            ImGui::PushStyleColor(ImGuiCol_Text, groupColor_(g));
             if (ImGui::Checkbox(g.name.empty() ? Tr("(untitled)") : g.name.c_str(), &all))
                 for (const auto* n : members) setSelected(n->id, all);
             ImGui::PopStyleColor();
@@ -1347,6 +1366,62 @@ void NotesWindow::renderBulkDeleteModal_()
     if (close) {
         bulkSelected_.clear();
         bulkConfirm_ = false;
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+}
+
+// ── Group colour ────────────────────────────────────────────────────────────
+
+void NotesWindow::renderGroupColorModal_()
+{
+    ImVec2 display = ImGui::GetIO().DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2(display.x * 0.5f, display.y * 0.5f),
+                            ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    if (!ImGui::BeginPopupModal(PopupName("Group Colour", "group_color").c_str(), nullptr,
+                                ImGuiWindowFlags_AlwaysAutoResize))
+        return;
+
+    Magpie::Group* g = store_.GetGroup(groupColorId_);
+    bool close = (g == nullptr);
+    if (g != nullptr) {
+        ImGui::TextUnformatted(g->name.empty() ? Tr("(untitled)") : g->name.c_str());
+        ImGui::Spacing();
+
+        // Live preview: the group shows the picked colour while the modal is open.
+        ImVec4 col = groupColor_(*g);
+        ImGui::SetNextItemWidth(240.0f);
+        if (ImGui::ColorPicker4("##group_color", &col.x,
+                                ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_NoSidePreview)) {
+            g->hasColor = true;
+            g->color[0] = col.x; g->color[1] = col.y; g->color[2] = col.z; g->color[3] = col.w;
+        }
+        ImGui::Spacing();
+
+        Theme::PushGreenButton();
+        if (ImGui::Button(Tr("OK"), ImVec2(80, 0))) {
+            Save();
+            close = true;
+        }
+        Theme::PopButton();
+        ImGui::SameLine();
+        if (ImGui::Button(Tr("Use default"), ImVec2(ButtonWidth(Tr("Use default"), 80), 0))) {
+            g->hasColor = false;
+            Save();
+            close = true;
+        }
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", Tr("Use the group colour from the addon options."));
+        ImGui::SameLine();
+        if (ImGui::Button(Tr("Cancel"), ImVec2(ButtonWidth(Tr("Cancel"), 80), 0))) {
+            g->hasColor = groupColorHadOwn_;
+            std::copy(groupColorBefore_, groupColorBefore_ + 4, g->color);
+            close = true;
+        }
+    }
+
+    if (close) {
+        groupColorId_.clear();
         ImGui::CloseCurrentPopup();
     }
     ImGui::EndPopup();

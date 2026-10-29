@@ -19,7 +19,7 @@
 - **Delete several notes at once**: menu button -> *Delete notes...*, tick notes (a group's box
   ticks all its notes, *Select all* / *None*), then confirm.
 - **Groups**: collapsible groups to structure notes (menu button -> *New group...*). Right-click a
-  group to rename, export or delete it (its notes are kept) or add a note to it; move notes via
+  group to rename, recolour (*Group colour...*), export or delete it (its notes are kept) or add a note to it; move notes via
   right-click -> *Move to group* or by dragging them onto a group. Groups have unique ids too.
 - **Export / import** (menu button next to *Create New Note*): *Export all...* saves every note to one `.json` file, right-click a note ->
   *Export note...* saves just that one; *Import...* shows the notes in such a file (or in a
@@ -31,7 +31,7 @@
   `addons/TrailpackMemo/exports/`.
 - **English and German UI**: follows the Nexus language by default, or set it in the addon
   options (Auto / English / Deutsch).
-- **Custom colours** for the window border, background and text (colour pickers with alpha in
+- **Custom colours** for the window border, background, text and group names (colour pickers with alpha in
   the Nexus addon options, each with a Reset).
 - **Two text sizes** (70-200 %) in the Nexus addon options: one for the window's UI, one for the
   note content (view, editor, preview); headings, checkboxes and chips scale along.

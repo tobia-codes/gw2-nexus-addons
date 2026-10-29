@@ -121,6 +121,7 @@ static void SaveSettings() {
     j["color_border"]     = ColorToJson(c.border);
     j["color_background"] = c.hasBackground ? ColorToJson(c.background) : nlohmann::json();
     j["color_text"]       = c.hasText       ? ColorToJson(c.text)       : nlohmann::json();
+    j["color_group_name"] = c.hasGroupName  ? ColorToJson(c.groupName)  : nlohmann::json();
     std::ofstream f(path, std::ios::out | std::ios::trunc);
     if (f.is_open()) f << j.dump(2);
 }
@@ -157,6 +158,8 @@ static void LoadSettings() {
         c.hasBackground = ColorFromJson(j["color_background"], c.background);
     if (j.contains("color_text"))
         c.hasText = ColorFromJson(j["color_text"], c.text);
+    if (j.contains("color_group_name"))
+        c.hasGroupName = ColorFromJson(j["color_group_name"], c.groupName);
 }
 
 // Add/remove the quick-access shortcut, keeping g_QAIconAdded in sync. The icon
@@ -393,7 +396,19 @@ void AddonOptions() {
     if (ImGui::Button(Tr("Reset"))) { c.hasText = false; s_ColorsDirty = true; }
     ImGui::PopID();
 
+    // Group names: follow the border colour until picked; single groups can override
+    // this via right-click -> "Group colour...".
+    ImGui::PushID("group_name");
+    ImVec4 gn = c.hasGroupName ? c.groupName : c.border;
+    if (ImGui::ColorEdit4(Tr("Group names"), &gn.x, flags)) {
+        c.groupName = gn; c.hasGroupName = true; s_ColorsDirty = true;
+    }
+    ImGui::SameLine();
+    if (ImGui::Button(Tr("Reset"))) { c.hasGroupName = false; s_ColorsDirty = true; }
+    ImGui::PopID();
+
     ImGui::TextDisabled("%s", Tr("Reset uses the Nexus default (gold for the border)."));
+    ImGui::TextDisabled("%s", Tr("Group names follow the border until set; right-click a group for its own colour."));
 
     if (s_ColorsDirty && !ImGui::IsAnyItemActive()) {
         SaveSettings();

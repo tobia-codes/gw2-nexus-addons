@@ -68,6 +68,11 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Its notes are kept and moved out of the group.",
       "Ihre Notizen bleiben erhalten und werden aus der Gruppe genommen." },
 
+    { "Group colour...",                   "Gruppenfarbe..." },
+    { "Group Colour",                      "Gruppenfarbe" },
+    { "Use default",                       "Standard verwenden" },
+    { "Use the group colour from the addon options.",
+      "Die Gruppenfarbe aus den Addon-Einstellungen verwenden." },
     { "Delete notes...",                   "Notizen löschen..." },
     { "Delete Notes",                      "Notizen löschen" },
     { "Select the notes to delete:",       "Notizen zum Löschen auswählen:" },
@@ -154,6 +159,9 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Border",                            "Rahmen" },
     { "Background",                        "Hintergrund" },
     { "Text",                              "Text" },
+    { "Group names",                       "Gruppennamen" },
+    { "Group names follow the border until set; right-click a group for its own colour.",
+      "Gruppennamen folgen dem Rahmen, bis gesetzt; Rechtsklick auf eine Gruppe für eine eigene Farbe." },
     { "Reset uses the Nexus default (gold for the border).",
       "Zurücksetzen nutzt den Nexus-Standard (Gold für den Rahmen)." },
 };

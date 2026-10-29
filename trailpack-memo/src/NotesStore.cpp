@@ -40,6 +40,24 @@ static bool isString(const nlohmann::json& obj, const char* key)
     return obj.contains(key) && obj[key].is_string();
 }
 
+// Group colour <-> JSON: [r,g,b,a] (0..1) or null for "no own colour".
+static nlohmann::json colorToJson(bool has, const float c[4])
+{
+    return has ? nlohmann::json{c[0], c[1], c[2], c[3]} : nlohmann::json();
+}
+static bool colorFromJson(const nlohmann::json& obj, float out[4])
+{
+    if (!obj.contains("color")) return false;
+    const nlohmann::json& j = obj["color"];
+    if (!j.is_array() || j.size() != 4) return false;
+    for (int i = 0; i < 4; ++i) if (!j[i].is_number()) return false;
+    for (int i = 0; i < 4; ++i) {
+        const float v = j[i].get<float>();
+        out[i] = v < 0.0f ? 0.0f : v > 1.0f ? 1.0f : v;
+    }
+    return true;
+}
+
 static const char* const kNotesFormat   = "trailpack-memo-notes";
 static const char* const kExportFormat  = "trailpack-memo-export";
 static const int         kFormatVersion = 2;
@@ -144,7 +162,8 @@ std::string NotesStore::ToJson() const
 {
     nlohmann::json groups = nlohmann::json::array();
     for (const auto& g : groups_)
-        groups.push_back({{"id", g.id}, {"name", g.name}, {"collapsed", g.collapsed}});
+        groups.push_back({{"id", g.id}, {"name", g.name}, {"collapsed", g.collapsed},
+                          {"color", colorToJson(g.hasColor, g.color)}});
     nlohmann::json notes = nlohmann::json::array();
     for (const auto& n : notes_)
         notes.push_back({{"id", n.id}, {"title", n.title}, {"body", n.body}, {"group", n.groupId}});
@@ -185,6 +204,7 @@ bool NotesStore::FromJson(const std::string& json)
             g.name      = obj["name"].get<std::string>();
             g.collapsed = obj.contains("collapsed") && obj["collapsed"].is_boolean() &&
                           obj["collapsed"].get<bool>();
+            g.hasColor  = colorFromJson(obj, g.color);
             groups.push_back(std::move(g));
         }
     }
@@ -234,7 +254,8 @@ static nlohmann::json exportDoc(const std::vector<const Group*>& groups,
 {
     nlohmann::json g = nlohmann::json::array();
     for (const Group* grp : groups)
-        g.push_back({{"id", grp->id}, {"name", grp->name}});
+        g.push_back({{"id", grp->id}, {"name", grp->name},
+                     {"color", colorToJson(grp->hasColor, grp->color)}});
     nlohmann::json n = nlohmann::json::array();
     for (const Note* note : notes)
         n.push_back({{"id", note->id}, {"title", note->title}, {"body", note->body},
@@ -290,7 +311,8 @@ bool NotesStore::PrepareImport(const std::string& json, std::vector<ImportItem>&
 
     // Export file / notes.json -> their "notes" (+ "groups"); a bare array is a v1 notes.json.
     const nlohmann::json* arr = &parsed;
-    std::map<std::string, std::string> groupNames;   // valid group id -> name
+    struct FileGroup { std::string name; bool hasColor = false; float color[4] = {1, 1, 1, 1}; };
+    std::map<std::string, FileGroup> fileGroups;   // valid group id -> name + colour
     if (parsed.is_object()) {
         if (!parsed.contains("format") ||
             (parsed["format"] != kExportFormat && parsed["format"] != kNotesFormat)) return false;
@@ -302,7 +324,11 @@ bool NotesStore::PrepareImport(const std::string& json, std::vector<ImportItem>&
             for (const auto& g : groups) {
                 if (!g.is_object() || !isString(g, "id") || !isString(g, "name")) return false;
                 const std::string id = g["id"].get<std::string>();
-                if (IsNoteId(id)) groupNames.emplace(id, g["name"].get<std::string>());
+                if (!IsNoteId(id)) continue;
+                FileGroup fg;
+                fg.name     = g["name"].get<std::string>();
+                fg.hasColor = colorFromJson(g, fg.color);
+                fileGroups.emplace(id, fg);
             }
         }
     }
@@ -320,8 +346,13 @@ bool NotesStore::PrepareImport(const std::string& json, std::vector<ImportItem>&
         it.title = obj["title"].get<std::string>();
         it.body  = obj["body"].get<std::string>();
         if (isString(obj, "group")) {
-            const auto g = groupNames.find(obj["group"].get<std::string>());
-            if (g != groupNames.end()) { it.groupId = g->first; it.groupName = g->second; }
+            const auto g = fileGroups.find(obj["group"].get<std::string>());
+            if (g != fileGroups.end()) {
+                it.groupId       = g->first;
+                it.groupName     = g->second.name;
+                it.groupHasColor = g->second.hasColor;
+                std::copy(g->second.color, g->second.color + 4, it.groupColor);
+            }
         }
 
         const bool repeat = std::any_of(tmp.begin(), tmp.end(), [&](const ImportItem& prev) {
@@ -354,8 +385,10 @@ int NotesStore::AddImported(const std::vector<ImportItem>& items)
         if (IsNoteId(item.groupId)) {
             if (GetGroup(item.groupId) == nullptr && Get(item.groupId) == nullptr) {
                 Group g;
-                g.id   = item.groupId;
-                g.name = item.groupName;
+                g.id       = item.groupId;
+                g.name     = item.groupName;
+                g.hasColor = item.groupHasColor;
+                std::copy(item.groupColor, item.groupColor + 4, g.color);
                 groups_.push_back(std::move(g));
             }
             if (GetGroup(item.groupId) != nullptr) groupId = item.groupId;
