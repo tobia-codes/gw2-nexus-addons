@@ -15,7 +15,7 @@ void TitleBarButton(const char* windowTitle, bool* open)
 {
     const ImGuiStyle& style = ImGui::GetStyle();
     const ImVec2 winPos  = ImGui::GetWindowPos();
-    const float  titleH  = ImGui::GetFontSize() + style.FramePadding.y * 2.0f;
+    const float  titleH  = ImGui::GetFontSize() + Theme::TitleBarPadY() * 2.0f;   // see BeginWindow
     const float  size    = ImGui::GetFontSize();
 
     // Title text starts after the collapse arrow (arrow = font size + inner spacing).
@@ -79,7 +79,8 @@ const Section kSections[] = {
       "- Menu button (next to 'Create New Note') > 'New group...', or right-click an empty spot "
       "in the list (also: new note, delete notes).\n"
       "- Click a group to fold / unfold it. Drag notes onto it, or right-click a note > "
-      "'Move to group'.\n"
+      "'Move to group'. To take a note out of its group, drag it to an empty spot in the "
+      "list or use 'Move to group' > 'Remove from group'.\n"
       "- Right-click a group: new note in it, rename, colour, export, delete (its notes are kept)." },
     { "Chat links",
       "Paste GW2 chat links ([&...]) into a note - they become chips.\n"
@@ -105,8 +106,9 @@ const Section kSections[] = {
       "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
       "- Language (Auto follows Nexus), quick access icon.\n"
       "- 'Font options': UI and note text size.\n"
-      "- 'Layout options': corner rounding of the note window, its buttons, fields, popups and list rows (0 = square).\n"
-      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text), popups (background, text) and the daily / weekly badges.\n"
+      "- 'Events': event chips in checked tasks keep their time / tooltip and menu (both off by default).\n"
+      "- 'Layout options': corner rounding of the addon's windows, buttons, fields, popups and list rows (0 = square).\n"
+      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names), note (border on/off and colour, background, text), popups (background, text) and the daily / weekly badges.\n"
       "- 'Colour options' > Theme: Default, Light, Dark or one of your own; 'Save as theme' "
       "stores the current colours under a name. Borders are off by default.\n"
       "- 'Backup': 'Create backup...' saves all notes, groups and settings in one file; "
@@ -151,9 +153,9 @@ void Render(bool* open, float uiScale)
     const std::string title = Title();
     ImGui::SetNextWindowSize(ImVec2(460.0f, 520.0f), ImGuiCond_FirstUseEver);
     // Plain Nexus style (no user colours), so the guide stays readable with any theme;
-    // only the background is made opaque.
-    Theme::OpaqueWindowScope opaque;
-    if (ImGui::Begin(title.c_str(), open)) {
+    // only the background is made opaque and the corner rounding applies.
+    Theme::PlainWindowScope plain;
+    if (Theme::BeginWindow(title.c_str(), open)) {
         Magpie::FontScaleScope uiFont(uiScale);
         for (size_t i = 0; i < sizeof kSections / sizeof kSections[0]; ++i) {
             ImGui::PushID((int)i);

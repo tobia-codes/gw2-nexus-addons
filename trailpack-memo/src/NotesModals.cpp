@@ -230,8 +230,7 @@ void NotesWindow::renderBulkDeleteModal_()
         }
         const bool anyUngrouped = std::any_of(notes.begin(), notes.end(),
             [](const Magpie::Note& n) { return n.groupId.empty(); });
-        if (anyUngrouped && !store_.Groups().empty())
-            ImGui::TextColored(NoGroupColor(), "%s", Tr("No group"));
+        if (anyUngrouped && !store_.Groups().empty()) ImGui::Spacing();
         for (const auto& n : notes)
             if (n.groupId.empty()) noteRow(n);
         ImGui::EndChild();

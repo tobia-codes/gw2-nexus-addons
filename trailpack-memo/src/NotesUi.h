@@ -22,8 +22,6 @@ ImVec4      TypeColor(Magpie::NoteType t);
 ImVec4      TypeTextColor(Magpie::NoteType t);
 std::string ResetText(Magpie::NoteType t);
 
-// Colour of the "No group" label (user-set, else Nexus's disabled text).
-ImVec4      NoGroupColor();
 // Colour of note titles in the list (user-set, else the current text colour).
 ImVec4      ListTextColor();
 // Note pane text (user-set, else the current text colour).

@@ -37,7 +37,7 @@ bool ColorSet::operator==(const ColorSet& o) const
 {
     return showBorder == o.showBorder && border == o.border &&
            background == o.background && text == o.text &&
-           groupName == o.groupName && noGroup == o.noGroup &&
+           groupName == o.groupName &&
            listBackground == o.listBackground && listText == o.listText &&
            noteBackground == o.noteBackground && noteText == o.noteText &&
            showListBorder == o.showListBorder && showNoteBorder == o.showNoteBorder &&
@@ -56,7 +56,6 @@ ColorSet ColorSet::Light()
     c.border         = Rgba{ 0.55f, 0.56f, 0.60f, 1.0f };
     c.background     = { true, Rgba{ 0.72f, 0.73f, 0.77f, 0.97f } };
     c.groupName      = { true, Rgba{ 0.48f, 0.30f, 0.00f, 1.0f } };
-    c.noGroup        = { true, Rgba{ 0.28f, 0.29f, 0.33f, 1.0f } };
     c.listBackground = { true, Rgba{ 0.93f, 0.93f, 0.95f, 1.0f } };
     c.listText       = { true, Rgba{ 0.05f, 0.05f, 0.07f, 1.0f } };
     c.noteBackground = { true, Rgba{ 0.98f, 0.98f, 0.98f, 1.0f } };
@@ -70,7 +69,6 @@ ColorSet ColorSet::Dark()
 {
     ColorSet c;
     c.background     = { true, Rgba{ 0.06f, 0.06f, 0.08f, 0.97f } };
-    c.noGroup        = { true, Rgba{ 0.55f, 0.55f, 0.60f, 1.0f } };
     c.listBackground = { true, Rgba{ 0.10f, 0.10f, 0.12f, 1.0f } };
     c.listText       = { true, Rgba{ 0.88f, 0.88f, 0.90f, 1.0f } };
     c.noteBackground = { true, Rgba{ 0.08f, 0.08f, 0.10f, 1.0f } };
@@ -88,7 +86,6 @@ static void colorsToJson(const ColorSet& c, nlohmann::json& j)
     j["color_background"]        = optional(c.background);
     j["color_text"]              = optional(c.text);
     j["color_group_name"]        = optional(c.groupName);
-    j["color_no_group"]          = optional(c.noGroup);
     j["color_list_background"]   = optional(c.listBackground);
     j["color_list_text"]         = optional(c.listText);
     j["color_note_background"]   = optional(c.noteBackground);
@@ -124,7 +121,6 @@ static void colorsFromJson(const nlohmann::json& j, ColorSet& c)
     optional("color_background", c.background);
     optional("color_text", c.text);
     optional("color_group_name", c.groupName);
-    optional("color_no_group", c.noGroup);
     optional("color_list_background", c.listBackground);
     optional("color_list_text", c.listText);
     optional("color_note_background", c.noteBackground);
@@ -179,6 +175,8 @@ std::string Settings::ToJson() const
     nlohmann::json j;
     j["show_qa_icon"]     = showQaIcon;
     j["edit_preview"]     = editPreview;
+    j["done_show_time"]   = doneShowTime;
+    j["done_show_popups"] = doneShowPopups;
     j["text_scale"]       = uiTextScale;
     j["note_text_scale"]  = noteTextScale;
     j["list_width"]       = listWidth;
@@ -217,6 +215,8 @@ bool Settings::FromJson(const std::string& json)
 
     boolean("show_qa_icon", showQaIcon);
     boolean("edit_preview", editPreview);
+    boolean("done_show_time", doneShowTime);
+    boolean("done_show_popups", doneShowPopups);
     scale("text_scale", uiTextScale);
     scale("note_text_scale", noteTextScale);
     if (j.contains("list_width") && j["list_width"].is_number()) {

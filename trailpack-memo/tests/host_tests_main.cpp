@@ -678,6 +678,7 @@ static void test_settings_roundtrip()
     a.uiTextScale   = 150;
     a.noteTextScale = 80;
     a.listWidth     = 333.0f;
+    a.doneShowTime   = true;
     a.cornerRounding   = 2.5f;
     a.language      = Magpie::Settings::Language::De;
     Magpie::ColorSet& c = a.colors;
@@ -689,7 +690,6 @@ static void test_settings_roundtrip()
     c.popupText       = { true, Magpie::Rgba{ 1.0f, 0.9f, 0.6f, 1.0f } };
     c.border          = Magpie::Rgba{ 0.5f, 0.25f, 1.0f, 1.0f };
     c.groupName       = { true, Magpie::Rgba{ 1.0f, 0.0f, 0.0f, 1.0f } };
-    c.noGroup         = { true, Magpie::Rgba{ 0.0f, 0.5f, 0.0f, 1.0f } };
     c.listBackground  = { true, Magpie::Rgba{ 0.2f, 0.2f, 0.2f, 1.0f } };
     c.noteText        = { true, Magpie::Rgba{ 0.9f, 0.9f, 0.1f, 1.0f } };
     c.dailyBadge      = Magpie::Rgba{ 0.1f, 0.2f, 0.3f, 1.0f };
@@ -704,6 +704,7 @@ static void test_settings_roundtrip()
     CHECK_EQ(b.uiTextScale, 150);
     CHECK_EQ(b.noteTextScale, 80);
     CHECK(b.listWidth == 333.0f);
+    CHECK(b.doneShowTime && !b.doneShowPopups);
     CHECK(b.cornerRounding == 2.5f);
     CHECK(b.language == Magpie::Settings::Language::De);
     CHECK(b.colors == a.colors);                         // every colour option survives
@@ -742,6 +743,7 @@ static void test_settings_validation()
     CHECK(s.listWidth == Magpie::Settings::kDefaultListWidth);
     CHECK(s.cornerRounding == Magpie::Settings::kRoundingMax);
     CHECK(Magpie::Settings{}.cornerRounding == 0.0f);      // square by default
+    CHECK(!Magpie::Settings{}.doneShowTime && !Magpie::Settings{}.doneShowPopups);
 
     // Badge colours: a missing or malformed value keeps the default.
     CHECK(s.FromJson("{\"color_daily_badge\": null, \"color_weekly_badge_text\": [1, 1]}"));

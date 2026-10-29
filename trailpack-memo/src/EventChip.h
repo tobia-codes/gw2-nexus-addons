@@ -9,6 +9,7 @@
 
 #include "imgui.h"
 #include <string>
+#include "ChipDone.h"
 
 namespace Magpie {
 
@@ -17,11 +18,14 @@ std::string EventChipLabel(const std::string& token);
 ImU32       EventChipColor(const std::string& token);
 
 // Width a view chip for event `id` takes at `fontSize` now; matches DrawEventChip.
-float MeasureEventChip(ImFont* font, float fontSize, const std::string& id);
+float MeasureEventChip(ImFont* font, float fontSize, const std::string& id,
+                       const ChipDoneStyle* done = nullptr);
 
 // Draw a view chip for event `id` at screen `pos`; returns its width. Registers the tooltip,
 // the left-click copy and the right-click menu; `uid` makes the menu's popup id unique.
+// In a checked task (`done`): name only in the task's grey, or with the countdown in a much
+// lighter event colour; tooltip and menu only if `done->popups`, no left-click copy.
 float DrawEventChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& pos,
-                    const std::string& id, int uid);
+                    const std::string& id, int uid, const ChipDoneStyle* done = nullptr);
 
 } // namespace Magpie

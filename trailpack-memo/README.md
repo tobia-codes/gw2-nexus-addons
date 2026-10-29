@@ -8,7 +8,9 @@
 
 - **Checkboxes** with GitHub syntax: `- [ ] todo` / `- [x] done` (indentation allowed).
   - Click a box in view mode to tick it -- saved immediately.
-  - Checked items are dimmed and struck through.
+  - Checked items are dimmed and struck through; their chips turn into plain grey names (no
+    countdown, tooltip or click). Options > "Events" can keep the event countdown (in a
+    much lighter event colour) and / or the event chips' tooltips and right-click menus.
   - The note list shows progress (`3/7`, green when complete).
   - Right-click a note body -> **Uncheck all tasks** (handy for daily/weekly routines).
 - **Markdown toolbar** in edit mode: **B**, *I*, H1, H2, bullet list, task -- works on the
@@ -27,7 +29,8 @@
 - **Groups**: collapsible groups to structure notes (menu button -> *New group...*, or right-click an empty spot in the list, which
   also offers *Create New Note* and *Delete notes...*). Right-click a
   group to rename, recolour (*Group colour...*), export or delete it (its notes are kept) or add a note to it; move notes via
-  right-click -> *Move to group* or by dragging them onto a group. Groups have unique ids too.
+  right-click -> *Move to group* or by dragging them onto a group; ungrouped notes simply follow
+  the groups (drag a note to an empty spot or use *Remove from group* to ungroup it). Groups have unique ids too.
 - **Export / import** (menu button next to *Create New Note*): *Export all...* saves every note to one `.json` file, right-click a note ->
   *Export note...* saves just that one; *Import...* shows the notes in such a file (or in a
   Trailpack / Magpie Memo `notes.json`) and you tick which ones to add; groups come along and are
@@ -39,7 +42,7 @@
 - **English and German UI**: follows the Nexus language by default, or set it in the addon
   options (Auto / English / Deutsch).
 - **Custom colours** under "Colour options", grouped as window (border on/off and colour, background, text, menu button and icon), note
-  list (border on/off and colour, background, text, group names, the "No group" label), note
+  list (border on/off and colour, background, text, group names), note
   (border on/off and colour, background, text) and daily / weekly badges (background and letter, each
   separately, with a live preview). Each row is a swatch that opens a picker with alpha, plus a
   Reset; "Reset all colours" restores every default. Borders are off by default. Popups (menus, tooltips, the event picker, dialogs) are opaque and
@@ -55,7 +58,8 @@
   note content (view, editor, preview); headings, checkboxes and chips scale along.
 - **Corner rounding** under "Layout options": rounding of the note window, its panes, buttons,
   fields, popups and highlighted list rows, 0-12 px (slider plus number field for fine values);
-  default 0 = square. The settings and guide windows keep Nexus's style.
+  default 0 = square. Also applies to the settings and guide windows (which otherwise keep
+  Nexus's colours, with an opaque background).
 - **Lists continue on Enter**: a new `- ` / `- [ ] ` is started automatically; Enter on an empty
   item ends the list.
 

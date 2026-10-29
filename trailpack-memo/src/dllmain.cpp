@@ -26,6 +26,7 @@
 #include "FileDialog.h"
 #include "HelpWindow.h"
 #include "NotesUi.h"
+#include "MarkdownRender.h"
 #include "IconCache.h"
 #include "EmbeddedIcon.h"   // MAGPIE_ICON[] + MAGPIE_ICON_size (generated from icon.png)
 
@@ -108,8 +109,6 @@ static void ApplyColors(const Magpie::ColorSet& s) {
     c.text            = ToImVec4(s.text.color);
     c.hasGroupName    = s.groupName.set;
     c.groupName       = ToImVec4(s.groupName.color);
-    c.hasNoGroup      = s.noGroup.set;
-    c.noGroup         = ToImVec4(s.noGroup.color);
     c.hasListBg       = s.listBackground.set;
     c.listBg          = ToImVec4(s.listBackground.color);
     c.hasListText     = s.listText.set;
@@ -146,7 +145,6 @@ static Magpie::ColorSet CollectColors() {
     s.background      = { c.hasBackground, ToRgba(c.background) };
     s.text            = { c.hasText,       ToRgba(c.text) };
     s.groupName       = { c.hasGroupName,  ToRgba(c.groupName) };
-    s.noGroup         = { c.hasNoGroup,    ToRgba(c.noGroup) };
     s.listBackground  = { c.hasListBg,     ToRgba(c.listBg) };
     s.listText        = { c.hasListText,   ToRgba(c.listText) };
     s.noteBackground  = { c.hasNoteBg,     ToRgba(c.noteBg) };
@@ -433,6 +431,7 @@ void AddonUnload() {
 void AddonRender() {
     if (!g_WindowVisible && !g_HelpVisible && !g_SettingsVisible) return;
     ApplyLanguage();   // Auto follows a Nexus language switch without a restart
+    Theme::SetRounding(g_Settings.cornerRounding);   // note, settings and guide windows
     // ImGui's text cursor shows up as a gear in GW2: our text fields keep the normal game
     // cursor. Only a TextInput cursor set by our windows is replaced (not another addon's).
     const bool textCursorBefore = ImGui::GetMouseCursor() == ImGuiMouseCursor_TextInput;
@@ -451,9 +450,9 @@ void AddonRender() {
     }
 
     if (g_WindowVisible) {
-        Theme::SetRounding(g_Settings.cornerRounding);
+        Magpie::SetCheckedTaskChips(g_Settings.doneShowTime, g_Settings.doneShowPopups);
         Theme::PushWindowStyle();
-        const bool open = ImGui::Begin(WINDOW_NAME, &g_WindowVisible);
+        const bool open = Theme::BeginWindow(WINDOW_NAME, &g_WindowVisible);
         Help::TitleBarButton(WINDOW_NAME, &g_HelpVisible);   // "?" next to the title
         if (open) {
             // UI text size for everything inside the window (not the title bar).
@@ -474,12 +473,12 @@ void AddonRender() {
 
     // Own settings window: the same options as in Nexus (RenderOptions), so both stay in sync.
     // Plain Nexus style (no user colours), so it stays readable whatever theme is picked;
-    // only the background is made opaque.
+    // only the background is made opaque and the corner rounding applies.
     if (g_SettingsVisible) {
-        Theme::OpaqueWindowScope opaque;
+        Theme::PlainWindowScope plain;
         const std::string title = SettingsTitle();
         ImGui::SetNextWindowSize(ImVec2(480.0f, 420.0f), ImGuiCond_FirstUseEver);
-        if (ImGui::Begin(title.c_str(), &g_SettingsVisible)) {
+        if (Theme::BeginWindow(title.c_str(), &g_SettingsVisible)) {
             Magpie::FontScaleScope uiFont(g_Settings.uiTextScale / 100.0f);
             RenderOptions();
         }
@@ -551,6 +550,19 @@ static void RenderOptions() {
         sizeSlider("note_size", Tr("Note text size"), g_Settings.noteTextScale);
     }
 
+    // ── Events ────────────────────────────────────────────────────────────
+    // Event chips in checked tasks are grey names by default; these bring back parts of them.
+    if (ImGui::CollapsingHeader(Tr("Events"))) {
+        if (ImGui::Checkbox(Tr("Show the time in checked tasks"), &g_Settings.doneShowTime)) SaveSettings();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", Tr("Event chips in checked tasks keep their countdown, "
+                                       "in a much lighter colour."));
+        if (ImGui::Checkbox(Tr("Show tooltip and menu in checked tasks"), &g_Settings.doneShowPopups)) SaveSettings();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", Tr("Event chips in checked tasks keep their tooltip and right-click "
+                                       "menu (wiki, copy waypoint). Left-click does nothing."));
+    }
+
     // ── Layout options ────────────────────────────────────────────────────
     // Corner rounding of the note window: slider plus a number field next to it, since even small values
     // (e.g. 0.5 px) are visible. Saved when either is released.
@@ -598,7 +610,7 @@ static void RenderOptions() {
         // Column positions: right of the widest label (badge rows: preview + name).
         float labelW = 0.0f;
         for (const char* l : { Tr("Theme"), Tr("Save as theme"), Tr("Border"), Tr("Background"), Tr("Text"),
-                               Tr("Group names"), Tr("No group"), Tr("Menu button"), Tr("Menu icon") })
+                               Tr("Group names"), Tr("Menu button"), Tr("Menu icon") })
             labelW = std::max(labelW, ImGui::CalcTextSize(l).x);
         for (Magpie::NoteType t : { Magpie::NoteType::Daily, Magpie::NoteType::Weekly })
             labelW = std::max(labelW, badgeW + style.ItemSpacing.x + ImGui::CalcTextSize(NotesUi::TypeName(t)).x);
@@ -628,9 +640,12 @@ static void RenderOptions() {
             resetTip();
             ImGui::PopID();
         };
-        auto heading = [](const char* text) {
+        // Collapsible subsection (closed by default; ImGui remembers the state). Its content is
+        // indented like Indent(); call ImGui::TreePop() after it when this returns true.
+        auto section = [](const char* text, const char* id) {
             ImGui::Spacing();
-            ImGui::TextDisabled("%s", text);
+            const std::string label = std::string(text) + "###" + id;   // id stays across languages
+            return ImGui::TreeNodeEx(label.c_str(), ImGuiTreeNodeFlags_SpanAvailWidth);
         };
 
         // ── Theme: built-ins and the user's saved themes ─────────────────
@@ -698,89 +713,87 @@ static void RenderOptions() {
             ImGui::Unindent();
         }
 
-        heading(Tr("Window"));
-        ImGui::Indent();
         // Same label in three sections: the id is scoped per section.
         auto borderToggle = [&](const char* id, bool& show) {
             ImGui::PushID(id);
             if (ImGui::Checkbox(Tr("Show border"), &show)) s_ColorsDirty = true;
             ImGui::PopID();
         };
-        borderToggle("window_border", c.showBorder);
-        ImGui::PushID("border");
-        label(Tr("Border"));
-        if (ImGui::ColorEdit4("##c", &c.border.x, flags)) s_ColorsDirty = true;
-        ImGui::SameLine();
-        if (ImGui::Button(Tr("Reset"))) { c.border = Theme::BORDER_GOLD; s_ColorsDirty = true; }
-        resetTip();
-        ImGui::PopID();
-        // Background / text show Nexus's current colour until the user picks their own.
-        optionalRow("background", Tr("Background"), c.hasBackground, c.background, style.Colors[ImGuiCol_WindowBg]);
-        optionalRow("text",       Tr("Text"),       c.hasText,       c.text,       style.Colors[ImGuiCol_Text]);
-        // Menu button next to "Create New Note" (opens Import / Export / Settings...).
-        optionalRow("menu_button", Tr("Menu button"), c.hasMenuButton, c.menuButton, style.Colors[ImGuiCol_Button]);
-        optionalRow("menu_icon",   Tr("Menu icon"),   c.hasMenuIcon,   c.menuIcon,   style.Colors[ImGuiCol_Text]);
-        ImGui::Unindent();
+        if (section(Tr("Window"), "sec_window")) {
+            borderToggle("window_border", c.showBorder);
+            ImGui::PushID("border");
+            label(Tr("Border"));
+            if (ImGui::ColorEdit4("##c", &c.border.x, flags)) s_ColorsDirty = true;
+            ImGui::SameLine();
+            if (ImGui::Button(Tr("Reset"))) { c.border = Theme::BORDER_GOLD; s_ColorsDirty = true; }
+            resetTip();
+            ImGui::PopID();
+            // Background / text show Nexus's current colour until the user picks their own.
+            optionalRow("background", Tr("Background"), c.hasBackground, c.background, style.Colors[ImGuiCol_WindowBg]);
+            optionalRow("text",       Tr("Text"),       c.hasText,       c.text,       style.Colors[ImGuiCol_Text]);
+            // Menu button next to "Create New Note" (opens Import / Export / Settings...).
+            optionalRow("menu_button", Tr("Menu button"), c.hasMenuButton, c.menuButton, style.Colors[ImGuiCol_Button]);
+            optionalRow("menu_icon",   Tr("Menu icon"),   c.hasMenuIcon,   c.menuIcon,   style.Colors[ImGuiCol_Text]);
+            ImGui::TreePop();
+        }
 
         // List / note panes: Nexus's child background and the window text until picked.
         const ImVec4 paneBg   = style.Colors[ImGuiCol_ChildBg];
         const ImVec4 paneText = style.Colors[ImGuiCol_Text];
 
-        heading(Tr("Note list"));
-        ImGui::Indent();
-        borderToggle("list_border_on", c.showListBorder);
-        optionalRow("list_border", Tr("Border"),   c.hasListBorder, c.listBorder, c.border);
-        optionalRow("list_bg",   Tr("Background"), c.hasListBg,   c.listBg,   paneBg);
-        optionalRow("list_text", Tr("Text"),       c.hasListText, c.listText, paneText);
-        // Group names: follow the border colour until picked; single groups can override
-        // this via right-click -> "Group colour...".
-        optionalRow("group_name", Tr("Group names"), c.hasGroupName, c.groupName, c.border);
-        ImGui::SameLine();
-        ImGui::TextDisabled("(?)");
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", Tr("Group names follow the border until set; right-click a group for its own colour."));
-        // "No group" label: Nexus's disabled-text colour until picked.
-        optionalRow("no_group", Tr("No group"), c.hasNoGroup, c.noGroup, style.Colors[ImGuiCol_TextDisabled]);
-        ImGui::Unindent();
+        if (section(Tr("Note list"), "sec_list")) {
+            borderToggle("list_border_on", c.showListBorder);
+            optionalRow("list_border", Tr("Border"),   c.hasListBorder, c.listBorder, c.border);
+            optionalRow("list_bg",   Tr("Background"), c.hasListBg,   c.listBg,   paneBg);
+            optionalRow("list_text", Tr("Text"),       c.hasListText, c.listText, paneText);
+            // Group names: follow the border colour until picked; single groups can override
+            // this via right-click -> "Group colour...".
+            optionalRow("group_name", Tr("Group names"), c.hasGroupName, c.groupName, c.border);
+            ImGui::SameLine();
+            ImGui::TextDisabled("(?)");
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", Tr("Group names follow the border until set; right-click a group for its own colour."));
+            ImGui::TreePop();
+        }
 
-        heading(Tr("Note"));
-        ImGui::Indent();
-        borderToggle("note_border_on", c.showNoteBorder);
-        optionalRow("note_border", Tr("Border"),   c.hasNoteBorder, c.noteBorder, c.border);
-        optionalRow("note_bg",   Tr("Background"), c.hasNoteBg,   c.noteBg,   paneBg);
-        optionalRow("note_text", Tr("Text"),       c.hasNoteText, c.noteText, paneText);
-        ImGui::Unindent();
+        if (section(Tr("Note"), "sec_note")) {
+            borderToggle("note_border_on", c.showNoteBorder);
+            optionalRow("note_border", Tr("Border"),   c.hasNoteBorder, c.noteBorder, c.border);
+            optionalRow("note_bg",   Tr("Background"), c.hasNoteBg,   c.noteBg,   paneBg);
+            optionalRow("note_text", Tr("Text"),       c.hasNoteText, c.noteText, paneText);
+            ImGui::TreePop();
+        }
 
         // Popups of the note window (menus, tooltips, the event picker, dialogs): until picked
         // they follow the note list (its colour, opaque, and its text) so they match the look.
-        heading(Tr("Popups"));
-        ImGui::Indent();
-        optionalRow("popup_bg",   Tr("Background"), c.hasPopupBg,   c.popupBg,   Theme::DefaultPopupBg());
-        optionalRow("popup_text", Tr("Text"),       c.hasPopupText, c.popupText, Theme::DefaultPopupText());
-        ImGui::Unindent();
+        if (section(Tr("Popups"), "sec_popups")) {
+            optionalRow("popup_bg",   Tr("Background"), c.hasPopupBg,   c.popupBg,   Theme::DefaultPopupBg());
+            optionalRow("popup_text", Tr("Text"),       c.hasPopupText, c.popupText, Theme::DefaultPopupText());
+            ImGui::TreePop();
+        }
 
         // Daily / weekly badges: preview + name | background | letter | Reset (both).
-        heading(Tr("Daily / weekly badges"));
-        ImGui::Indent();
-        ImGui::SetCursorPosX(colSwatch); ImGui::TextDisabled("%s", Tr("Background"));
-        ImGui::SameLine(colText);   ImGui::TextDisabled("%s", Tr("Text"));
-        auto badgeRow = [&](Magpie::NoteType t, ImVec4& bgCol, ImVec4& textCol, const ImVec4& bgDef) {
-            ImGui::PushID((int)t);
-            const ImVec2 p = ImGui::GetCursorScreenPos();
-            NotesUi::DrawTypeBadge(ImGui::GetWindowDrawList(), p, ImGui::GetFrameHeight(), t);
-            ImGui::Dummy(ImVec2(badgeW, ImGui::GetFrameHeight()));
-            ImGui::SameLine();
-            label(NotesUi::TypeName(t));
-            if (ImGui::ColorEdit4("##bg", &bgCol.x, flags)) s_ColorsDirty = true;
-            ImGui::SameLine(colText);
-            if (ImGui::ColorEdit4("##text", &textCol.x, flags)) s_ColorsDirty = true;
-            ImGui::SameLine(colReset);
-            if (ImGui::Button(Tr("Reset"))) { bgCol = bgDef; textCol = Theme::BADGE_TEXT; s_ColorsDirty = true; }
-            ImGui::PopID();
-        };
-        badgeRow(Magpie::NoteType::Daily,  c.dailyBadge,  c.dailyBadgeText,  Theme::BADGE_DAILY);
-        badgeRow(Magpie::NoteType::Weekly, c.weeklyBadge, c.weeklyBadgeText, Theme::BADGE_WEEKLY);
-        ImGui::Unindent();
+        if (section(Tr("Daily / weekly badges"), "sec_badges")) {
+            ImGui::SetCursorPosX(colSwatch); ImGui::TextDisabled("%s", Tr("Background"));
+            ImGui::SameLine(colText);   ImGui::TextDisabled("%s", Tr("Text"));
+            auto badgeRow = [&](Magpie::NoteType t, ImVec4& bgCol, ImVec4& textCol, const ImVec4& bgDef) {
+                ImGui::PushID((int)t);
+                const ImVec2 p = ImGui::GetCursorScreenPos();
+                NotesUi::DrawTypeBadge(ImGui::GetWindowDrawList(), p, ImGui::GetFrameHeight(), t);
+                ImGui::Dummy(ImVec2(badgeW, ImGui::GetFrameHeight()));
+                ImGui::SameLine();
+                label(NotesUi::TypeName(t));
+                if (ImGui::ColorEdit4("##bg", &bgCol.x, flags)) s_ColorsDirty = true;
+                ImGui::SameLine(colText);
+                if (ImGui::ColorEdit4("##text", &textCol.x, flags)) s_ColorsDirty = true;
+                ImGui::SameLine(colReset);
+                if (ImGui::Button(Tr("Reset"))) { bgCol = bgDef; textCol = Theme::BADGE_TEXT; s_ColorsDirty = true; }
+                ImGui::PopID();
+            };
+            badgeRow(Magpie::NoteType::Daily,  c.dailyBadge,  c.dailyBadgeText,  Theme::BADGE_DAILY);
+            badgeRow(Magpie::NoteType::Weekly, c.weeklyBadge, c.weeklyBadgeText, Theme::BADGE_WEEKLY);
+            ImGui::TreePop();
+        }
 
         ImGui::Spacing();
         if (ImGui::Button(Tr("Reset all colours"))) {

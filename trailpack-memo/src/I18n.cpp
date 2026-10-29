@@ -54,7 +54,7 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Menu",                              "Menü" },
     { "New group...",                      "Neue Gruppe..." },
     { "New group",                         "Neue Gruppe" },
-    { "No group",                          "Ohne Gruppe" },
+    { "Remove from group",                 "Aus Gruppe entfernen" },
     { "Move to group",                     "In Gruppe verschieben" },
     { "New note in group",                 "Neue Notiz in Gruppe" },
     { "Rename group...",                   "Gruppe umbenennen..." },
@@ -210,12 +210,14 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "- Menu button (next to 'Create New Note') > 'New group...', or right-click an empty spot "
       "in the list (also: new note, delete notes).\n"
       "- Click a group to fold / unfold it. Drag notes onto it, or right-click a note > "
-      "'Move to group'.\n"
+      "'Move to group'. To take a note out of its group, drag it to an empty spot in the "
+      "list or use 'Move to group' > 'Remove from group'.\n"
       "- Right-click a group: new note in it, rename, colour, export, delete (its notes are kept).",
       "- Menü-Button (neben 'Neue Notiz') > 'Neue Gruppe...' oder Rechtsklick auf eine leere "
       "Stelle in der Liste (dort auch: neue Notiz, Notizen löschen).\n"
       "- Eine Gruppe anklicken klappt sie auf / zu. Notizen darauf ziehen oder Rechtsklick auf "
-      "eine Notiz > 'In Gruppe verschieben'.\n"
+      "eine Notiz > 'In Gruppe verschieben'. Aus der Gruppe nehmen: auf eine leere Stelle in "
+      "der Liste ziehen oder 'In Gruppe verschieben' > 'Aus Gruppe entfernen'.\n"
       "- Rechtsklick auf eine Gruppe: neue Notiz darin, umbenennen, Farbe, exportieren, löschen "
       "(ihre Notizen bleiben erhalten)." },
     { "Chat links",                        "Chat-Links" },
@@ -260,8 +262,9 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
       "- Language (Auto follows Nexus), quick access icon.\n"
       "- 'Font options': UI and note text size.\n"
-      "- 'Layout options': corner rounding of the note window, its buttons, fields, popups and list rows (0 = square).\n"
-      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text), popups (background, text) and the daily / weekly badges.\n"
+      "- 'Events': event chips in checked tasks keep their time / tooltip and menu (both off by default).\n"
+      "- 'Layout options': corner rounding of the addon's windows, buttons, fields, popups and list rows (0 = square).\n"
+      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names), note (border on/off and colour, background, text), popups (background, text) and the daily / weekly badges.\n"
       "- 'Colour options' > Theme: Default, Light, Dark or one of your own; 'Save as theme' "
       "stores the current colours under a name. Borders are off by default.\n"
       "- 'Backup': 'Create backup...' saves all notes, groups and settings in one file; "
@@ -270,8 +273,9 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "Nexus-Addon-Optionen > Trailpack Memo, oder Menü-Knopf > 'Einstellungen...':\n"
       "- Sprache (Automatisch folgt Nexus), Schnellzugriff-Icon.\n"
       "- 'Schriftoptionen': UI- und Notiz-Textgröße.\n"
-      "- 'Layout-Optionen': Eckenrundung des Notizfensters, seiner Buttons, Felder, Popups und Listenzeilen (0 = eckig).\n"
-      "- 'Farboptionen': Fenster (Rahmen an/aus und Farbe, Hintergrund, Text, Menü-Knopf und -Symbol), Notizliste (Rahmen an/aus und Farbe, Hintergrund, Text, Gruppennamen, 'Ohne Gruppe'), Notiz (Rahmen an/aus und Farbe, Hintergrund, Text), Popups (Hintergrund, Text) und die Täglich-/Wöchentlich-Badges.\n"
+      "- 'Events': Event-Chips in erledigten Aufgaben behalten Zeit / Tooltip und Menü (beide standardmäßig aus).\n"
+      "- 'Layout-Optionen': Eckenrundung der Addon-Fenster, Buttons, Felder, Popups und Listenzeilen (0 = eckig).\n"
+      "- 'Farboptionen': Fenster (Rahmen an/aus und Farbe, Hintergrund, Text, Menü-Knopf und -Symbol), Notizliste (Rahmen an/aus und Farbe, Hintergrund, Text, Gruppennamen), Notiz (Rahmen an/aus und Farbe, Hintergrund, Text), Popups (Hintergrund, Text) und die Täglich-/Wöchentlich-Badges.\n"
       "- 'Farboptionen' > Theme: Standard, Hell, Dunkel oder ein eigenes; 'Als Theme speichern' "
       "sichert die aktuellen Farben unter einem Namen. Rahmen sind standardmäßig aus.\n"
       "- 'Backup': 'Backup erstellen...' speichert alle Notizen, Gruppen und Einstellungen in einer "
@@ -301,6 +305,12 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Reset",                             "Zurücksetzen" },
     { "Font options",                      "Schriftoptionen" },
     { "Layout options",                    "Layout-Optionen" },
+    { "Show the time in checked tasks",    "Zeit in erledigten Aufgaben anzeigen" },
+    { "Event chips in checked tasks keep their countdown, in a much lighter colour.",
+      "Event-Chips in erledigten Aufgaben behalten ihren Countdown, in deutlich hellerer Farbe." },
+    { "Show tooltip and menu in checked tasks", "Tooltip und Menü in erledigten Aufgaben anzeigen" },
+    { "Event chips in checked tasks keep their tooltip and right-click menu (wiki, copy waypoint). Left-click does nothing.",
+      "Event-Chips in erledigten Aufgaben behalten Tooltip und Rechtsklick-Menü (Wiki, Wegpunkt kopieren). Linksklick tut nichts." },
     { "Corner rounding",                   "Eckenrundung" },
     { "Colour options",                    "Farboptionen" },
     { "Border",                            "Rahmen" },

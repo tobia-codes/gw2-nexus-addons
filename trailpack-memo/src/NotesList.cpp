@@ -7,6 +7,7 @@
 #include <cstdio>
 #include <ctime>
 #include "imgui.h"
+#include "imgui_internal.h"   // BeginDragDropTargetCustom, GetCurrentWindow
 #include "Theme.h"
 #include "I18n.h"
 #include "NotesUi.h"
@@ -71,7 +72,7 @@ static void RowGap()
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + std::floor(ImGui::GetFontSize() * 0.2f));
 }
 
-// Extra space above a group header (not the first) and the "No group" label.
+// Extra space above a group header (not the first) and above the ungrouped notes.
 static void GroupGap()
 {
     ImGui::SetCursorPosY(ImGui::GetCursorPosY() + std::floor(ImGui::GetFontSize() * 0.6f));
@@ -122,14 +123,18 @@ float NotesWindow::renderListColumn_()
             if (note.groupId == gid) renderNoteRow_(note, groupIndent);
     }
 
+    // Ungrouped notes follow the groups without a heading.
     const bool anyUngrouped = std::any_of(notes.begin(), notes.end(),
         [](const Magpie::Note& n) { return n.groupId.empty(); });
-    if (!groupIds.empty() && (anyUngrouped || ImGui::GetDragDropPayload() != nullptr)) {
-        // Section label; also the drop target that takes a note out of its group.
-        GroupGap();
-        ImGui::SetCursorPosX(ImGui::GetCursorPosX() + RowPadX());   // in line with the row text
-        ImGui::TextColored(NoGroupColor(), "%s", Tr("No group"));
-        if (ImGui::BeginDragDropTarget()) {
+    if (!groupIds.empty() && anyUngrouped) GroupGap();
+    for (const auto& note : notes)
+        if (note.groupId.empty()) renderNoteRow_(note, 0.0f);
+
+    // Dropping a note anywhere in the list but on a group header takes it out of its group
+    // (ImGui prefers the smaller target, so the headers win where they are).
+    {
+        ImGuiWindow* w = ImGui::GetCurrentWindow();
+        if (ImGui::BeginDragDropTargetCustom(w->InnerRect, ImGui::GetID("##ungroup_drop"))) {
             if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("TPM_NOTE")) {
                 const std::string id(static_cast<const char*>(p->Data), (size_t)p->DataSize);
                 if (store_.MoveToGroup(id, std::string())) Save();
@@ -137,8 +142,6 @@ float NotesWindow::renderListColumn_()
             ImGui::EndDragDropTarget();
         }
     }
-    for (const auto& note : notes)
-        if (note.groupId.empty()) renderNoteRow_(note, 0.0f);
 
     // Right-click on empty space in the list (rows have their own menus).
     if (ImGui::BeginPopupContextWindow("##list_ctx",
@@ -254,7 +257,7 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
     const float rowRight = ImGui::GetItemRectMax().x;
     const float textY    = rowPos.y + RowPadY();
 
-    // Drag a note onto a group header (or "No group") to move it.
+    // Drag a note onto a group header to move it (elsewhere in the list: out of its group).
     if (ImGui::BeginDragDropSource()) {
         ImGui::SetDragDropPayload("TPM_NOTE", note.id.data(), note.id.size());
         ImGui::TextUnformatted(note.title.c_str());
@@ -280,9 +283,10 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
                 }
                 ImGui::PopID();
             }
-            ImGui::Separator();
-            if (ImGui::MenuItem(Tr("No group"), nullptr, note.groupId.empty(), !note.groupId.empty()))
-                move = true;   // target stays empty -> ungroup
+            if (!note.groupId.empty()) {
+                ImGui::Separator();
+                if (ImGui::MenuItem(Tr("Remove from group"))) move = true;   // target stays empty
+            }
             ImGui::EndMenu();
             if (move && store_.MoveToGroup(note.id, target)) Save();
         }
@@ -307,7 +311,7 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
 
     const float titleRight = rowRight - RowPadX() - (progressW > 0.0f ? progressW + 6.0f : 0.0f);
     dl->PushClipRect(rowPos, ImVec2(titleRight, rowPos.y + rowH), true);
-    const float badgeX = rowPos.x + RowPadX();   // in line with the group name and "No group"
+    const float badgeX = rowPos.x + RowPadX();   // in line with the group name
     const float badgeW = DrawTypeBadge(dl, ImVec2(badgeX, textY), ImGui::GetTextLineHeight(), note.type);
     const float titleX = badgeX + (badgeW > 0.0f ? badgeW + 4.0f : 0.0f);
     const std::string title = Ellipsize(note.title, titleRight - titleX);

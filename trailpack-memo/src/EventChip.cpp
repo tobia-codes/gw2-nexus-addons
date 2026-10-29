@@ -38,9 +38,12 @@ std::string UnknownLabel(const std::string& id)
 }
 
 // "<name> - in 23 Min" / "<name> - seit 4 Min"; unknown ids: "Unknown event (<id>)".
-std::string ViewLabel(const Events::EventDef* e, const std::string& id, int64_t now)
+// A checked task without the time option shows the name only.
+std::string ViewLabel(const Events::EventDef* e, const std::string& id, int64_t now,
+                      const ChipDoneStyle* done = nullptr)
 {
     if (e == nullptr) return UnknownLabel(id);
+    if (done != nullptr && !done->showTime) return Events::Name(*e, I18n::Current());
     const Events::Status st = Events::State(*e, now);
     const int64_t secs = st.active ? now - st.start : st.start - now;
     return std::string(Events::Name(*e, I18n::Current())) + " - " + Events::FormatTime(secs, st.active);
@@ -99,7 +102,7 @@ void CopyWaypoint(const Events::EventDef& e, int64_t now, int uid)
     s_CopiedUid   = uid;
 }
 
-void Tooltip(const Events::EventDef& e, int64_t now)
+void Tooltip(const Events::EventDef& e, int64_t now, bool clickCopy)
 {
     const I18n::Lang lang = I18n::Current();
     ImGui::TextUnformatted(Events::Name(e, lang));
@@ -128,8 +131,10 @@ void Tooltip(const Events::EventDef& e, int64_t now)
     if (place.waypoint != nullptr) {
         const char* wp = Events::WaypointName(place, lang);
         ImGui::Text(Tr("Waypoint: %s"), wp[0] != '\0' ? wp : place.waypoint);
-        ImGui::Separator();
-        ImGui::TextDisabled("%s", Tr("Left-click: copy waypoint. Right-click: more."));
+        if (clickCopy) {
+            ImGui::Separator();
+            ImGui::TextDisabled("%s", Tr("Left-click: copy waypoint. Right-click: more."));
+        }
     } else {
         ImGui::TextDisabled("%s", Tr("No waypoint known for this event."));
     }
@@ -153,21 +158,32 @@ ImU32 EventChipColor(const std::string& token)
                                        : ImGui::GetColorU32(ImGuiCol_TextDisabled);
 }
 
-float MeasureEventChip(ImFont* font, float fontSize, const std::string& id)
+float MeasureEventChip(ImFont* font, float fontSize, const std::string& id,
+                       const ChipDoneStyle* done)
 {
-    const std::string label = ViewLabel(Events::Find(id), id, (int64_t)std::time(nullptr));
+    const std::string label = ViewLabel(Events::Find(id), id, (int64_t)std::time(nullptr), done);
     return font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, label.c_str()).x;
 }
 
 float DrawEventChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& pos,
-                    const std::string& id, int uid)
+                    const std::string& id, int uid, const ChipDoneStyle* done)
 {
     const int64_t now = (int64_t)std::time(nullptr);
     const Events::EventDef* e = Events::Find(id);
-    const std::string label = ViewLabel(e, id, now);
+    const std::string label = ViewLabel(e, id, now, done);
     const float width = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, label.c_str()).x;
-    dl->AddText(font, fontSize, pos, StateColor(e, now), label.c_str());
-    if (e == nullptr) return width;
+    ImU32 col = StateColor(e, now);
+    if (done != nullptr) {
+        // Countdown kept: the event colour much lighter, clearly apart from open tasks.
+        const ImVec4 c = ImGui::ColorConvertU32ToFloat4(col);
+        const float  k = 0.6f;
+        col = done->showTime ? ImGui::GetColorU32(ImVec4(c.x + (1.0f - c.x) * k, c.y + (1.0f - c.y) * k,
+                                                         c.z + (1.0f - c.z) * k, c.w))
+                             : done->textCol;
+    }
+    dl->AddText(font, fontSize, pos, col, label.c_str());
+    if (e == nullptr || (done != nullptr && !done->popups)) return width;
+    const bool clickCopy = done == nullptr;
 
     // ── Interaction (hit-test only, like rich chips; popups in this window's id scope) ──
     char pid[32];
@@ -179,12 +195,12 @@ float DrawEventChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& 
         Theme::PopupTextScope popupText;
         const bool copiedHint = uid == s_CopiedUid && ImGui::GetTime() < s_CopiedUntil;
         if (hovering) {
-            if (CurrentPlace(*e, now).waypoint != nullptr) ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
-            if (ImGui::IsMouseClicked(ImGuiMouseButton_Left)) CopyWaypoint(*e, now, uid);
+            if (clickCopy && CurrentPlace(*e, now).waypoint != nullptr) ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+            if (clickCopy && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) CopyWaypoint(*e, now, uid);
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) ImGui::OpenPopup(pid);
             if (!copiedHint && !ImGui::IsPopupOpen(pid)) {
                 ImGui::BeginTooltip();
-                Tooltip(*e, now);
+                Tooltip(*e, now, clickCopy);
                 ImGui::EndTooltip();
             }
         }
