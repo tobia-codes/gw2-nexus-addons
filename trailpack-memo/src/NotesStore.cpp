@@ -78,6 +78,16 @@ void NotesStore::Delete(const std::string& id)
         notes_.erase(it);
 }
 
+int NotesStore::DeleteMany(const std::vector<std::string>& ids)
+{
+    const std::set<std::string> doomed(ids.begin(), ids.end());
+    const size_t before = notes_.size();
+    notes_.erase(std::remove_if(notes_.begin(), notes_.end(),
+                                [&](const Note& n) { return doomed.count(n.id) > 0; }),
+                 notes_.end());
+    return static_cast<int>(before - notes_.size());
+}
+
 Note* NotesStore::Get(const std::string& id)
 {
     auto it = std::find_if(notes_.begin(), notes_.end(),

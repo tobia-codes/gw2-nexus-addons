@@ -68,6 +68,18 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Its notes are kept and moved out of the group.",
       "Ihre Notizen bleiben erhalten und werden aus der Gruppe genommen." },
 
+    { "Delete notes...",                   "Notizen löschen..." },
+    { "Delete Notes",                      "Notizen löschen" },
+    { "Select the notes to delete:",       "Notizen zum Löschen auswählen:" },
+    { "Select all",                        "Alle auswählen" },
+    { "Delete 1 note",                     "1 Notiz löschen" },
+    { "Delete %d notes",                   "%d Notizen löschen" },
+    { "Really delete 1 note? This cannot be undone.",
+      "Wirklich 1 Notiz löschen? Das kann nicht rückgängig gemacht werden." },
+    { "Really delete %d notes? This cannot be undone.",
+      "Wirklich %d Notizen löschen? Das kann nicht rückgängig gemacht werden." },
+    { "Back",                              "Zurück" },
+
     // ── Export / import ───────────────────────────────────────────────────
     { "Export notes",                      "Notizen exportieren" },
     { "Import notes",                      "Notizen importieren" },

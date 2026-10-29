@@ -16,6 +16,8 @@
 - **Live preview** beside the editor (`Preview` checkbox, remembered across sessions).
 - **Resizable note list**: drag the divider between list and note (double-click resets); long
   titles show in full on hover.
+- **Delete several notes at once**: menu button -> *Delete notes...*, tick notes (a group's box
+  ticks all its notes, *Select all* / *None*), then confirm.
 - **Groups**: collapsible groups to structure notes (menu button -> *New group...*). Right-click a
   group to rename, export or delete it (its notes are kept) or add a note to it; move notes via
   right-click -> *Move to group* or by dragging them onto a group. Groups have unique ids too.

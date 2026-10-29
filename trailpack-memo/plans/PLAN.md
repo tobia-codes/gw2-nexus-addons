@@ -50,6 +50,8 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 - Optional side-by-side live preview, persisted in `settings.json`.
 - Note list width: splitter between list and note (drag, double-click resets to 200 px),
   `list_width` in `settings.json`, clamped only when drawn. Clipped titles show a tooltip.
+- Bulk delete: menu -> "Delete notes..." modal (`renderBulkDeleteModal_`, two steps: select, then
+  confirm) -> `NotesStore::DeleteMany`; groups are left in place.
 - Groups (`Magpie::Group`: id, name, collapsed; one level): `Note::groupId`. notes.json is now
   `{"format":"trailpack-memo-notes","version":2,groups,notes}` (v1 plain array still loads).
   Export v2 carries `groups` + per-note `group`; `ExportGroupJson` for one group; import reuses a

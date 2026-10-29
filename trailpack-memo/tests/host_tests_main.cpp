@@ -498,6 +498,20 @@ static void test_import_v1_export_without_groups()
     CHECK(dst.Notes()[0].groupId.empty());
 }
 
+static void test_delete_many()
+{
+    Magpie::NotesStore store;
+    const std::string g = store.CreateGroup("G").id;
+    const std::string a = store.Create("A", g).id;
+    const std::string b = store.Create("B").id;
+    const std::string c = store.Create("C").id;
+    CHECK_EQ(store.DeleteMany({a, c, "unknown"}), 2);
+    CHECK(store.Notes().size() == 1);
+    CHECK_EQ(store.Notes()[0].id, b);
+    CHECK(store.Groups().size() == 1);              // groups are left alone
+    CHECK_EQ(store.DeleteMany({}), 0);
+}
+
 // ── I18n ───────────────────────────────────────────────────────────────────────
 
 static void test_i18n_lookup_and_fallback()
@@ -1354,6 +1368,7 @@ int main()
     test_import_reuses_existing_group_by_id();
     test_export_single_note_and_group();
     test_import_v1_export_without_groups();
+    test_delete_many();
     test_i18n_lookup_and_fallback();
     test_i18n_table_is_consistent();
     test_reimport_same_note_is_skipped();

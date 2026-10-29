@@ -43,6 +43,8 @@ public:
     Note& Create(const std::string& defaultTitle = "Untitled note",
                  const std::string& groupId = std::string());
     void  Delete(const std::string& id);
+    // Delete every note whose id is in `ids` (unknown ids ignored). Returns the count removed.
+    int   DeleteMany(const std::vector<std::string>& ids);
     Note* Get(const std::string& id);
 
     // ── Groups ────────────────────────────────────────────────────────────

@@ -84,6 +84,10 @@ private:
     std::string groupNameBuffer_;
     std::string pendingDeleteGroupId_;   // group awaiting delete confirmation
 
+    // ── Delete several notes ("Delete notes..." modal) ────────────────────
+    std::vector<std::string> bulkSelected_;      // ids ticked in the modal
+    bool                     bulkConfirm_ = false;  // second step: "really delete?"
+
     // ── Private helpers ───────────────────────────────────────────────────
     void selectFirst_();
     void advanceSelectionAfterDelete_(const std::string& deletedId);
@@ -139,6 +143,8 @@ private:
     // Group-name modal (create / rename) and delete-group confirmation.
     void renderGroupNameModal_();
     void renderDeleteGroupModal_();
+    // "Delete notes" modal: tick notes (per group, Select all / None), then confirm.
+    void renderBulkDeleteModal_();
 
     // Nexus's FontBig (for headings), or null.
     ImFont* fontBig_() const;

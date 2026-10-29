@@ -279,6 +279,7 @@ void NotesWindow::Render()
     renderImportModal_();
     renderGroupNameModal_();
     renderDeleteGroupModal_();
+    renderBulkDeleteModal_();
 
     const auto& notes = store_.Notes();
 
@@ -313,7 +314,7 @@ void NotesWindow::Render()
     // the unsaved-changes modal opens — never from inside the list child.
     std::string clickedId;
     std::string createInGroup;
-    bool openGroupName = false, openDeleteGroup = false;
+    bool openGroupName = false, openDeleteGroup = false, openBulkDelete = false;
     const float groupIndent = ImGui::GetFontSize() * 0.9f;
 
     // Groups first (each followed by its notes unless collapsed), then ungrouped notes.
@@ -392,6 +393,12 @@ void NotesWindow::Render()
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", Tr("Save all notes to one file.\n"
                                        "Right-click a note in the list to export just that one."));
+        ImGui::Separator();
+        if (ImGui::MenuItem(Tr("Delete notes..."), nullptr, false, !notes.empty())) {
+            bulkSelected_.clear();
+            bulkConfirm_   = false;
+            openBulkDelete = true;
+        }
         ImGui::EndPopup();
     }
 
@@ -400,6 +407,7 @@ void NotesWindow::Render()
     // Popups requested from inside the list child / menus open here, in window scope.
     if (openGroupName)   ImGui::OpenPopup(PopupName("Group", "group_name").c_str());
     if (openDeleteGroup) ImGui::OpenPopup(PopupName("Delete Group", "delete_group").c_str());
+    if (openBulkDelete)  ImGui::OpenPopup(PopupName("Delete Notes", "bulk_delete").c_str());
     if (!createInGroup.empty()) requestCreate_(createInGroup);
 
     if (!clickedId.empty()) {
@@ -1226,6 +1234,119 @@ void NotesWindow::renderDeleteGroupModal_()
     }
     if (del || cancel) {
         pendingDeleteGroupId_.clear();
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+}
+
+// ── Delete several notes ────────────────────────────────────────────────────
+
+void NotesWindow::renderBulkDeleteModal_()
+{
+    ImVec2 display = ImGui::GetIO().DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2(display.x * 0.5f, display.y * 0.5f),
+                            ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    if (!ImGui::BeginPopupModal(PopupName("Delete Notes", "bulk_delete").c_str(), nullptr,
+                                ImGuiWindowFlags_AlwaysAutoResize))
+        return;
+
+    const auto& notes = store_.Notes();
+    auto isSelected = [&](const std::string& id) {
+        return std::find(bulkSelected_.begin(), bulkSelected_.end(), id) != bulkSelected_.end();
+    };
+    auto setSelected = [&](const std::string& id, bool on) {
+        const auto it = std::find(bulkSelected_.begin(), bulkSelected_.end(), id);
+        if (on && it == bulkSelected_.end()) bulkSelected_.push_back(id);
+        if (!on && it != bulkSelected_.end()) bulkSelected_.erase(it);
+    };
+    // Drop ticks of notes that vanished meanwhile (e.g. deleted elsewhere).
+    bulkSelected_.erase(std::remove_if(bulkSelected_.begin(), bulkSelected_.end(),
+        [&](const std::string& id) { return store_.Get(id) == nullptr; }), bulkSelected_.end());
+    const int count = (int)bulkSelected_.size();
+
+    bool close = false;
+    if (!bulkConfirm_) {
+        ImGui::TextUnformatted(Tr("Select the notes to delete:"));
+        ImGui::Spacing();
+
+        // Same layout as the list: each group (its checkbox ticks all of its notes), then
+        // ungrouped notes. Scrolls once there are more than ~12 rows.
+        const float rowH = ImGui::GetFrameHeightWithSpacing();
+        const size_t rows = notes.size() + store_.Groups().size() + 1;
+        ImGui::BeginChild("##bulk_list", ImVec2(360.0f, rowH * (float)std::min<size_t>(rows, 12)), false);
+        auto noteRow = [&](const Magpie::Note& n) {
+            ImGui::PushID(n.id.c_str());
+            bool on = isSelected(n.id);
+            if (ImGui::Checkbox(n.title.empty() ? Tr("(untitled)") : n.title.c_str(), &on))
+                setSelected(n.id, on);
+            ImGui::PopID();
+        };
+        for (const auto& g : store_.Groups()) {
+            std::vector<const Magpie::Note*> members;
+            for (const auto& n : notes) if (n.groupId == g.id) members.push_back(&n);
+            if (members.empty()) continue;
+            bool all = std::all_of(members.begin(), members.end(),
+                                   [&](const Magpie::Note* n) { return isSelected(n->id); });
+            ImGui::PushID(g.id.c_str());
+            ImGui::PushStyleColor(ImGuiCol_Text, Theme::Colors().border);
+            if (ImGui::Checkbox(g.name.empty() ? Tr("(untitled)") : g.name.c_str(), &all))
+                for (const auto* n : members) setSelected(n->id, all);
+            ImGui::PopStyleColor();
+            ImGui::PopID();
+            ImGui::Indent();
+            for (const auto* n : members) noteRow(*n);
+            ImGui::Unindent();
+        }
+        const bool anyUngrouped = std::any_of(notes.begin(), notes.end(),
+            [](const Magpie::Note& n) { return n.groupId.empty(); });
+        if (anyUngrouped && !store_.Groups().empty())
+            ImGui::TextDisabled("%s", Tr("No group"));
+        for (const auto& n : notes)
+            if (n.groupId.empty()) noteRow(n);
+        ImGui::EndChild();
+
+        ImGui::Spacing();
+        if (ImGui::SmallButton(Tr("Select all")))
+            for (const auto& n : notes) setSelected(n.id, true);
+        ImGui::SameLine();
+        if (ImGui::SmallButton(Tr("None"))) bulkSelected_.clear();
+        ImGui::Separator();
+
+        char label[64];
+        snprintf(label, sizeof label, TrN(count, "Delete 1 note", "Delete %d notes"), count);
+        Theme::PushAmberButton();
+        if (ImGui::Button(label, ImVec2(ButtonWidth(label, 140), 0)) && count > 0)
+            bulkConfirm_ = true;
+        Theme::PopButton();
+        ImGui::SameLine();
+        close = ImGui::Button(Tr("Cancel"), ImVec2(ButtonWidth(Tr("Cancel"), 80), 0));
+    } else {
+        // Second step: nothing is deleted until this is confirmed.
+        if (count == 1)
+            ImGui::TextUnformatted(Tr("Really delete 1 note? This cannot be undone."));
+        else
+            ImGui::Text(Tr("Really delete %d notes? This cannot be undone."), count);
+        ImGui::Spacing();
+
+        Theme::PushAmberButton();
+        const bool del = ImGui::Button(Tr("Delete"), ImVec2(ButtonWidth(Tr("Delete"), 80), 0));
+        Theme::PopButton();
+        ImGui::SameLine();
+        if (ImGui::Button(Tr("Back"), ImVec2(ButtonWidth(Tr("Back"), 80), 0))) bulkConfirm_ = false;
+
+        if (del) {
+            const bool selectedGone = isSelected(selectedId_);
+            if (selectedGone && mode_ == Mode::Edit) cancelEdit_();   // its edit can't be saved
+            store_.DeleteMany(bulkSelected_);
+            if (selectedGone) selectFirst_();
+            Save();
+            close = true;
+        }
+    }
+
+    if (close) {
+        bulkSelected_.clear();
+        bulkConfirm_ = false;
         ImGui::CloseCurrentPopup();
     }
     ImGui::EndPopup();
