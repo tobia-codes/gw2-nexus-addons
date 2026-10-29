@@ -374,6 +374,130 @@ static void test_import_invalid_leaves_store_untouched()
     CHECK(dst.Notes().size() == 1);
 }
 
+// ── Groups ─────────────────────────────────────────────────────────────────────
+
+static void test_group_create_move_delete()
+{
+    Magpie::NotesStore store;
+    Magpie::Group& g = store.CreateGroup("Dailies");
+    const std::string gid = g.id;
+    CHECK(Magpie::IsNoteId(gid));
+    const std::string a = store.Create("A", gid).id;
+    const std::string b = store.Create("B").id;
+    CHECK_EQ(store.Get(a)->groupId, gid);
+    CHECK(store.Get(b)->groupId.empty());
+
+    CHECK(store.MoveToGroup(b, gid));
+    CHECK_EQ(store.Get(b)->groupId, gid);
+    CHECK(!store.MoveToGroup(b, std::string(32, 'c')));   // unknown group
+    CHECK(store.MoveToGroup(b, ""));                        // ungroup
+    CHECK(store.Get(b)->groupId.empty());
+
+    // Create with an unknown group id -> ungrouped.
+    CHECK(store.Create("C", std::string(32, 'd')).groupId.empty());
+
+    store.DeleteGroup(gid);
+    CHECK(store.Groups().empty());
+    CHECK(store.Notes().size() == 3);                       // notes are kept
+    CHECK(store.Get(a)->groupId.empty());
+}
+
+static void test_groups_persist_roundtrip()
+{
+    Magpie::NotesStore src;
+    Magpie::Group& g = src.CreateGroup("Raids");
+    g.collapsed = true;
+    const std::string gid = g.id;
+    src.Create("W1", gid);
+    src.Create("Loose");
+
+    Magpie::NotesStore dst;
+    CHECK(dst.FromJson(src.ToJson()));
+    CHECK(dst.Groups().size() == 1);
+    CHECK_EQ(dst.Groups()[0].id, gid);
+    CHECK_EQ(dst.Groups()[0].name, std::string("Raids"));
+    CHECK(dst.Groups()[0].collapsed);
+    CHECK_EQ(dst.Notes()[0].groupId, gid);
+    CHECK(dst.Notes()[1].groupId.empty());
+}
+
+static void test_fromjson_drops_unknown_group_refs()
+{
+    Magpie::NotesStore store;
+    const std::string nid = std::string(31, '0') + "1";
+    CHECK(store.FromJson(
+        "{\"format\":\"trailpack-memo-notes\",\"version\":2,\"groups\":[],"
+        "\"notes\":[{\"id\":\"" + nid + "\",\"title\":\"A\",\"body\":\"\","
+        "\"group\":\"" + std::string(32, 'e') + "\"}]}"));
+    CHECK(store.Notes()[0].groupId.empty());
+}
+
+static void test_export_all_includes_groups_and_import_recreates_them()
+{
+    Magpie::NotesStore src;
+    const std::string gid = src.CreateGroup("Dailies").id;
+    src.CreateGroup("Empty");
+    src.Create("A", gid);
+    src.Create("B");
+
+    Magpie::NotesStore dst;
+    CHECK_EQ(dst.ImportJson(src.ExportJson()), 2);
+    CHECK(dst.Groups().size() == 1);               // only groups used by imported notes
+    CHECK_EQ(dst.Groups()[0].id, gid);              // group keeps its id
+    CHECK_EQ(dst.Groups()[0].name, std::string("Dailies"));
+    CHECK_EQ(dst.Notes()[0].groupId, gid);
+    CHECK(dst.Notes()[1].groupId.empty());
+}
+
+static void test_import_reuses_existing_group_by_id()
+{
+    Magpie::NotesStore src;
+    const std::string gid = src.CreateGroup("Dailies").id;
+    src.Create("A", gid);
+    const std::string file = src.ExportJson();
+    src.Create("B", gid);
+
+    Magpie::NotesStore dst;
+    dst.ImportJson(file);
+    dst.GetGroup(gid)->name = "Renamed locally";
+    CHECK_EQ(dst.ImportJson(src.ExportJson()), 1);  // only B is new
+    CHECK(dst.Groups().size() == 1);                // no second "Dailies"
+    CHECK_EQ(dst.Groups()[0].name, std::string("Renamed locally"));
+    CHECK_EQ(dst.Notes()[1].groupId, gid);
+}
+
+static void test_export_single_note_and_group()
+{
+    Magpie::NotesStore src;
+    const std::string g1 = src.CreateGroup("G1").id;
+    const std::string g2 = src.CreateGroup("G2").id;
+    const std::string a  = src.Create("A", g1).id;
+    src.Create("B", g1);
+    src.Create("C", g2);
+
+    std::vector<Magpie::ImportItem> items;
+    Magpie::NotesStore probe;
+    CHECK(probe.PrepareImport(src.ExportJson({a}), items));
+    CHECK(items.size() == 1);
+    CHECK_EQ(items[0].groupId, g1);                 // the note's group travels along
+    CHECK_EQ(items[0].groupName, std::string("G1"));
+
+    CHECK(probe.PrepareImport(src.ExportGroupJson(g1), items));
+    CHECK(items.size() == 2);
+    CHECK_EQ(items[0].title, std::string("A"));
+    CHECK_EQ(items[1].title, std::string("B"));
+}
+
+static void test_import_v1_export_without_groups()
+{
+    Magpie::NotesStore dst;
+    CHECK_EQ(dst.ImportJson("{\"format\":\"trailpack-memo-export\",\"version\":1,"
+                            "\"notes\":[{\"id\":\"" + std::string(32, 'a') + "\","
+                            "\"title\":\"Old\",\"body\":\"x\"}]}"), 1);
+    CHECK(dst.Groups().empty());
+    CHECK(dst.Notes()[0].groupId.empty());
+}
+
 // ── I18n ───────────────────────────────────────────────────────────────────────
 
 static void test_i18n_lookup_and_fallback()
@@ -1223,6 +1347,13 @@ int main()
     test_fromjson_invalid_returns_false_and_leaves_state();
     test_export_all_import_roundtrip();
     test_export_selected_ids_only();
+    test_group_create_move_delete();
+    test_groups_persist_roundtrip();
+    test_fromjson_drops_unknown_group_refs();
+    test_export_all_includes_groups_and_import_recreates_them();
+    test_import_reuses_existing_group_by_id();
+    test_export_single_note_and_group();
+    test_import_v1_export_without_groups();
     test_i18n_lookup_and_fallback();
     test_i18n_table_is_consistent();
     test_reimport_same_note_is_skipped();

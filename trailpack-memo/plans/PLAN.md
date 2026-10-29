@@ -24,7 +24,7 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 |---|---|---|
 | `dllmain.cpp` | no | Nexus lifecycle, identity, keybind, quick access, options pane, `settings.json` (preview toggle, QA icon) |
 | `NotesWindow.{h,cpp}` | no | Two-pane UI, view/edit modes, Save/Cancel, unsaved + delete modals, edit toolbar, preview, task clicks, `notes.json` I/O |
-| `NotesStore.{h,cpp}` | yes | Note model `{id,title,body}`, CRUD, JSON round-trip |
+| `NotesStore.{h,cpp}` | yes | Note + group model, CRUD, notes.json round-trip, export/import |
 | `Markdown.{h,cpp}` | yes | Line parser (Paragraph/Heading/Bullet/Task; Text/Bold/Italic/Chip spans); task count/toggle/uncheck-all |
 | `MarkdownEdit.{h,cpp}` | yes | Toolbar commands on a cell model: wrap bold/italic, toggle line prefixes, list continuation on Enter |
 | `MarkdownRender.{h,cpp}` | no | ImGui view rendering: FontBig headings, faux bold (double draw), faux italic (shear), checkboxes, rich chips |
@@ -47,6 +47,11 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 - Edit toolbar B / I / H1 / H2 / list / task + `Ctrl+B` / `Ctrl+I`, toggles off when reapplied.
 - Enter continues bullet/task lists; Enter on an empty item ends the list.
 - Optional side-by-side live preview, persisted in `settings.json`.
+- Groups (`Magpie::Group`: id, name, collapsed; one level): `Note::groupId`. notes.json is now
+  `{"format":"trailpack-memo-notes","version":2,groups,notes}` (v1 plain array still loads).
+  Export v2 carries `groups` + per-note `group`; `ExportGroupJson` for one group; import reuses a
+  group by id or recreates it (only groups used by imported notes). Deleting a group ungroups its
+  notes. List UI: `renderGroupHeader_` / `renderNoteRow_`, drag payload `TPM_NOTE`.
 - Note ids are globally unique (32 hex, random 128 bit, `IsNoteId`); `FromJson` migrates legacy
   counter ids (`00000000`, Magpie Memo) and `NotesWindow::Init` saves right after loading so ids
   stay stable.

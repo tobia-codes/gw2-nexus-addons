@@ -9,6 +9,15 @@ struct Note {
                         // export/import so the same note is recognised on another install
     std::string title;
     std::string body;
+    std::string groupId;  // id of the Group it belongs to; empty = ungrouped
+};
+
+// A named, collapsible group of notes (one level, no nesting). Ids use the same globally
+// unique format as notes, so a group is recognised again on import.
+struct Group {
+    std::string id;
+    std::string name;
+    bool        collapsed = false;  // UI state; saved in notes.json, not exported
 };
 
 // One note read from an import file (see NotesStore::PrepareImport).
@@ -19,37 +28,60 @@ struct ImportItem {
     bool        duplicate = false;  // already in the store (or earlier in the same file)
     bool        changed   = false;  // duplicate by id whose title/body differ from the local
                                     // note -> can be offered as an update (UpdateImported)
+    std::string groupId;            // the note's group in the file (valid id), or empty
+    std::string groupName;          // that group's name in the file
 };
 
-// True if `id` has the globally unique format (32 lowercase hex chars).
+// True if `id` has the globally unique format (32 lowercase hex chars). Used for note and
+// group ids alike.
 bool IsNoteId(const std::string& id);
 
 class NotesStore {
 public:
     const std::vector<Note>& Notes() const;
 
-    Note& Create(const std::string& defaultTitle = "Untitled note");
+    Note& Create(const std::string& defaultTitle = "Untitled note",
+                 const std::string& groupId = std::string());
     void  Delete(const std::string& id);
     Note* Get(const std::string& id);
 
+    // ── Groups ────────────────────────────────────────────────────────────
+    const std::vector<Group>& Groups() const;
+    Group& CreateGroup(const std::string& name);
+    Group* GetGroup(const std::string& id);
+    // Remove the group; its notes are kept and become ungrouped.
+    void   DeleteGroup(const std::string& id);
+    // Put a note into a group ("" = ungroup). False if the note or group is unknown.
+    bool   MoveToGroup(const std::string& noteId, const std::string& groupId);
+
+    // notes.json:
+    //   {"format":"trailpack-memo-notes","version":2,
+    //    "groups":[{id,name,collapsed},...],"notes":[{id,title,body,group},...]}
     std::string ToJson() const;
-    // Replace all notes. Ids that are missing, not in IsNoteId format (Magpie Memo / older
-    // Trailpack counters like "00000000") or repeated are replaced with fresh ones -- the
-    // caller should save afterwards so the new ids stay stable.
+    // Replace all notes and groups. Accepts the format above or the version-1 plain array
+    // of notes (older Trailpack / Magpie Memo). Ids that are missing, not in IsNoteId format
+    // (counters like "00000000") or repeated are replaced with fresh ones -- the caller
+    // should save afterwards so the new ids stay stable. Unknown group refs -> ungrouped.
     bool        FromJson(const std::string& json);
 
     // Export/import for sharing and backups. Export file:
-    //   {"format":"trailpack-memo-export","version":1,"notes":[{id,title,body},...]}
-    // `ids` empty -> every note, in list order; unknown ids are skipped.
+    //   {"format":"trailpack-memo-export","version":2,
+    //    "groups":[{id,name},...],"notes":[{id,title,body,group},...]}
+    // `ids` empty -> every note and every group (incl. empty ones); otherwise just those
+    // notes, plus the groups they belong to. Unknown ids are skipped.
     std::string ExportJson(const std::vector<std::string>& ids = {}) const;
+    // One group and all of its notes.
+    std::string ExportGroupJson(const std::string& groupId) const;
 
-    // Read an export file -- or a plain notes.json array (Trailpack / Magpie Memo) -- into
-    // `out` without changing the store. Each item is flagged `duplicate` when a note with
+    // Read an export file (version 1 or 2), a notes.json (either version) or a plain
+    // version-1 array (Trailpack / Magpie Memo) into `out` without changing the store. Each item is flagged `duplicate` when a note with
     // its id already exists; items without a valid id fall back to an identical title+body
     // match. Returns false (out empty) if the input is not a valid notes file.
     bool        PrepareImport(const std::string& json, std::vector<ImportItem>& out) const;
     // Append `items` as new notes, skipping duplicates (re-checked against the store). An
-    // item keeps its id when it has one; otherwise it gets a fresh id. Returns the count added.
+    // item keeps its id when it has one; otherwise it gets a fresh id. An item's group is
+    // reused when a group with that id exists, else created (same id + name from the file).
+    // Returns the count added.
     int         AddImported(const std::vector<ImportItem>& items);
     // Overwrite title + body of the local notes that share an item's id (the "changed"
     // duplicates the user chose to update). Items without a matching note are ignored.
@@ -59,7 +91,10 @@ public:
     int         ImportJson(const std::string& json);
 
 private:
-    std::vector<Note> notes_;
+    std::vector<Note>  notes_;
+    std::vector<Group> groups_;
+
+    std::string newId_() const;   // fresh id unused by any note or group
 
     bool hasDuplicateOf_(const ImportItem& item) const;
 };

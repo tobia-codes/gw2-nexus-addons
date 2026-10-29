@@ -51,6 +51,23 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Delete this note? This cannot be undone.",
       "Diese Notiz löschen? Das kann nicht rückgängig gemacht werden." },
 
+    // ── Groups ────────────────────────────────────────────────────────────
+    { "Menu",                              "Menü" },
+    { "New group...",                      "Neue Gruppe..." },
+    { "New group",                         "Neue Gruppe" },
+    { "No group",                          "Ohne Gruppe" },
+    { "Move to group",                     "In Gruppe verschieben" },
+    { "New note in group",                 "Neue Notiz in Gruppe" },
+    { "Rename group...",                   "Gruppe umbenennen..." },
+    { "Export group...",                   "Gruppe exportieren..." },
+    { "Delete group...",                   "Gruppe löschen..." },
+    { "Group",                             "Gruppe" },
+    { "Group name:",                       "Gruppenname:" },
+    { "Delete Group",                      "Gruppe löschen" },
+    { "Delete the group \"%s\"?",          "Die Gruppe \"%s\" löschen?" },
+    { "Its notes are kept and moved out of the group.",
+      "Ihre Notizen bleiben erhalten und werden aus der Gruppe genommen." },
+
     // ── Export / import ───────────────────────────────────────────────────
     { "Export notes",                      "Notizen exportieren" },
     { "Import notes",                      "Notizen importieren" },

@@ -82,9 +82,21 @@ void NotesWindow::Init(AddonAPI_t* api)
         if (f.is_open()) {
             std::ostringstream ss;
             ss << f.rdbuf();
+            const std::string content = ss.str();
             // Rolls back silently on bad JSON. On success, save at once: loading may have
             // replaced legacy ids, and exported ids must stay stable across sessions.
-            if (store_.FromJson(ss.str())) Save();
+            if (store_.FromJson(content)) {
+                // First load of a version-1 file (plain array): keep a copy before it is
+                // rewritten in the version-2 format, which older builds can't read.
+                const fs::path backup = notesFile_.parent_path() / "notes.v1-backup.json";
+                const size_t first = content.find_first_not_of(" \t\r\n");
+                std::error_code ec;
+                if (first != std::string::npos && content[first] == '[' && !fs::exists(backup, ec)) {
+                    std::ofstream b(backup, std::ios::out | std::ios::trunc | std::ios::binary);
+                    if (b.is_open()) b << content;
+                }
+                Save();
+            }
         }
     }
 
@@ -174,7 +186,8 @@ void NotesWindow::resolvePending_()
         pendingCreate_ = false;
         pendingSelectId_.clear();
         // Create the new note, select it, and open in Edit mode.
-        Magpie::Note& n = store_.Create(Tr("Untitled note"));
+        Magpie::Note& n = store_.Create(Tr("Untitled note"), pendingCreateGroupId_);
+        pendingCreateGroupId_.clear();
         selectedId_ = n.id;
         Save();
         enterEdit_(&n);
@@ -211,7 +224,7 @@ void NotesWindow::requestSelect_(const std::string& id)
     }
 }
 
-void NotesWindow::requestCreate_()
+void NotesWindow::requestCreate_(const std::string& groupId)
 {
     bool dirty = (mode_ == Mode::Edit);
     if (dirty) {
@@ -222,11 +235,12 @@ void NotesWindow::requestCreate_()
     }
 
     if (dirty) {
-        pendingCreate_   = true;
+        pendingCreate_        = true;
+        pendingCreateGroupId_ = groupId;
         pendingSelectId_.clear();
         ImGui::OpenPopup(PopupName("Unsaved Changes", "unsaved").c_str());
     } else {
-        Magpie::Note& n = store_.Create(Tr("Untitled note"));
+        Magpie::Note& n = store_.Create(Tr("Untitled note"), groupId);
         selectedId_ = n.id;
         Save();
         enterEdit_(&n);
@@ -288,6 +302,8 @@ void NotesWindow::Render()
     pollFileDialog_();
     renderIoModal_();
     renderImportModal_();
+    renderGroupNameModal_();
+    renderDeleteGroupModal_();
 
     const auto& notes = store_.Notes();
 
@@ -315,42 +331,38 @@ void NotesWindow::Render()
     // OpenPopup() (inside requestSelect_) must run in the parent-window scope so
     // the unsaved-changes modal opens — never from inside the list child.
     std::string clickedId;
-    for (const auto& note : notes) {
-        bool selected = (note.id == selectedId_);
-        // Title drawn manually (clipped) so a task-progress count can sit right-aligned
-        // without long titles running over it. PushID keeps duplicate titles distinct.
-        ImGui::PushID(note.id.c_str());
-        const ImVec2 rowPos = ImGui::GetCursorScreenPos();
-        if (ImGui::Selectable("##note_row", selected)) {
-            clickedId = note.id;
-        }
-        if (ImGui::BeginPopupContextItem("##row_ctx")) {
-            if (ImGui::MenuItem(Tr("Export note..."))) startExport_(note.id);
-            ImGui::EndPopup();
-        }
-        ImGui::PopID();
+    std::string createInGroup;
+    bool openGroupName = false, openDeleteGroup = false;
+    const float groupIndent = ImGui::GetFontSize() * 0.9f;
 
-        const float rowRight = ImGui::GetItemRectMax().x;
-        const float rowH     = ImGui::GetItemRectSize().y;
-        ImDrawList* dl = ImGui::GetWindowDrawList();
-
-        char progress[24] = "";
-        float progressW = 0.0f;
-        const Magpie::Md::TaskCount tc = Magpie::Md::CountTasks(note.body);
-        if (tc.total > 0) {
-            snprintf(progress, sizeof progress, "%d/%d", tc.done, tc.total);
-            progressW = ImGui::CalcTextSize(progress).x;
-            const ImU32 col = (tc.done == tc.total)
-                ? ImGui::GetColorU32(Theme::BTN_GREEN_ACTIVE)
-                : ImGui::GetColorU32(ImGuiCol_TextDisabled);
-            dl->AddText(ImVec2(rowRight - progressW, rowPos.y), col, progress);
-        }
-
-        const float titleRight = rowRight - (progressW > 0.0f ? progressW + 6.0f : 0.0f);
-        dl->PushClipRect(rowPos, ImVec2(titleRight, rowPos.y + rowH), true);
-        dl->AddText(rowPos, ImGui::GetColorU32(ImGuiCol_Text), note.title.c_str());
-        dl->PopClipRect();
+    // Groups first (each followed by its notes unless collapsed), then ungrouped notes.
+    // Ids are snapshotted: a header's context menu may change the store this frame.
+    std::vector<std::string> groupIds;
+    for (const auto& g : store_.Groups()) groupIds.push_back(g.id);
+    for (const auto& gid : groupIds) {
+        Magpie::Group* group = store_.GetGroup(gid);
+        if (group == nullptr) continue;
+        if (!renderGroupHeader_(*group, openGroupName, openDeleteGroup, createInGroup)) continue;
+        for (const auto& note : notes)
+            if (note.groupId == gid) renderNoteRow_(note, groupIndent, clickedId);
     }
+
+    const bool anyUngrouped = std::any_of(notes.begin(), notes.end(),
+        [](const Magpie::Note& n) { return n.groupId.empty(); });
+    if (!groupIds.empty() && (anyUngrouped || ImGui::GetDragDropPayload() != nullptr)) {
+        // Section label; also the drop target that takes a note out of its group.
+        ImGui::Spacing();
+        ImGui::TextDisabled("%s", Tr("No group"));
+        if (ImGui::BeginDragDropTarget()) {
+            if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("TPM_NOTE")) {
+                const std::string id(static_cast<const char*>(p->Data), (size_t)p->DataSize);
+                if (store_.MoveToGroup(id, std::string())) Save();
+            }
+            ImGui::EndDragDropTarget();
+        }
+    }
+    for (const auto& note : notes)
+        if (note.groupId.empty()) renderNoteRow_(note, 0.0f, clickedId);
 
     ImGui::EndChild();
 
@@ -382,9 +394,15 @@ void NotesWindow::Render()
             dl->AddLine(ImVec2(bMin.x + padX, y), ImVec2(bMax.x - padX, y), col, 1.5f);
         }
     }
-    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", Tr("Import / Export"));
+    if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", Tr("Menu"));
 
     if (ImGui::BeginPopup("##notes_menu")) {
+        if (ImGui::MenuItem(Tr("New group..."))) {
+            groupNameId_.clear();
+            groupNameBuffer_ = Tr("New group");
+            openGroupName    = true;
+        }
+        ImGui::Separator();
         if (ImGui::MenuItem(Tr("Import..."))) startImport_();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", Tr("Add notes from an exported file (or a notes.json).\n"
@@ -397,6 +415,11 @@ void NotesWindow::Render()
     }
 
     ImGui::EndGroup();
+
+    // Popups requested from inside the list child / menus open here, in window scope.
+    if (openGroupName)   ImGui::OpenPopup(PopupName("Group", "group_name").c_str());
+    if (openDeleteGroup) ImGui::OpenPopup(PopupName("Delete Group", "delete_group").c_str());
+    if (!createInGroup.empty()) requestCreate_(createInGroup);
 
     if (!clickedId.empty()) {
         requestSelect_(clickedId);
@@ -746,11 +769,29 @@ void NotesWindow::startExport_(const std::string& id)
     std::error_code ec;
     if (!exportDir_.empty()) fs::create_directories(exportDir_, ec);
 
-    ioAction_   = IoAction::Export;
-    ioExportId_ = id;
+    ioAction_        = IoAction::Export;
+    ioExportId_      = id;
+    ioExportGroupId_.clear();
     ioDialog_   = std::async(std::launch::async, RunFileDialog, true,
                              exportDir_.wstring(), Widen(name),
                              Widen(Tr("Export notes")), DialogFilter());
+}
+
+void NotesWindow::startExportGroup_(const std::string& groupId)
+{
+    if (ioDialog_.valid()) return;
+    const Magpie::Group* group = store_.GetGroup(groupId);
+    if (group == nullptr) return;
+
+    std::error_code ec;
+    if (!exportDir_.empty()) fs::create_directories(exportDir_, ec);
+
+    ioAction_        = IoAction::Export;
+    ioExportId_.clear();
+    ioExportGroupId_ = groupId;
+    ioDialog_ = std::async(std::launch::async, RunFileDialog, true,
+                           exportDir_.wstring(), Widen(FileNameFor(group->name) + ".json"),
+                           Widen(Tr("Export notes")), DialogFilter());
 }
 
 void NotesWindow::startImport_()
@@ -780,19 +821,28 @@ void NotesWindow::pollFileDialog_()
     char msg[512];
 
     if (action == IoAction::Export) {
-        std::vector<std::string> ids;
-        if (!ioExportId_.empty()) ids.push_back(ioExportId_);
-        const size_t count = ids.empty() ? store_.Notes().size() : 1;
+        std::string json;
+        size_t count = 0;
+        if (!ioExportGroupId_.empty()) {
+            json  = store_.ExportGroupJson(ioExportGroupId_);
+            count = std::count_if(store_.Notes().begin(), store_.Notes().end(),
+                [&](const Magpie::Note& n) { return n.groupId == ioExportGroupId_; });
+        } else {
+            std::vector<std::string> ids;
+            if (!ioExportId_.empty()) ids.push_back(ioExportId_);
+            json  = store_.ExportJson(ids);
+            count = ids.empty() ? store_.Notes().size() : 1;
+        }
 
         std::ofstream f(path, std::ios::out | std::ios::trunc | std::ios::binary);
-        if (f.is_open()) f << store_.ExportJson(ids);
-        if (f.is_open() && f.good())
-            if (count == 1)
-                snprintf(msg, sizeof msg, Tr("Exported 1 note to %s."), fileName.c_str());
-            else
-                snprintf(msg, sizeof msg, Tr("Exported %d notes to %s."), (int)count, fileName.c_str());
-        else
+        if (f.is_open()) f << json;
+        if (!(f.is_open() && f.good())) {
             snprintf(msg, sizeof msg, Tr("Could not write %s."), fileName.c_str());
+        } else if (count == 1) {
+            snprintf(msg, sizeof msg, Tr("Exported 1 note to %s."), fileName.c_str());
+        } else {
+            snprintf(msg, sizeof msg, Tr("Exported %d notes to %s."), (int)count, fileName.c_str());
+        }
     } else {
         std::ifstream f(path, std::ios::in | std::ios::binary);
         std::ostringstream ss;
@@ -902,6 +952,10 @@ void NotesWindow::renderImportModal_()
             // Already in the notes (same id, or same title + text) and identical.
             ImGui::TextDisabled(Tr("[-] %s  (already up to date)"), title);
         }
+        if (!item.groupName.empty()) {   // the group it will land in
+            ImGui::SameLine();
+            ImGui::TextDisabled("[%s]", item.groupName.c_str());
+        }
         ImGui::PopID();
     }
     ImGui::EndChild();
@@ -952,6 +1006,214 @@ void NotesWindow::renderImportModal_()
         importItems_.clear();
         importChecked_.clear();
         importFile_.clear();
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+}
+
+// ── Note list rows ──────────────────────────────────────────────────────────
+
+void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent, std::string& clickedId)
+{
+    const bool selected = (note.id == selectedId_);
+    // Title drawn manually (clipped) so a task-progress count can sit right-aligned
+    // without long titles running over it. PushID keeps duplicate titles distinct.
+    ImGui::PushID(note.id.c_str());
+    const ImVec2 rowPos = ImGui::GetCursorScreenPos();
+    if (ImGui::Selectable("##note_row", selected)) {
+        clickedId = note.id;
+    }
+    const float rowRight = ImGui::GetItemRectMax().x;
+    const float rowH     = ImGui::GetItemRectSize().y;
+
+    // Drag a note onto a group header (or "No group") to move it.
+    if (ImGui::BeginDragDropSource()) {
+        ImGui::SetDragDropPayload("TPM_NOTE", note.id.data(), note.id.size());
+        ImGui::TextUnformatted(note.title.c_str());
+        ImGui::EndDragDropSource();
+    }
+
+    if (ImGui::BeginPopupContextItem("##row_ctx")) {
+        if (ImGui::MenuItem(Tr("Export note..."))) startExport_(note.id);
+        if (!store_.Groups().empty() && ImGui::BeginMenu(Tr("Move to group"))) {
+            std::string target;
+            bool        move = false;
+            for (const auto& g : store_.Groups()) {
+                ImGui::PushID(g.id.c_str());
+                if (ImGui::MenuItem(g.name.c_str(), nullptr, note.groupId == g.id)) {
+                    target = g.id;
+                    move   = true;
+                }
+                ImGui::PopID();
+            }
+            ImGui::Separator();
+            if (ImGui::MenuItem(Tr("No group"), nullptr, note.groupId.empty(), !note.groupId.empty()))
+                move = true;   // target stays empty -> ungroup
+            ImGui::EndMenu();
+            if (move && store_.MoveToGroup(note.id, target)) Save();
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::PopID();
+
+    ImDrawList* dl = ImGui::GetWindowDrawList();
+    char progress[24] = "";
+    float progressW = 0.0f;
+    const Magpie::Md::TaskCount tc = Magpie::Md::CountTasks(note.body);
+    if (tc.total > 0) {
+        snprintf(progress, sizeof progress, "%d/%d", tc.done, tc.total);
+        progressW = ImGui::CalcTextSize(progress).x;
+        const ImU32 col = (tc.done == tc.total)
+            ? ImGui::GetColorU32(Theme::BTN_GREEN_ACTIVE)
+            : ImGui::GetColorU32(ImGuiCol_TextDisabled);
+        dl->AddText(ImVec2(rowRight - progressW, rowPos.y), col, progress);
+    }
+
+    const float titleRight = rowRight - (progressW > 0.0f ? progressW + 6.0f : 0.0f);
+    dl->PushClipRect(rowPos, ImVec2(titleRight, rowPos.y + rowH), true);
+    dl->AddText(ImVec2(rowPos.x + indent, rowPos.y), ImGui::GetColorU32(ImGuiCol_Text),
+                note.title.c_str());
+    dl->PopClipRect();
+}
+
+bool NotesWindow::renderGroupHeader_(Magpie::Group& group, bool& openNameModal,
+                                     bool& openDeleteModal, std::string& createInGroup)
+{
+    ImGui::PushID(group.id.c_str());
+    const ImVec2 rowPos = ImGui::GetCursorScreenPos();
+    if (ImGui::Selectable("##group_row", false)) {
+        group.collapsed = !group.collapsed;
+        Save();
+    }
+    const float rowRight = ImGui::GetItemRectMax().x;
+    const float rowH     = ImGui::GetItemRectSize().y;
+
+    if (ImGui::BeginDragDropTarget()) {
+        if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("TPM_NOTE")) {
+            const std::string id(static_cast<const char*>(p->Data), (size_t)p->DataSize);
+            if (store_.MoveToGroup(id, group.id)) {
+                group.collapsed = false;   // show where the note went
+                Save();
+            }
+        }
+        ImGui::EndDragDropTarget();
+    }
+
+    if (ImGui::BeginPopupContextItem("##group_ctx")) {
+        if (ImGui::MenuItem(Tr("New note in group"))) createInGroup = group.id;
+        if (ImGui::MenuItem(Tr("Rename group..."))) {
+            groupNameId_     = group.id;
+            groupNameBuffer_ = group.name;
+            openNameModal    = true;
+        }
+        if (ImGui::MenuItem(Tr("Export group..."))) startExportGroup_(group.id);
+        ImGui::Separator();
+        if (ImGui::MenuItem(Tr("Delete group..."))) {
+            pendingDeleteGroupId_ = group.id;
+            openDeleteModal       = true;
+        }
+        ImGui::EndPopup();
+    }
+    ImGui::PopID();
+
+    // Disclosure triangle (drawn: no symbol glyphs), name, note count right-aligned.
+    ImDrawList* dl   = ImGui::GetWindowDrawList();
+    const float  sz  = ImGui::GetFontSize();
+    const ImU32  col = ImGui::GetColorU32(ImGuiCol_Text);
+    const ImVec2 c(rowPos.x + sz * 0.4f, rowPos.y + rowH * 0.5f);
+    const float  r = sz * 0.25f;
+    if (group.collapsed)
+        dl->AddTriangleFilled(ImVec2(c.x - r * 0.6f, c.y - r), ImVec2(c.x - r * 0.6f, c.y + r),
+                              ImVec2(c.x + r, c.y), col);
+    else
+        dl->AddTriangleFilled(ImVec2(c.x - r, c.y - r * 0.6f), ImVec2(c.x + r, c.y - r * 0.6f),
+                              ImVec2(c.x, c.y + r), col);
+
+    const int count = (int)std::count_if(store_.Notes().begin(), store_.Notes().end(),
+        [&](const Magpie::Note& n) { return n.groupId == group.id; });
+    char countText[16];
+    snprintf(countText, sizeof countText, "%d", count);
+    const float countW = ImGui::CalcTextSize(countText).x;
+    dl->AddText(ImVec2(rowRight - countW, rowPos.y), ImGui::GetColorU32(ImGuiCol_TextDisabled),
+                countText);
+
+    const float nameX = rowPos.x + sz * 0.9f;
+    dl->PushClipRect(ImVec2(nameX, rowPos.y), ImVec2(rowRight - countW - 6.0f, rowPos.y + rowH), true);
+    dl->AddText(ImVec2(nameX, rowPos.y), ImGui::GetColorU32(Theme::Colors().border),
+                group.name.empty() ? Tr("(untitled)") : group.name.c_str());
+    dl->PopClipRect();
+
+    return !group.collapsed;
+}
+
+// ── Group modals ────────────────────────────────────────────────────────────
+
+void NotesWindow::renderGroupNameModal_()
+{
+    ImVec2 display = ImGui::GetIO().DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2(display.x * 0.5f, display.y * 0.5f),
+                            ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    if (!ImGui::BeginPopupModal(PopupName("Group", "group_name").c_str(), nullptr,
+                                ImGuiWindowFlags_AlwaysAutoResize))
+        return;
+
+    ImGui::TextUnformatted(Tr("Group name:"));
+    if (ImGui::IsWindowAppearing()) ImGui::SetKeyboardFocusHere();
+    ImGui::SetNextItemWidth(260.0f);
+    const bool enter = ImGui::InputText("##group_name", &groupNameBuffer_,
+                                        ImGuiInputTextFlags_EnterReturnsTrue);
+    ImGui::Spacing();
+
+    Theme::PushGreenButton();
+    const bool ok = ImGui::Button(Tr("OK"), ImVec2(80, 0)) || enter;
+    Theme::PopButton();
+    ImGui::SameLine();
+    const bool cancel = ImGui::Button(Tr("Cancel"), ImVec2(ButtonWidth(Tr("Cancel"), 80), 0));
+
+    if (ok) {
+        const std::string name = groupNameBuffer_.empty() ? std::string(Tr("New group"))
+                                                          : groupNameBuffer_;
+        if (groupNameId_.empty()) {
+            store_.CreateGroup(name);
+        } else if (Magpie::Group* g = store_.GetGroup(groupNameId_)) {
+            g->name = name;
+        }
+        Save();
+    }
+    if (ok || cancel) {
+        groupNameId_.clear();
+        groupNameBuffer_.clear();
+        ImGui::CloseCurrentPopup();
+    }
+    ImGui::EndPopup();
+}
+
+void NotesWindow::renderDeleteGroupModal_()
+{
+    ImVec2 display = ImGui::GetIO().DisplaySize;
+    ImGui::SetNextWindowPos(ImVec2(display.x * 0.5f, display.y * 0.5f),
+                            ImGuiCond_Appearing, ImVec2(0.5f, 0.5f));
+    if (!ImGui::BeginPopupModal(PopupName("Delete Group", "delete_group").c_str(), nullptr,
+                                ImGuiWindowFlags_AlwaysAutoResize))
+        return;
+
+    const Magpie::Group* g = store_.GetGroup(pendingDeleteGroupId_);
+    ImGui::Text(Tr("Delete the group \"%s\"?"), g != nullptr ? g->name.c_str() : "");
+    ImGui::TextUnformatted(Tr("Its notes are kept and moved out of the group."));
+    ImGui::Spacing();
+
+    Theme::PushAmberButton();
+    const bool del = ImGui::Button(Tr("Delete"), ImVec2(ButtonWidth(Tr("Delete"), 80), 0));
+    Theme::PopButton();
+    ImGui::SameLine();
+    const bool cancel = ImGui::Button(Tr("Cancel"), ImVec2(ButtonWidth(Tr("Cancel"), 80), 0));
+
+    if (del) {
+        store_.DeleteGroup(pendingDeleteGroupId_);
+        Save();
+    }
+    if (del || cancel) {
+        pendingDeleteGroupId_.clear();
         ImGui::CloseCurrentPopup();
     }
     ImGui::EndPopup();
