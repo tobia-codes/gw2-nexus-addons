@@ -1,8 +1,16 @@
 #pragma once
+#include <cstdint>
 #include <string>
 #include <vector>
 
 namespace Magpie {
+
+// How a note behaves at GW2's resets: a plain note, or a checklist whose tasks are
+// unchecked again after every daily (00:00 UTC) / weekly (Monday 07:30 UTC) reset.
+enum class NoteType { Note, Daily, Weekly };
+
+const char* NoteTypeKey(NoteType t);                 // "note" / "daily" / "weekly"
+NoteType    NoteTypeFromKey(const std::string& key); // unknown -> Note
 
 struct Note {
     std::string id;     // globally unique: 32 lowercase hex chars (random 128 bit), kept on
@@ -10,6 +18,8 @@ struct Note {
     std::string title;
     std::string body;
     std::string groupId;  // id of the Group it belongs to; empty = ungrouped
+    NoteType    type = NoteType::Note;
+    int64_t     resetStamp = 0;  // Daily/Weekly: the reset (Unix UTC) already applied
 };
 
 // A named, collapsible group of notes (one level, no nesting). Ids use the same globally
@@ -32,6 +42,8 @@ struct ImportItem {
                                     // note -> can be offered as an update (UpdateImported)
     std::string groupId;            // the note's group in the file (valid id), or empty
     std::string groupName;          // that group's name in the file
+    NoteType    type = NoteType::Note;
+    int64_t     resetStamp = 0;
     bool        groupHasColor = false;  // that group's own colour in the file, if any
     float       groupColor[4] = { 1.0f, 1.0f, 1.0f, 1.0f };
 };
@@ -51,6 +63,15 @@ public:
     int   DeleteMany(const std::vector<std::string>& ids);
     Note* Get(const std::string& id);
 
+    // ── Reset types ───────────────────────────────────────────────────────
+    // Set a note's type; Daily/Weekly start counting from the latest reset before `now`
+    // (so its current ticks stay until the NEXT reset). False if the note is unknown.
+    bool   SetType(const std::string& id, NoteType type, int64_t now);
+    // Uncheck every Daily/Weekly note whose reset passed since it was last reset. Skips
+    // `skipId` (the note open in the editor -- it is reset once the edit ends). Returns
+    // the number of notes reset; the caller saves if > 0.
+    int    ApplyResets(int64_t now, const std::string& skipId = std::string());
+
     // ── Groups ────────────────────────────────────────────────────────────
     const std::vector<Group>& Groups() const;
     Group& CreateGroup(const std::string& name);
@@ -62,7 +83,8 @@ public:
 
     // notes.json:
     //   {"format":"trailpack-memo-notes","version":2,
-    //    "groups":[{id,name,collapsed,color},...],"notes":[{id,title,body,group},...]}
+    //    "groups":[{id,name,collapsed,color},...],
+    //    "notes":[{id,title,body,group,type,reset},...]}
     //   (color = [r,g,b,a] or null)
     std::string ToJson() const;
     // Replace all notes and groups. Accepts the format above or the version-1 plain array
@@ -73,7 +95,7 @@ public:
 
     // Export/import for sharing and backups. Export file:
     //   {"format":"trailpack-memo-export","version":2,
-    //    "groups":[{id,name,color},...],"notes":[{id,title,body,group},...]}
+    //    "groups":[{id,name,color},...],"notes":[{id,title,body,group,type,reset},...]}
     // `ids` empty -> every note and every group (incl. empty ones); otherwise just those
     // notes, plus the groups they belong to. Unknown ids are skipped.
     std::string ExportJson(const std::vector<std::string>& ids = {}) const;

@@ -18,6 +18,10 @@
   titles show in full on hover.
 - **Delete several notes at once**: menu button -> *Delete notes...*, tick notes (a group's box
   ticks all its notes, *Select all* / *None*), then confirm.
+- **Daily / weekly lists**: give a note the type *Daily* or *Weekly* (right-click -> *Type*, or the
+  selector next to the title while editing). Its checkboxes are unchecked automatically after the
+  GW2 reset (daily 00:00 UTC, weekly Monday 07:30 UTC) -- also if the game was closed over the
+  reset. A coloured *D* / *W* badge marks them in the list; hover for the countdown.
 - **Groups**: collapsible groups to structure notes (menu button -> *New group...*). Right-click a
   group to rename, recolour (*Group colour...*), export or delete it (its notes are kept) or add a note to it; move notes via
   right-click -> *Move to group* or by dragging them onto a group. Groups have unique ids too.

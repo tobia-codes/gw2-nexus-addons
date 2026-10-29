@@ -1,4 +1,6 @@
 #include "NotesStore.h"
+#include "Markdown.h"
+#include "Reset.h"
 #include <nlohmann/json.hpp>
 #include <algorithm>
 #include <map>
@@ -62,6 +64,35 @@ static const char* const kNotesFormat   = "trailpack-memo-notes";
 static const char* const kExportFormat  = "trailpack-memo-export";
 static const int         kFormatVersion = 2;
 
+const char* NoteTypeKey(NoteType t)
+{
+    switch (t) {
+        case NoteType::Daily:  return "daily";
+        case NoteType::Weekly: return "weekly";
+        default:               return "note";
+    }
+}
+
+NoteType NoteTypeFromKey(const std::string& key)
+{
+    if (key == "daily")  return NoteType::Daily;
+    if (key == "weekly") return NoteType::Weekly;
+    return NoteType::Note;
+}
+
+// type + reset stamp <-> a note's JSON object
+static void typeFromJson(const nlohmann::json& obj, NoteType& type, int64_t& stamp)
+{
+    type  = isString(obj, "type") ? NoteTypeFromKey(obj["type"].get<std::string>()) : NoteType::Note;
+    stamp = (obj.contains("reset") && obj["reset"].is_number_integer()) ? obj["reset"].get<int64_t>() : 0;
+}
+
+static int64_t lastResetFor(NoteType type, int64_t now)
+{
+    return type == NoteType::Daily  ? Reset::LastDaily(now)
+         : type == NoteType::Weekly ? Reset::LastWeekly(now) : 0;
+}
+
 // ── NotesStore ────────────────────────────────────────────────────────────────
 
 std::string NotesStore::newId_() const
@@ -111,6 +142,33 @@ Note* NotesStore::Get(const std::string& id)
     auto it = std::find_if(notes_.begin(), notes_.end(),
                            [&](const Note& n) { return n.id == id; });
     return it != notes_.end() ? &(*it) : nullptr;
+}
+
+// ── Reset types ───────────────────────────────────────────────────────────────
+
+bool NotesStore::SetType(const std::string& id, NoteType type, int64_t now)
+{
+    Note* n = Get(id);
+    if (n == nullptr) return false;
+    if (n->type != type) {
+        n->type       = type;
+        n->resetStamp = lastResetFor(type, now);
+    }
+    return true;
+}
+
+int NotesStore::ApplyResets(int64_t now, const std::string& skipId)
+{
+    int reset = 0;
+    for (auto& n : notes_) {
+        if (n.type == NoteType::Note || n.id == skipId) continue;
+        const int64_t last = lastResetFor(n.type, now);
+        if (n.resetStamp >= last) continue;
+        Md::UncheckAllTasks(n.body);
+        n.resetStamp = last;
+        ++reset;
+    }
+    return reset;
 }
 
 // ── Groups ────────────────────────────────────────────────────────────────────
@@ -166,7 +224,8 @@ std::string NotesStore::ToJson() const
                           {"color", colorToJson(g.hasColor, g.color)}});
     nlohmann::json notes = nlohmann::json::array();
     for (const auto& n : notes_)
-        notes.push_back({{"id", n.id}, {"title", n.title}, {"body", n.body}, {"group", n.groupId}});
+        notes.push_back({{"id", n.id}, {"title", n.title}, {"body", n.body}, {"group", n.groupId},
+                         {"type", NoteTypeKey(n.type)}, {"reset", n.resetStamp}});
     nlohmann::json doc = {{"format", kNotesFormat}, {"version", kFormatVersion},
                           {"groups", groups}, {"notes", notes}};
     return doc.dump();
@@ -219,6 +278,7 @@ bool NotesStore::FromJson(const std::string& json)
         n.title = obj["title"].get<std::string>();
         n.body  = obj["body"].get<std::string>();
         if (isString(obj, "group")) n.groupId = obj["group"].get<std::string>();
+        typeFromJson(obj, n.type, n.resetStamp);
         tmp.push_back(std::move(n));
     }
 
@@ -259,7 +319,8 @@ static nlohmann::json exportDoc(const std::vector<const Group*>& groups,
     nlohmann::json n = nlohmann::json::array();
     for (const Note* note : notes)
         n.push_back({{"id", note->id}, {"title", note->title}, {"body", note->body},
-                     {"group", note->groupId}});
+                     {"group", note->groupId}, {"type", NoteTypeKey(note->type)},
+                     {"reset", note->resetStamp}});
     return {{"format", kExportFormat}, {"version", kFormatVersion}, {"groups", g}, {"notes", n}};
 }
 
@@ -345,6 +406,7 @@ bool NotesStore::PrepareImport(const std::string& json, std::vector<ImportItem>&
             it.id = obj["id"].get<std::string>();
         it.title = obj["title"].get<std::string>();
         it.body  = obj["body"].get<std::string>();
+        typeFromJson(obj, it.type, it.resetStamp);
         if (isString(obj, "group")) {
             const auto g = fileGroups.find(obj["group"].get<std::string>());
             if (g != fileGroups.end()) {
@@ -396,7 +458,9 @@ int NotesStore::AddImported(const std::vector<ImportItem>& items)
 
         Note& n = Create(item.title, groupId);
         if (IsNoteId(item.id) && GetGroup(item.id) == nullptr) n.id = item.id;
-        n.body = item.body;
+        n.body       = item.body;
+        n.type       = item.type;
+        n.resetStamp = item.resetStamp;
         ++added;
     }
     return added;

@@ -36,6 +36,7 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 | `DecoderClient.{h,cpp}` | no | Decoder Ring consumer |
 | `PieUiClient.{h,cpp}` | no | Pie UI consumer (`OpenChatLink`) |
 | `IconCache.{h,cpp}` / `IconUrl.{h,cpp}` | no / yes | URL -> texture via Nexus `Textures_*FromURL`, failure set (retryable); FNV-1a key, URL split |
+| `Reset.{h,cpp}` | yes | GW2 daily/weekly reset times (UTC), countdown text |
 | `I18n.{h,cpp}` | yes | English -> German UI string table, `Tr` / `TrN`, current language |
 | `FontScale.{h,cpp}` | no | Scaled text without stretching the small font: `SetFontBase`, `FontScaleScope` |
 | `Theme.{h,cpp}` | no | Accent palette (gold border, green/amber buttons, edit tint) |
@@ -50,6 +51,11 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 - Optional side-by-side live preview, persisted in `settings.json`.
 - Note list width: splitter between list and note (drag, double-click resets to 200 px),
   `list_width` in `settings.json`, clamped only when drawn. Clipped titles show a tooltip.
+- Note types Note/Daily/Weekly (`Note::type`, `Note::resetStamp` = last reset applied, both in
+  notes.json + export). `Reset.{h,cpp}` (pure): last/next daily (00:00 UTC) and weekly
+  (Mon 07:30 UTC) resets -- Nexus has no reset API. `NotesStore::ApplyResets(now, skipId)` runs
+  every frame in `Render()` and skips the note open in the editor. `SetType` starts counting at
+  the latest reset, so current ticks stay until the next one. List badge D/W + countdown tooltip.
 - Group name colour: addon-wide `color_group_name` (Theme::UserColors, default = border) and per
   group `Group::hasColor/color` (notes.json + export, `null` = default; import keeps local colour of
   existing groups). Resolution in `NotesWindow::groupColor_`.

@@ -144,6 +144,8 @@ private:
     // Popups that must open in the window scope are reported through the out params.
     bool renderGroupHeader_(Magpie::Group& group, bool& openNameModal, bool& openDeleteModal,
                             bool& openColorModal, std::string& createInGroup);
+    // "Type" submenu (Note / Daily / Weekly) for a note's context menus.
+    void typeMenu_(const std::string& noteId);
     // A group's name colour: its own, else the addon-wide group colour, else the border.
     ImVec4 groupColor_(const Magpie::Group& group) const;
     void   renderGroupColorModal_();

@@ -7,6 +7,7 @@
 #include "ChipCodec.h"
 #include "IconUrl.h"
 #include "I18n.h"
+#include "Reset.h"
 #include <set>
 #include <vector>
 #include "ChipColor.h"
@@ -526,6 +527,101 @@ static void test_group_color_persists_and_travels()
     src.Create("B", gid);
     local.ImportJson(src.ExportJson());
     CHECK(!local.GetGroup(gid)->hasColor);
+}
+
+// ── Reset times / types ────────────────────────────────────────────────────────
+
+static void test_reset_times()
+{
+    using namespace Magpie::Reset;
+    // 2026-10-29 (Thursday) 12:00:00 UTC
+    const int64_t thu = 1793275200;
+    CHECK_EQ(LastDaily(thu), (int64_t)1793232000);              // 2026-10-29 00:00 UTC
+    CHECK_EQ(NextDaily(thu), (int64_t)1793318400);              // 2026-10-30 00:00 UTC
+    CHECK_EQ(LastWeekly(thu), (int64_t)1792999800);             // Mon 2026-10-26 07:30 UTC
+    CHECK_EQ(NextWeekly(thu), (int64_t)1793604600);             // Mon 2026-11-02 07:30 UTC
+    // Exactly at a reset: that reset counts as "last".
+    CHECK_EQ(LastWeekly(1792999800), (int64_t)1792999800);
+    CHECK_EQ(LastDaily(1793232000), (int64_t)1793232000);
+    // Monday before 07:30 UTC still belongs to the previous week.
+    CHECK_EQ(LastWeekly(1792999800 - 60), (int64_t)(1792999800 - 7 * 86400));
+
+    CHECK_EQ(FormatCountdown(30), std::string("<1m"));
+    CHECK_EQ(FormatCountdown(12 * 60), std::string("12m"));
+    CHECK_EQ(FormatCountdown(3 * 3600 + 12 * 60), std::string("3h 12m"));
+    CHECK_EQ(FormatCountdown(2 * 86400 + 5 * 3600 + 59), std::string("2d 5h"));
+}
+
+static void test_daily_note_resets_after_reset_only()
+{
+    const int64_t thu = 1793275200;                 // Thu 12:00 UTC
+    Magpie::NotesStore store;
+    Magpie::Note& n = store.Create("Dailies");
+    n.body = "- [x] a\n- [ ] b";
+    const std::string id = n.id;
+    CHECK(store.SetType(id, Magpie::NoteType::Daily, thu));
+
+    CHECK_EQ(store.ApplyResets(thu + 3600), 0);      // same day: ticks stay
+    CHECK_EQ(store.Get(id)->body, std::string("- [x] a\n- [ ] b"));
+
+    CHECK_EQ(store.ApplyResets(thu + 13 * 3600), 1); // past 00:00 UTC
+    CHECK_EQ(store.Get(id)->body, std::string("- [ ] a\n- [ ] b"));
+    store.Get(id)->body = "- [x] a\n- [ ] b";
+    CHECK_EQ(store.ApplyResets(thu + 14 * 3600), 0); // only once per reset
+
+    // Several days offline -> still a single reset.
+    CHECK_EQ(store.ApplyResets(thu + 5 * 86400), 1);
+    CHECK_EQ(store.Get(id)->body, std::string("- [ ] a\n- [ ] b"));
+}
+
+static void test_weekly_and_plain_notes()
+{
+    const int64_t thu = 1793275200;
+    Magpie::NotesStore store;
+    Magpie::Note& w = store.Create("Weekly");
+    w.body = "- [x] raid";
+    const std::string wid = w.id;
+    Magpie::Note& p = store.Create("Plain");
+    p.body = "- [x] keep";
+    const std::string pid = p.id;
+    store.SetType(wid, Magpie::NoteType::Weekly, thu);
+
+    CHECK_EQ(store.ApplyResets(thu + 2 * 86400), 0);         // Sat: no weekly reset yet
+    CHECK_EQ(store.ApplyResets(1793604600 + 1), 1);          // after Mon 07:30 UTC
+    CHECK_EQ(store.Get(wid)->body, std::string("- [ ] raid"));
+    CHECK_EQ(store.Get(pid)->body, std::string("- [x] keep"));   // plain notes never reset
+}
+
+static void test_reset_skips_note_in_editor()
+{
+    const int64_t thu = 1793275200;
+    Magpie::NotesStore store;
+    Magpie::Note& n = store.Create("D");
+    n.body = "- [x] a";
+    const std::string id = n.id;
+    store.SetType(id, Magpie::NoteType::Daily, thu);
+    CHECK_EQ(store.ApplyResets(thu + 86400, id), 0);   // open in the editor
+    CHECK_EQ(store.ApplyResets(thu + 86400), 1);        // reset once the edit ended
+}
+
+static void test_type_persists_and_travels()
+{
+    const int64_t thu = 1793275200;
+    Magpie::NotesStore src;
+    const std::string id = src.Create("D").id;
+    src.SetType(id, Magpie::NoteType::Weekly, thu);
+
+    Magpie::NotesStore loaded;
+    CHECK(loaded.FromJson(src.ToJson()));
+    CHECK(loaded.Get(id)->type == Magpie::NoteType::Weekly);
+    CHECK_EQ(loaded.Get(id)->resetStamp, src.Get(id)->resetStamp);
+
+    Magpie::NotesStore imported;
+    imported.ImportJson(src.ExportJson());
+    CHECK(imported.Get(id)->type == Magpie::NoteType::Weekly);
+    CHECK_EQ(imported.Get(id)->resetStamp, src.Get(id)->resetStamp);
+
+    CHECK(Magpie::NoteTypeFromKey("bogus") == Magpie::NoteType::Note);
 }
 
 static void test_delete_many()
@@ -1399,6 +1495,11 @@ int main()
     test_export_single_note_and_group();
     test_import_v1_export_without_groups();
     test_group_color_persists_and_travels();
+    test_reset_times();
+    test_daily_note_resets_after_reset_only();
+    test_weekly_and_plain_notes();
+    test_reset_skips_note_in_editor();
+    test_type_persists_and_travels();
     test_delete_many();
     test_i18n_lookup_and_fallback();
     test_i18n_table_is_consistent();
