@@ -12,6 +12,9 @@
 #include "Settings.h"
 #include "Backup.h"
 #include "events/EventData.h"
+#include "Events.h"
+#include <cstdlib>
+#include <ctime>
 #include <filesystem>
 #include <set>
 #include <vector>
@@ -847,6 +850,142 @@ static void test_event_data()
         CHECK_EQ((int)ds->starts[11], 1410);
         CHECK_EQ((int)ds->durations[11], 120);
     }
+}
+
+// ── Event schedule maths (Events.h) ────────────────────────────────────────────
+
+static const int64_t kOct29 = 1793232000;   // 2026-10-29 00:00 UTC
+
+static void test_events_lookup()
+{
+    using namespace Magpie::Events;
+    using Magpie::I18n::Lang;
+    CHECK(Find("nope") == nullptr);
+    const EventDef* teq = Find("tequatl-the-sunless");
+    CHECK(teq != nullptr);
+    if (teq == nullptr) return;
+    CHECK_EQ(std::string(Name(*teq, Lang::En)), std::string("Tequatl the Sunless"));
+    CHECK_EQ(std::string(Name(*teq, Lang::De)), std::string("Tequatl der Sonnenlose"));
+    CHECK_EQ(std::string(Map(*teq, Lang::En)), std::string("Sparkfly Fen"));
+    CHECK_EQ(std::string(CategoryName(teq->category, Lang::De)), std::string("Zentraltyria"));
+    CHECK_EQ(std::string(CategoryName(255, Lang::En)), std::string(""));
+
+    // No German name: English in both languages; expansion categories stay untranslated.
+    const EventDef* storm = Find("dragonstorm");
+    CHECK(storm != nullptr);
+    if (storm != nullptr) CHECK_EQ(std::string(Name(*storm, Lang::De)), std::string("Dragonstorm"));
+    const EventDef* ds = Find("dragons-stand");
+    CHECK(ds != nullptr);
+    if (ds != nullptr) CHECK_EQ(std::string(CategoryName(ds->category, Lang::De)), std::string("Heart of Thorns"));
+}
+
+static void test_events_state()
+{
+    using namespace Magpie::Events;
+    const EventDef* teq = Find("tequatl-the-sunless");   // 00:00 03:00 07:00 11:30 16:00 19:00, 30 min
+    const EventDef* ds  = Find("dragons-stand");         // every 2 h from 01:30, 120 min
+    const EventDef* tt  = Find("triple-trouble");        // 01:00 04:00 08:00 12:30 17:00 20:00
+    CHECK(teq != nullptr && ds != nullptr && tt != nullptr);
+    if (teq == nullptr || ds == nullptr || tt == nullptr) return;
+
+    // Running window edges: [start, start + duration).
+    Status s = State(*teq, kOct29);
+    CHECK(s.active && s.start == kOct29 && s.end == kOct29 + 1800);
+    s = State(*teq, kOct29 + 1799);
+    CHECK(s.active && s.start == kOct29);
+    s = State(*teq, kOct29 + 1800);
+    CHECK(!s.active && s.start == kOct29 + 3 * 3600);
+
+    // Day wrap: one second before midnight, the next start is 00:00 of the next day.
+    s = State(*teq, kOct29 - 1);
+    CHECK(!s.active && s.start == kOct29);
+
+    // Crossing midnight: Dragon's Stand from 23:30 runs until 01:30, then starts again.
+    s = State(*ds, kOct29 + 15 * 60);
+    CHECK(s.active && s.start == kOct29 - 1800 && s.end == kOct29 + 5400);
+    s = State(*ds, kOct29 + 5400);
+    CHECK(s.active && s.start == kOct29 + 5400);
+
+    s = State(*tt, kOct29);
+    CHECK(!s.active && s.start == kOct29 + 3600);
+
+    std::vector<int64_t> next = NextStarts(*teq, kOct29 + 3600, 3);
+    CHECK_EQ(next.size(), (size_t)3);
+    if (next.size() == 3) {
+        CHECK_EQ(next[0], kOct29 + 3 * 3600);
+        CHECK_EQ(next[1], kOct29 + 7 * 3600);
+        CHECK_EQ(next[2], kOct29 + 11 * 3600 + 1800);
+    }
+    next = NextStarts(*teq, kOct29 + 19 * 3600, 2);   // exactly at the last start of the day
+    CHECK(next.size() == 2 && next[0] == kOct29 + 86400 && next[1] == kOct29 + 86400 + 3 * 3600);
+    CHECK(NextStarts(*teq, kOct29, 0).empty());
+}
+
+#ifndef _WIN32
+// Daylight saving: the maths is UTC only, so a DST time zone gives the same results around
+// both 2026 switches (EU: 29 Mar and 25 Oct, 01:00 UTC).
+static void test_events_ignore_time_zone()
+{
+    using namespace Magpie::Events;
+    const EventDef* teq = Find("tequatl-the-sunless");
+    CHECK(teq != nullptr);
+    if (teq == nullptr) return;
+    const int64_t mar29 = kOct29 - 214 * 86400;   // 2026-03-29 00:00 UTC
+    const int64_t oct25 = kOct29 - 4 * 86400;     // 2026-10-25 00:00 UTC
+    const int64_t probes[] = { mar29 + 3600 - 1, mar29 + 3600, mar29 + 2 * 3600,
+                               oct25 + 3600 - 1, oct25 + 3600, oct25 + 2 * 3600 };
+
+    const char* old = std::getenv("TZ");
+    const std::string saved = old != nullptr ? old : "";
+    std::vector<int64_t> results[2];
+    const char* zones[] = { "UTC", "Europe/Berlin" };
+    for (int z = 0; z < 2; ++z) {
+        setenv("TZ", zones[z], 1);
+        tzset();
+        for (int64_t p : probes) {
+            const Status st = State(*teq, p);
+            results[z].push_back(st.start);
+            results[z].push_back(NextStarts(*teq, p, 1)[0]);
+        }
+    }
+    if (old != nullptr) setenv("TZ", saved.c_str(), 1); else unsetenv("TZ");
+    tzset();
+
+    CHECK(results[0] == results[1]);
+    CHECK_EQ(NextStarts(*teq, mar29 + 3600, 1)[0], mar29 + 3 * 3600);   // 03:00 UTC as always
+    CHECK_EQ(NextStarts(*teq, oct25 + 3600, 1)[0], oct25 + 3 * 3600);
+}
+#endif
+
+static void test_events_search_and_format()
+{
+    using namespace Magpie::Events;
+    using Magpie::I18n::Lang;
+    auto has = [](const std::vector<const EventDef*>& v, const char* id) {
+        for (const EventDef* e : v) if (std::string(e->id) == id) return true;
+        return false;
+    };
+    CHECK(has(Search("teq"), "tequatl-the-sunless"));
+    CHECK(has(Search("SONNENLOSE"), "tequatl-the-sunless"));             // German name, any case
+    CHECK(has(Search("FUNKENSCHWÄRMERSUMPF"), "tequatl-the-sunless"));   // German map, umlaut folded
+    CHECK(has(Search("dragons-stand"), "dragons-stand"));                // id
+    CHECK_EQ(Search("").size(), kEventCount);
+    CHECK(Search("zzzz-no-such-event").empty());
+
+    const Lang before = Magpie::I18n::Current();
+    Magpie::I18n::SetLang(Lang::En);
+    CHECK_EQ(FormatTime(45, false), std::string("in 45 s"));
+    CHECK_EQ(FormatTime(23 * 60 + 59, false), std::string("in 23 min"));
+    CHECK_EQ(FormatTime(83 * 60, false), std::string("in 1 h 23 min"));
+    CHECK_EQ(FormatTime(2 * 3600, false), std::string("in 2 h"));
+    CHECK_EQ(FormatTime(4 * 60 + 30, true), std::string("for 4 min"));
+    CHECK_EQ(FormatTime(-5, false), std::string("in 0 s"));
+    Magpie::I18n::SetLang(Lang::De);
+    CHECK_EQ(FormatTime(23 * 60, false), std::string("in 23 Min"));
+    CHECK_EQ(FormatTime(4 * 60, true), std::string("seit 4 Min"));
+    CHECK_EQ(FormatTime(83 * 60, false), std::string("in 1 Std 23 Min"));
+    CHECK_EQ(FormatTime(45, true), std::string("seit 45 s"));
+    Magpie::I18n::SetLang(before);
 }
 
 static void test_delete_many()
@@ -1731,6 +1870,12 @@ int main()
     test_settings_themes();
     test_backup();
     test_event_data();
+    test_events_lookup();
+    test_events_state();
+#ifndef _WIN32
+    test_events_ignore_time_zone();
+#endif
+    test_events_search_and_format();
     test_delete_many();
     test_i18n_lookup_and_fallback();
     test_i18n_table_is_consistent();

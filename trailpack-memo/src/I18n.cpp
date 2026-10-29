@@ -297,6 +297,16 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Menu button",                       "Menü-Knopf" },
     { "Menu icon",                         "Menü-Symbol" },
     { "Theme",                             "Theme" },
+
+    // ── Events (chip times) ───────────────────────────────────────────────
+    { "in %d s",                           "in %d s" },
+    { "in %d min",                         "in %d Min" },
+    { "in %d h",                           "in %d Std" },
+    { "in %d h %d min",                    "in %d Std %d Min" },
+    { "for %d s",                          "seit %d s" },
+    { "for %d min",                        "seit %d Min" },
+    { "for %d h",                          "seit %d Std" },
+    { "for %d h %d min",                   "seit %d Std %d Min" },
     { "Save as theme",                     "Als Theme speichern" },
     { "Default (Nexus)",                   "Standard (Nexus)" },
     { "Light",                             "Hell" },
