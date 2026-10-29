@@ -9,7 +9,7 @@
 #include <utility>
 #include <vector>
 
-namespace Magpie { namespace I18n {
+namespace Trailpack { namespace I18n {
 
 enum class Lang { En, De };
 
@@ -26,4 +26,4 @@ const char* TrN(long long n, const char* one, const char* many);
 // The full English -> German table (for tests).
 const std::vector<std::pair<const char*, const char*>>& GermanTable();
 
-}} // namespace Magpie::I18n
+}} // namespace Trailpack::I18n

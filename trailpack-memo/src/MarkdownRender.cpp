@@ -20,10 +20,10 @@
 #include <vector>
 
 #include "imgui.h"
-#include "ChipRich.h"   // Magpie::DrawRichChip / MeasureRichChip (Task 13)
-#include "EventChip.h"  // Magpie::DrawEventChip / MeasureEventChip (event timers)
+#include "ChipRich.h"   // Trailpack::DrawRichChip / MeasureRichChip (Task 13)
+#include "EventChip.h"  // Trailpack::DrawEventChip / MeasureEventChip (event timers)
 
-namespace Magpie {
+namespace Trailpack {
 
 namespace {
 
@@ -270,4 +270,4 @@ int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wr
     return clickedTask;
 }
 
-} // namespace Magpie
+} // namespace Trailpack

@@ -12,7 +12,7 @@
 #include "I18n.h"
 #include "Theme.h"
 
-namespace Magpie {
+namespace Trailpack {
 
 using I18n::Tr;
 
@@ -216,4 +216,4 @@ float DrawEventChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& 
     return width;
 }
 
-} // namespace Magpie
+} // namespace Trailpack

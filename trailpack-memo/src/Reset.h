@@ -9,7 +9,7 @@
 #include <cstdint>
 #include <string>
 
-namespace Magpie { namespace Reset {
+namespace Trailpack { namespace Reset {
 
 // The most recent reset at or before `now`.
 int64_t LastDaily(int64_t now);
@@ -22,4 +22,4 @@ int64_t NextWeekly(int64_t now);
 // Compact countdown for `seconds` (>= 0): "2d 5h", "3h 12m", "12m", "<1m".
 std::string FormatCountdown(int64_t seconds);
 
-}} // namespace Magpie::Reset
+}} // namespace Trailpack::Reset

@@ -1,7 +1,7 @@
 // Reset.cpp — see Reset.h.
 #include "Reset.h"
 
-namespace Magpie { namespace Reset {
+namespace Trailpack { namespace Reset {
 
 static const int64_t kDay        = 24 * 60 * 60;
 static const int64_t kWeek       = 7 * kDay;
@@ -47,4 +47,4 @@ std::string FormatCountdown(int64_t seconds)
     return std::to_string(m) + "m";
 }
 
-}} // namespace Magpie::Reset
+}} // namespace Trailpack::Reset

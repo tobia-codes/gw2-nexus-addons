@@ -12,7 +12,7 @@
 #include "I18n.h"
 #include "NotesUi.h"
 
-using Magpie::I18n::Tr;
+using Trailpack::I18n::Tr;
 using namespace NotesUi;
 
 // Hamburger icon drawn with lines over the last item: Nexus's font has no symbol
@@ -114,7 +114,7 @@ float NotesWindow::renderListColumn_()
     for (const auto& g : store_.Groups()) groupIds.push_back(g.id);
     bool firstGroup = true;
     for (const auto& gid : groupIds) {
-        Magpie::Group* group = store_.GetGroup(gid);
+        Trailpack::Group* group = store_.GetGroup(gid);
         if (group == nullptr) continue;
         if (!firstGroup) GroupGap();
         firstGroup = false;
@@ -125,7 +125,7 @@ float NotesWindow::renderListColumn_()
 
     // Ungrouped notes follow the groups without a heading.
     const bool anyUngrouped = std::any_of(notes.begin(), notes.end(),
-        [](const Magpie::Note& n) { return n.groupId.empty(); });
+        [](const Trailpack::Note& n) { return n.groupId.empty(); });
     if (!groupIds.empty() && anyUngrouped) GroupGap();
     for (const auto& note : notes)
         if (note.groupId.empty()) renderNoteRow_(note, 0.0f);
@@ -243,7 +243,7 @@ void NotesWindow::renderSplitter_(float listWidth)
 
 // ── Rows ──────────────────────────────────────────────────────────────────
 
-void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
+void NotesWindow::renderNoteRow_(const Trailpack::Note& note, float indent)
 {
     const bool selected = (note.id == selectedId_);
     // Title drawn manually (shortened with "...") so a task-progress count can sit right-aligned
@@ -299,7 +299,7 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
     ImDrawList* dl = ImGui::GetWindowDrawList();
     char progress[24] = "";
     float progressW = 0.0f;
-    const Magpie::Md::TaskCount tc = taskCount_(note);
+    const Trailpack::Md::TaskCount tc = taskCount_(note);
     if (tc.total > 0) {
         snprintf(progress, sizeof progress, "%d/%d", tc.done, tc.total);
         progressW = ImGui::CalcTextSize(progress).x;
@@ -332,7 +332,7 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
     RowGap();
 }
 
-ImVec4 NotesWindow::groupColor_(const Magpie::Group& group) const
+ImVec4 NotesWindow::groupColor_(const Trailpack::Group& group) const
 {
     if (group.hasColor)
         return ImVec4(group.color[0], group.color[1], group.color[2], group.color[3]);
@@ -340,7 +340,7 @@ ImVec4 NotesWindow::groupColor_(const Magpie::Group& group) const
     return c.hasGroupName ? c.groupName : c.border;
 }
 
-bool NotesWindow::renderGroupHeader_(Magpie::Group& group)
+bool NotesWindow::renderGroupHeader_(Trailpack::Group& group)
 {
     ImGui::PushID(group.id.c_str());
     ImVec2 rowPos;
@@ -404,7 +404,7 @@ bool NotesWindow::renderGroupHeader_(Magpie::Group& group)
                               ImVec2(c.x, c.y + r), col);
 
     const int count = (int)std::count_if(store_.Notes().begin(), store_.Notes().end(),
-        [&](const Magpie::Note& n) { return n.groupId == group.id; });
+        [&](const Trailpack::Note& n) { return n.groupId == group.id; });
     char countText[16];
     snprintf(countText, sizeof countText, "%d", count);
     const float countW = ImGui::CalcTextSize(countText).x;
@@ -426,11 +426,11 @@ bool NotesWindow::renderGroupHeader_(Magpie::Group& group)
 
 void NotesWindow::typeMenu_(const std::string& noteId)
 {
-    const Magpie::Note* n = store_.Get(noteId);
+    const Trailpack::Note* n = store_.Get(noteId);
     if (n == nullptr || !ImGui::BeginMenu(Tr("Type"))) return;
-    const Magpie::NoteType types[] = { Magpie::NoteType::Note, Magpie::NoteType::Daily,
-                                       Magpie::NoteType::Weekly };
-    for (Magpie::NoteType t : types) {
+    const Trailpack::NoteType types[] = { Trailpack::NoteType::Note, Trailpack::NoteType::Daily,
+                                       Trailpack::NoteType::Weekly };
+    for (Trailpack::NoteType t : types) {
         if (ImGui::MenuItem(TypeName(t), nullptr, n->type == t) &&
             store_.SetType(noteId, t, (int64_t)std::time(nullptr)))
             Save();

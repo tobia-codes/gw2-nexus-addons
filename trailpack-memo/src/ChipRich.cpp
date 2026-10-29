@@ -21,17 +21,17 @@
 #include <cstring>  // strlen
 #include <string>
 
-#include "ChipResolver.h"            // Magpie::ResolveChip (structural label)
-#include "ChipColor.h"               // Magpie::ChipColor (native GW2 chip colours)
-#include "DecoderClient.h"           // Magpie::Decoder::Present / Resolve
-#include "PieUiClient.h"             // Magpie::PieUi::Present / OpenChatLink
+#include "ChipResolver.h"            // Trailpack::ResolveChip (structural label)
+#include "ChipColor.h"               // Trailpack::ChipColor (native GW2 chip colours)
+#include "DecoderClient.h"           // Trailpack::Decoder::Present / Resolve
+#include "PieUiClient.h"             // Trailpack::PieUi::Present / OpenChatLink
 #include "DecoderRingApi.h"          // DecoderRecord + enums (rarity)
-#include "IconCache.h"               // Magpie::Icons::RequestUrl / Get
+#include "IconCache.h"               // Trailpack::Icons::RequestUrl / Get
 #include "chat/ChatLinks.h"          // SegmentLine -> (linkType, id)
 #include "I18n.h"                    // Tr
 #include "Theme.h"                   // PopupTextScope (popups ignore the note text colour)
 
-namespace Magpie {
+namespace Trailpack {
 
 namespace {
 
@@ -58,12 +58,12 @@ bool LinkKey(const std::string& code, uint8_t& linkType, uint32_t& id)
 const char* PieUiActionLabel(uint8_t linkType)
 {
     switch (linkType) {
-        case PieUI::ChatLinks::LINK_MAP:           return Magpie::I18n::Tr("Open map in Pie UI");
-        case PieUI::ChatLinks::LINK_WARDROBE_TMPL: return Magpie::I18n::Tr("Open wardrobe template in Pie UI");
-        case PieUI::ChatLinks::LINK_BUILD:         return Magpie::I18n::Tr("Open build in Pie UI");
+        case PieUI::ChatLinks::LINK_MAP:           return Trailpack::I18n::Tr("Open map in Pie UI");
+        case PieUI::ChatLinks::LINK_WARDROBE_TMPL: return Trailpack::I18n::Tr("Open wardrobe template in Pie UI");
+        case PieUI::ChatLinks::LINK_BUILD:         return Trailpack::I18n::Tr("Open build in Pie UI");
         case PieUI::ChatLinks::LINK_ITEM:
         case PieUI::ChatLinks::LINK_SKIN:
-        case PieUI::ChatLinks::LINK_OUTFIT:        return Magpie::I18n::Tr("Preview in Pie UI");
+        case PieUI::ChatLinks::LINK_OUTFIT:        return Trailpack::I18n::Tr("Preview in Pie UI");
         default:                                   return "";
     }
 }
@@ -82,7 +82,7 @@ ChipState Resolve(const std::string& code)
 {
     ChipState st;
     // Structural label is the offline fallback (works with no Decoder Ring).
-    const ChipView structural = Magpie::ResolveChip(code);
+    const ChipView structural = Trailpack::ResolveChip(code);
     st.label = structural.label.empty() ? "[link]" : structural.label;
 
     uint8_t linkType = 0; uint32_t id = 0;
@@ -92,9 +92,9 @@ ChipState Resolve(const std::string& code)
     // (-> Basic colour) so cold/absent items still render in a sensible colour.
     uint8_t rarity = DR_RarityUnknown;
 
-    if (haveKey && Magpie::Decoder::Present()) {
+    if (haveKey && Trailpack::Decoder::Present()) {
         DecoderRecord rec{};
-        if (Magpie::Decoder::Resolve(linkType, id, code.c_str(), rec) && rec.name[0] != '\0') {
+        if (Trailpack::Decoder::Resolve(linkType, id, code.c_str(), rec) && rec.name[0] != '\0') {
             st.warm = true;
             st.rec  = rec;
             std::string name(rec.name);
@@ -154,10 +154,10 @@ void AppendCoin(std::string& out, int32_t copper)
 const char* BoundText(uint8_t bound)
 {
     switch (bound) {
-        case DB_AccountOnAcquire: return Magpie::I18n::Tr("Account Bound on Acquire");
-        case DB_SoulOnAcquire:    return Magpie::I18n::Tr("Soulbound on Acquire");
-        case DB_AccountOnUse:     return Magpie::I18n::Tr("Account Bound on Use");
-        case DB_SoulOnUse:        return Magpie::I18n::Tr("Soulbound on Use");
+        case DB_AccountOnAcquire: return Trailpack::I18n::Tr("Account Bound on Acquire");
+        case DB_SoulOnAcquire:    return Trailpack::I18n::Tr("Soulbound on Acquire");
+        case DB_AccountOnUse:     return Trailpack::I18n::Tr("Account Bound on Use");
+        case DB_SoulOnUse:        return Trailpack::I18n::Tr("Soulbound on Use");
         default:                  return nullptr;
     }
 }
@@ -178,7 +178,7 @@ void EmitFacts(const DecoderRecord& rec)
 // but no pasted chat link), and the upgrade section is simply skipped.
 void EmitItemPanel(const DecoderRecord& rec, const std::string& code)
 {
-    const char* nm = rec.name[0] ? rec.name : Magpie::I18n::Tr("(unnamed)");
+    const char* nm = rec.name[0] ? rec.name : Trailpack::I18n::Tr("(unnamed)");
     // Rarity-coloured header so the panel matches the chip colour.
     ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(ChipColorForItemRarity(rec.rarity)),
                        "%s", nm);
@@ -194,13 +194,13 @@ void EmitItemPanel(const DecoderRecord& rec, const std::string& code)
     // Vendor value + bind/trade flags. DR deliberately keeps these OUT of
     // facts[], so there is no duplication with the stat lines above.
     ImGui::Separator();
-    std::string v = Magpie::I18n::Tr("Vendor: ");
+    std::string v = Trailpack::I18n::Tr("Vendor: ");
     AppendCoin(v, rec.vendorValue);
     ImGui::TextUnformatted(v.c_str());
     if (const char* b = BoundText(rec.bound)) ImGui::TextUnformatted(b);
-    ImGui::TextUnformatted(rec.tradeable ? Magpie::I18n::Tr("Tradeable on the Trading Post")
-                                         : Magpie::I18n::Tr("Not tradeable"));
-    if (rec.noSell) ImGui::TextUnformatted(Magpie::I18n::Tr("Cannot be sold to a vendor"));
+    ImGui::TextUnformatted(rec.tradeable ? Trailpack::I18n::Tr("Tradeable on the Trading Post")
+                                         : Trailpack::I18n::Tr("Not tradeable"));
+    if (rec.noSell) ImGui::TextUnformatted(Trailpack::I18n::Tr("Cannot be sold to a vendor"));
 
     // Rune / sigil set bonuses live on the UPGRADE item's own record (DR
     // keeps records flat), so decode the chip's upgrade ids and resolve
@@ -213,10 +213,10 @@ void EmitItemPanel(const DecoderRecord& rec, const std::string& code)
         for (uint32_t uid : ups) {
             if (uid == 0) continue;
             DecoderRecord up{};
-            if (Magpie::Decoder::Resolve(PieUI::ChatLinks::LINK_ITEM, uid, nullptr, up)) {
+            if (Trailpack::Decoder::Resolve(PieUI::ChatLinks::LINK_ITEM, uid, nullptr, up)) {
                 if (!header) {
                     ImGui::Separator();
-                    ImGui::TextUnformatted(Magpie::I18n::Tr("Upgrades:"));
+                    ImGui::TextUnformatted(Trailpack::I18n::Tr("Upgrades:"));
                     header = true;
                 }
                 if (up.name[0]) ImGui::TextUnformatted(up.name);
@@ -244,7 +244,7 @@ void TooltipWarm(const DecoderRecord& rec, const std::string& code)
         return;
     }
 
-    const char* nm = rec.name[0] ? rec.name : Magpie::I18n::Tr("(unnamed)");
+    const char* nm = rec.name[0] ? rec.name : Trailpack::I18n::Tr("(unnamed)");
     ImGui::TextUnformatted(nm);
 
     switch (rec.linkType) {
@@ -264,7 +264,7 @@ void TooltipWarm(const DecoderRecord& rec, const std::string& code)
         case 0x04: {  // waypoint / PoI
             if (rec.mapName[0]) {
                 ImGui::Separator();
-                std::string m = Magpie::I18n::Tr("Map: ");
+                std::string m = Trailpack::I18n::Tr("Map: ");
                 m += rec.mapName;
                 ImGui::TextUnformatted(m.c_str());
             }
@@ -292,7 +292,7 @@ void TooltipWarm(const DecoderRecord& rec, const std::string& code)
             // warm output fills on a later frame via the RESOLVED event.
             if (rec.vendorValue > 0) {
                 DecoderRecord out{};
-                if (Magpie::Decoder::Resolve(PieUI::ChatLinks::LINK_ITEM,
+                if (Trailpack::Decoder::Resolve(PieUI::ChatLinks::LINK_ITEM,
                                              (uint32_t)rec.vendorValue, nullptr, out)
                     && out.name[0]) {
                     ImGui::Separator();
@@ -328,8 +328,8 @@ static float ComputeWidth(ImFont* font, float fontSize, const ChipState& st, boo
     // may briefly disagree with the draw on the single frame an icon finishes
     // loading — harmless (only affects a wrap decision, never correctness).
     if (withIcon && st.warm && st.rec.iconUrl[0]) {
-        Magpie::Icons::RequestUrl(st.rec.iconUrl);
-        if (Magpie::Icons::Get(st.rec.iconUrl) != nullptr) w += fontSize + kIconGap;
+        Trailpack::Icons::RequestUrl(st.rec.iconUrl);
+        if (Trailpack::Icons::Get(st.rec.iconUrl) != nullptr) w += fontSize + kIconGap;
     }
     w += font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, st.label.c_str()).x;
     return w;
@@ -357,7 +357,7 @@ float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& p
 
     // Optional inline icon (square, fontSize x fontSize) — only when warm + ready.
     if (done == nullptr && st.warm && st.rec.iconUrl[0]) {
-        Texture_t* tex = Magpie::Icons::Get(st.rec.iconUrl);  // never null Resource
+        Texture_t* tex = Trailpack::Icons::Get(st.rec.iconUrl);  // never null Resource
         if (tex != nullptr) {
             const ImVec2 iMin(penX, pos.y);
             const ImVec2 iMax(penX + fontSize, pos.y + fontSize);
@@ -386,7 +386,7 @@ float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& p
     // chat code, which Pie UI decodes itself — no Decoder Ring required.
     uint8_t pieType = 0; uint32_t pieId = 0;
     const char* pieLabel =
-        (done == nullptr && LinkKey(code, pieType, pieId) && Magpie::PieUi::Present())
+        (done == nullptr && LinkKey(code, pieType, pieId) && Trailpack::PieUi::Present())
             ? PieUiActionLabel(pieType) : "";
     const bool offerPie = pieLabel[0] != '\0';
 
@@ -401,19 +401,19 @@ float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& p
             } else {
                 ImGui::TextUnformatted(st.label.c_str());
                 ImGui::Separator();
-                ImGui::TextUnformatted(Magpie::I18n::Tr("Decoder Ring not loaded."));
-                ImGui::TextUnformatted(Magpie::I18n::Tr("Right-click to copy the code or open the wiki."));
+                ImGui::TextUnformatted(Trailpack::I18n::Tr("Decoder Ring not loaded."));
+                ImGui::TextUnformatted(Trailpack::I18n::Tr("Right-click to copy the code or open the wiki."));
             }
             // Discoverability for the Pie UI action (supported types, Pie UI present).
             if (offerPie) {
                 ImGui::Separator();
-                ImGui::Text(Magpie::I18n::Tr("Left-click: %s"), pieLabel);
+                ImGui::Text(Trailpack::I18n::Tr("Left-click: %s"), pieLabel);
             }
             ImGui::EndTooltip();
         }
         // Left-click a supported chip -> ask Pie UI to perform its native action.
         if (offerPie && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            Magpie::PieUi::OpenChatLink(code);
+            Trailpack::PieUi::OpenChatLink(code);
         }
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
             ImGui::OpenPopup(pid);
@@ -424,13 +424,13 @@ float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& p
     // Decoder Ring present. Begun every frame in this window scope.
     Theme::PopupTextScope popupText;
     if (ImGui::BeginPopup(pid)) {
-        if (ImGui::MenuItem(Magpie::I18n::Tr("Copy chat code"))) ImGui::SetClipboardText(code.c_str());
-        if (ImGui::MenuItem(Magpie::I18n::Tr("Open in wiki")))   OpenWiki(code);
-        if (offerPie && ImGui::MenuItem(pieLabel)) Magpie::PieUi::OpenChatLink(code);
+        if (ImGui::MenuItem(Trailpack::I18n::Tr("Copy chat code"))) ImGui::SetClipboardText(code.c_str());
+        if (ImGui::MenuItem(Trailpack::I18n::Tr("Open in wiki")))   OpenWiki(code);
+        if (offerPie && ImGui::MenuItem(pieLabel)) Trailpack::PieUi::OpenChatLink(code);
         ImGui::EndPopup();
     }
 
     return width;
 }
 
-} // namespace Magpie
+} // namespace Trailpack

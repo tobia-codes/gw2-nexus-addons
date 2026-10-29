@@ -14,7 +14,7 @@
 #include "EventPicker.h"
 #include "Events.h"
 
-using Magpie::I18n::Tr;
+using Trailpack::I18n::Tr;
 using namespace NotesUi;
 
 void NotesWindow::renderDetailPane_()
@@ -31,13 +31,13 @@ void NotesWindow::renderDetailPane_()
         ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
     }
 
-    Magpie::Note* note = selectedId_.empty() ? nullptr : store_.Get(selectedId_);
+    Trailpack::Note* note = selectedId_.empty() ? nullptr : store_.Get(selectedId_);
     if (note == nullptr) {
-        // Empty state — light magpie flavour.
+        // Empty state.
         ImGui::Spacing();
         const ImVec4 hint = Dimmed(NoteTextColor());
-        ImGui::TextColored(hint, "%s", Tr("Your nest is empty."));
-        ImGui::TextColored(hint, "%s", Tr("Click 'Create New Note' to start collecting."));
+        ImGui::TextColored(hint, "%s", Tr("No notes yet."));
+        ImGui::TextColored(hint, "%s", Tr("Click 'Create New Note' to start."));
     } else if (mode_ == Mode::Edit) {
         renderEditMode_(*note);
     } else {
@@ -48,7 +48,7 @@ void NotesWindow::renderDetailPane_()
     ImGui::EndChild();
 }
 
-void NotesWindow::renderEditMode_(Magpie::Note& note)
+void NotesWindow::renderEditMode_(Trailpack::Note& note)
 {
     // Save / Cancel on the left, Delete on the far right.
     Theme::PushGreenButton();
@@ -91,7 +91,7 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
         typeChanged = ImGui::Combo("##type", &type, types, IM_ARRAYSIZE(types));
     }
     if (typeChanged &&
-        store_.SetType(note.id, (Magpie::NoteType)type, (int64_t)std::time(nullptr)))
+        store_.SetType(note.id, (Trailpack::NoteType)type, (int64_t)std::time(nullptr)))
         Save();
     if (ImGui::IsItemHovered())
         Theme::Tooltip("%s", Tr("Daily / Weekly: checkboxes are unchecked after the reset."));
@@ -102,7 +102,7 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
     // Editable body: chat codes are atomic chip cells, markdown stays raw (edit = source).
     const ImU32 border = ImGui::GetColorU32(Theme::Colors().border);
     if (!showPreview_) {
-        Magpie::FontScaleScope noteFont(noteTextScale_);
+        Trailpack::FontScaleScope noteFont(noteTextScale_);
         Theme::TextColorScope noteText(uc.hasNoteText, uc.noteText);
         if (uc.hasNoteBg) ImGui::PushStyleColor(ImGuiCol_FrameBg, fieldBg);
         bodyEditor_.Render("##body_edit", ImGui::GetContentRegionAvail().x, border, /*minLines=*/6);
@@ -114,7 +114,7 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
     const float half = (ImGui::GetContentRegionAvail().x - ImGui::GetStyle().ItemSpacing.x) * 0.5f;
     ImGui::BeginChild("##edit_col", ImVec2(half, 0), false);
     {
-        Magpie::FontScaleScope noteFont(noteTextScale_);
+        Trailpack::FontScaleScope noteFont(noteTextScale_);
         Theme::TextColorScope noteText(uc.hasNoteText, uc.noteText);
         if (uc.hasNoteBg) ImGui::PushStyleColor(ImGuiCol_FrameBg, fieldBg);
         bodyEditor_.Render("##body_edit", ImGui::GetContentRegionAvail().x, border, /*minLines=*/6);
@@ -127,15 +127,15 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
     ImGui::BeginChild("##preview_col", ImVec2(0, 0), true, Theme::kPaneFlags);
     Theme::PopPaneBorder();
     {
-        const std::vector<Magpie::Md::Line>& lines = parsed_(previewParse_, bodyEditor_.GetText());
-        Magpie::FontScaleScope noteFont(noteTextScale_);
+        const std::vector<Trailpack::Md::Line>& lines = parsed_(previewParse_, bodyEditor_.GetText());
+        Trailpack::FontScaleScope noteFont(noteTextScale_);
         Theme::TextColorScope noteText(uc.hasNoteText, uc.noteText);
-        Magpie::RenderMarkdown(lines, fontBig_(), ImGui::GetContentRegionAvail().x);
+        Trailpack::RenderMarkdown(lines, fontBig_(), ImGui::GetContentRegionAvail().x);
     }
     ImGui::EndChild();
 }
 
-void NotesWindow::renderViewMode_(Magpie::Note& note)
+void NotesWindow::renderViewMode_(Trailpack::Note& note)
 {
     // Title (+ type and reset countdown), Edit on the right. Deleting lives in the
     // right-click menus and "Delete notes...". Title and countdown share the space left of
@@ -145,7 +145,7 @@ void NotesWindow::renderViewMode_(Magpie::Note& note)
     const float rowW    = ImGui::GetContentRegionAvail().x;
     const float spacing = ImGui::GetStyle().ItemSpacing.x;
     const float textW   = rowW - editW - spacing;
-    const std::string reset = note.type != Magpie::NoteType::Note ? "[" + ResetText(note.type) + "]" : "";
+    const std::string reset = note.type != Trailpack::NoteType::Note ? "[" + ResetText(note.type) + "]" : "";
 
     const std::string title = Ellipsize(note.title, textW);
     bool cut = title != note.title;
@@ -177,7 +177,7 @@ void NotesWindow::renderViewMode_(Magpie::Note& note)
 
 void NotesWindow::renderEditToolbar_()
 {
-    using namespace Magpie::Md;
+    using namespace Trailpack::Md;
 
     // The buttons flow like words: each stays on the current row if it fits, else starts a new
     // one, so a narrow pane wraps the toolbar instead of cutting it off.
@@ -246,9 +246,9 @@ void NotesWindow::renderEditToolbar_()
     if (ImGui::BeginPopup("##event_picker")) {
         Theme::PopupTextScope popupText;
         if (ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Escape))) ImGui::CloseCurrentPopup();
-        const std::string id = Magpie::EventPicker::Render(eventQuery_, eventPickerFocus_);
+        const std::string id = Trailpack::EventPicker::Render(eventQuery_, eventPickerFocus_);
         if (!id.empty()) {
-            bodyEditor_.InsertChip(Magpie::Events::Token(id));
+            bodyEditor_.InsertChip(Trailpack::Events::Token(id));
             bodyEditor_.Focus();
             ImGui::CloseCurrentPopup();
         }
@@ -256,22 +256,22 @@ void NotesWindow::renderEditToolbar_()
     }
 }
 
-void NotesWindow::renderViewBody_(Magpie::Note* note)
+void NotesWindow::renderViewBody_(Trailpack::Note* note)
 {
     // Rendered markdown inside a scrollable child so long notes scroll.
     // EDIT mode shows the raw source; VIEW shows this.
     ImGui::BeginChild("##view_body", ImVec2(0, 0), false);
 
-    const std::vector<Magpie::Md::Line>& lines = parsed_(viewParse_, note->body);
+    const std::vector<Trailpack::Md::Line>& lines = parsed_(viewParse_, note->body);
     int clickedTask = -1;
     {
-        Magpie::FontScaleScope noteFont(noteTextScale_);
+        Trailpack::FontScaleScope noteFont(noteTextScale_);
         Theme::TextColorScope noteText(Theme::Colors().hasNoteText, Theme::Colors().noteText);
-        clickedTask = Magpie::RenderMarkdown(lines, fontBig_(),
+        clickedTask = Trailpack::RenderMarkdown(lines, fontBig_(),
                                              ImGui::GetContentRegionAvail().x,
                                              /*interactiveTasks=*/true);
     }
-    if (clickedTask >= 0 && Magpie::Md::ToggleTask(note->body, clickedTask)) {
+    if (clickedTask >= 0 && Trailpack::Md::ToggleTask(note->body, clickedTask)) {
         Save();
     }
 
@@ -285,9 +285,9 @@ void NotesWindow::renderViewBody_(Magpie::Note* note)
         Theme::PopupTextScope popupText;
         if (ImGui::MenuItem(Tr("Edit"))) editRequestId_ = note->id;
         ImGui::Separator();
-        const Magpie::Md::TaskCount tc = Magpie::Md::CountTasks(note->body);
+        const Trailpack::Md::TaskCount tc = Trailpack::Md::CountTasks(note->body);
         if (ImGui::MenuItem(Tr("Uncheck all tasks"), nullptr, false, tc.done > 0)) {
-            Magpie::Md::UncheckAllTasks(note->body);
+            Trailpack::Md::UncheckAllTasks(note->body);
             Save();
         }
         typeMenu_(note->id);

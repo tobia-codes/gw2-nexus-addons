@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 
-namespace Magpie { namespace Md {
+namespace Trailpack { namespace Md {
 
 using Cells = std::vector<unsigned int>;
 
@@ -52,4 +52,4 @@ void ApplyOps(Cells& text, const std::vector<EditOp>& ops);
 Cells       ToCells(const std::string& ascii);
 std::string FromCells(const Cells& cells);
 
-}} // namespace Magpie::Md
+}} // namespace Trailpack::Md

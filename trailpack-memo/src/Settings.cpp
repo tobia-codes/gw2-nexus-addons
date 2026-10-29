@@ -3,7 +3,7 @@
 
 #include <nlohmann/json.hpp>
 
-namespace Magpie {
+namespace Trailpack {
 
 static nlohmann::json colorJson(const Rgba& c) { return { c.r, c.g, c.b, c.a }; }
 
@@ -246,4 +246,4 @@ bool Settings::FromJson(const std::string& json)
     return true;
 }
 
-} // namespace Magpie
+} // namespace Trailpack

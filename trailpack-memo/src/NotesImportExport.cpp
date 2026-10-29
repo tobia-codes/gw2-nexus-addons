@@ -16,8 +16,8 @@
 #include "FileDialog.h"
 
 namespace fs = std::filesystem;
-using Magpie::I18n::Tr;
-using Magpie::I18n::TrN;
+using Trailpack::I18n::Tr;
+using Trailpack::I18n::TrN;
 using namespace NotesUi;
 using FileDialog::Widen;
 
@@ -55,7 +55,7 @@ void NotesWindow::startExport_(const std::string& id)
         std::strftime(date, sizeof date, "%Y-%m-%d", std::localtime(&now));
         name = std::string("trailpack-notes-") + date + ".json";
     } else {
-        const Magpie::Note* note = store_.Get(id);
+        const Trailpack::Note* note = store_.Get(id);
         if (note == nullptr) return;
         name = FileNameFor(note->title) + ".json";
     }
@@ -74,7 +74,7 @@ void NotesWindow::startExport_(const std::string& id)
 void NotesWindow::startExportGroup_(const std::string& groupId)
 {
     if (ioDialog_.valid()) return;
-    const Magpie::Group* group = store_.GetGroup(groupId);
+    const Trailpack::Group* group = store_.GetGroup(groupId);
     if (group == nullptr) return;
 
     std::error_code ec;
@@ -120,7 +120,7 @@ void NotesWindow::pollFileDialog_()
         if (!ioExportGroupId_.empty()) {
             json  = store_.ExportGroupJson(ioExportGroupId_);
             count = std::count_if(store_.Notes().begin(), store_.Notes().end(),
-                [&](const Magpie::Note& n) { return n.groupId == ioExportGroupId_; });
+                [&](const Trailpack::Note& n) { return n.groupId == ioExportGroupId_; });
         } else {
             std::vector<std::string> ids;
             if (!ioExportId_.empty()) ids.push_back(ioExportId_);
@@ -142,10 +142,10 @@ void NotesWindow::pollFileDialog_()
         std::ostringstream ss;
         if (f.is_open()) ss << f.rdbuf();
 
-        std::vector<Magpie::ImportItem> items;
+        std::vector<Trailpack::ImportItem> items;
         const bool valid = f.is_open() && store_.PrepareImport(ss.str(), items);
         const size_t offered = std::count_if(items.begin(), items.end(),
-            [](const Magpie::ImportItem& i) { return !i.duplicate || i.changed; });
+            [](const Trailpack::ImportItem& i) { return !i.duplicate || i.changed; });
         if (!valid) {
             snprintf(msg, sizeof msg,
                      Tr("%s is not a Trailpack Memo export or notes file.\nNothing was imported."),
@@ -199,10 +199,10 @@ void NotesWindow::renderImportModal_()
 
     // An update is only possible when the local note is not open in the editor
     // (saving the edit afterwards would silently undo the update).
-    auto updatable = [&](const Magpie::ImportItem& item) {
+    auto updatable = [&](const Trailpack::ImportItem& item) {
         return item.changed && !(mode_ == Mode::Edit && selectedId_ == item.id);
     };
-    auto selectable = [&](const Magpie::ImportItem& item) {
+    auto selectable = [&](const Trailpack::ImportItem& item) {
         return !item.duplicate || updatable(item);
     };
 
@@ -212,7 +212,7 @@ void NotesWindow::renderImportModal_()
     ImGui::BeginChild("##import_list", ImVec2(400.0f, listH), false);
     int toAdd = 0, toUpdate = 0;
     for (size_t i = 0; i < importItems_.size(); ++i) {
-        const Magpie::ImportItem& item = importItems_[i];
+        const Trailpack::ImportItem& item = importItems_[i];
         ImGui::PushID((int)i);
         const char* title = item.title.empty() ? Tr("(untitled)") : item.title.c_str();
         if (selectable(item)) {
@@ -271,9 +271,9 @@ void NotesWindow::renderImportModal_()
     const bool cancel = ImGui::Button(Tr("Cancel"), ImVec2(ButtonWidth(Tr("Cancel"), 80), 0));
 
     if (doImport) {
-        std::vector<Magpie::ImportItem> adds, updates;
+        std::vector<Trailpack::ImportItem> adds, updates;
         for (size_t i = 0; i < importItems_.size(); ++i) {
-            const Magpie::ImportItem& item = importItems_[i];
+            const Trailpack::ImportItem& item = importItems_[i];
             if (!importChecked_[i] || !selectable(item)) continue;
             (item.duplicate ? updates : adds).push_back(item);
         }

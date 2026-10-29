@@ -8,7 +8,7 @@
 #include "Reset.h"
 #include "Theme.h"
 
-using Magpie::I18n::Tr;
+using Trailpack::I18n::Tr;
 
 namespace NotesUi {
 
@@ -35,22 +35,22 @@ std::string Ellipsize(const std::string& text, float maxWidth)
     return text.substr(0, keep) + "...";
 }
 
-const char* TypeName(Magpie::NoteType t)
+const char* TypeName(Trailpack::NoteType t)
 {
-    return t == Magpie::NoteType::Daily  ? Tr("Daily")
-         : t == Magpie::NoteType::Weekly ? Tr("Weekly") : Tr("Note");
+    return t == Trailpack::NoteType::Daily  ? Tr("Daily")
+         : t == Trailpack::NoteType::Weekly ? Tr("Weekly") : Tr("Note");
 }
 
-ImVec4 TypeColor(Magpie::NoteType t)
+ImVec4 TypeColor(Trailpack::NoteType t)
 {
     const Theme::UserColors& c = Theme::Colors();
-    return t == Magpie::NoteType::Daily ? c.dailyBadge : c.weeklyBadge;
+    return t == Trailpack::NoteType::Daily ? c.dailyBadge : c.weeklyBadge;
 }
 
-ImVec4 TypeTextColor(Magpie::NoteType t)
+ImVec4 TypeTextColor(Trailpack::NoteType t)
 {
     const Theme::UserColors& c = Theme::Colors();
-    return t == Magpie::NoteType::Daily ? c.dailyBadgeText : c.weeklyBadgeText;
+    return t == Trailpack::NoteType::Daily ? c.dailyBadgeText : c.weeklyBadgeText;
 }
 
 ImVec4 ListTextColor()
@@ -77,23 +77,23 @@ ImVec4 Dimmed(ImVec4 c)
     return c;
 }
 
-std::string ResetText(Magpie::NoteType t)
+std::string ResetText(Trailpack::NoteType t)
 {
-    if (t == Magpie::NoteType::Note) return std::string();
+    if (t == Trailpack::NoteType::Note) return std::string();
     const int64_t now  = (int64_t)std::time(nullptr);
-    const int64_t next = t == Magpie::NoteType::Daily ? Magpie::Reset::NextDaily(now)
-                                                      : Magpie::Reset::NextWeekly(now);
+    const int64_t next = t == Trailpack::NoteType::Daily ? Trailpack::Reset::NextDaily(now)
+                                                      : Trailpack::Reset::NextWeekly(now);
     char buf[96];
     snprintf(buf, sizeof buf,
-             t == Magpie::NoteType::Daily ? Tr("Daily reset in %s") : Tr("Weekly reset in %s"),
-             Magpie::Reset::FormatCountdown(next - now).c_str());
+             t == Trailpack::NoteType::Daily ? Tr("Daily reset in %s") : Tr("Weekly reset in %s"),
+             Trailpack::Reset::FormatCountdown(next - now).c_str());
     return buf;
 }
 
-float DrawTypeBadge(ImDrawList* dl, ImVec2 pos, float height, Magpie::NoteType t)
+float DrawTypeBadge(ImDrawList* dl, ImVec2 pos, float height, Trailpack::NoteType t)
 {
-    if (t == Magpie::NoteType::Note) return 0.0f;
-    const char*  letter = t == Magpie::NoteType::Daily ? Tr("D") : Tr("W");
+    if (t == Trailpack::NoteType::Note) return 0.0f;
+    const char*  letter = t == Trailpack::NoteType::Daily ? Tr("D") : Tr("W");
     const ImVec2 ts     = ImGui::CalcTextSize(letter);
     const float  w      = ts.x + ImGui::GetFontSize() * 0.5f;
     const float  pad    = height * 0.08f;

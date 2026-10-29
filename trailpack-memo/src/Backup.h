@@ -7,7 +7,7 @@
 #include <cstdint>
 #include <string>
 
-namespace Magpie { namespace Backup {
+namespace Trailpack { namespace Backup {
 
 // Build a backup from the current notes.json and settings.json texts. Empty if either
 // isn't valid JSON.
@@ -17,4 +17,4 @@ std::string Make(const std::string& notesJson, const std::string& settingsJson, 
 // Settings::FromJson). False if the text isn't a backup of a supported version.
 bool Parse(const std::string& text, std::string& notesJson, std::string& settingsJson);
 
-}} // namespace Magpie::Backup
+}} // namespace Trailpack::Backup

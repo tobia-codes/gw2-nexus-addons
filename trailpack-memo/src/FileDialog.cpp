@@ -20,7 +20,7 @@ std::wstring JsonFilter(const char* label)
 {
     std::wstring f;
     f += Widen(label);                                    f += L'\0'; f += L"*.json"; f += L'\0';
-    f += Widen(Magpie::I18n::Tr("All files (*.*)"));      f += L'\0'; f += L"*.*";    f += L'\0';
+    f += Widen(Trailpack::I18n::Tr("All files (*.*)"));      f += L'\0'; f += L"*.*";    f += L'\0';
     return f;
 }
 

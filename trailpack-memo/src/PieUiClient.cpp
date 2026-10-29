@@ -1,6 +1,6 @@
 // ============================================================================
 // PieUiClient — the ONLY place that talks to the optional Pie UI provider.
-// Magpie is here the CONSUMER of Pie UI's "perform a chat link's native action"
+// Trailpack Memo is here the CONSUMER of Pie UI's "perform a chat link's native action"
 // service, which is fire-and-forget (no data returned), so this client is much
 // simpler than DecoderClient: a single latched presence flag, no cache, no
 // unloading handler.
@@ -30,7 +30,7 @@
 
 #include <atomic>
 
-namespace Magpie { namespace PieUi {
+namespace Trailpack { namespace PieUi {
 
 namespace {
 
@@ -82,4 +82,4 @@ void OpenChatLink(const std::string& chatCode) {
     APIDefs->Events_Raise(EV_PIEUI_OPEN_CHATLINK, (void*)chatCode.c_str());
 }
 
-}} // namespace Magpie::PieUi
+}} // namespace Trailpack::PieUi

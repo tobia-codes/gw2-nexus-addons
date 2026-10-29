@@ -9,7 +9,7 @@
 
 #include "imgui.h"
 
-namespace Magpie {
+namespace Trailpack {
 
 // Once per frame, OUTSIDE any window: remember the normal font, its natural pixel size
 // (ImGui::GetFontSize() at that point) and Nexus's FontBig (may be null).
@@ -36,4 +36,4 @@ private:
     float   oldScale_ = 1.0f;
 };
 
-} // namespace Magpie
+} // namespace Trailpack

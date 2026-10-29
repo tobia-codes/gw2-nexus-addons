@@ -3,7 +3,7 @@
 #include <string>
 #include <vector>
 
-namespace Magpie {
+namespace Trailpack {
 
 // How a note behaves at GW2's resets: a plain note, or a checklist whose tasks are
 // unchecked again after every daily (00:00 UTC) / weekly (Monday 07:30 UTC) reset.
@@ -88,7 +88,7 @@ public:
     //   (color = [r,g,b,a] or null)
     std::string ToJson() const;
     // Replace all notes and groups. Accepts the format above or the version-1 plain array
-    // of notes (older Trailpack / Magpie Memo). Ids that are missing, not in IsNoteId format
+    // of notes (older notes.json files). Ids that are missing, not in IsNoteId format
     // (counters like "00000000") or repeated are replaced with fresh ones -- the caller
     // should save afterwards so the new ids stay stable. Unknown group refs -> ungrouped.
     bool        FromJson(const std::string& json);
@@ -103,7 +103,7 @@ public:
     std::string ExportGroupJson(const std::string& groupId) const;
 
     // Read an export file (version 1 or 2), a notes.json (either version) or a plain
-    // version-1 array (Trailpack / Magpie Memo) into `out` without changing the store. Each item is flagged `duplicate` when a note with
+    // version-1 array (older notes.json) into `out` without changing the store. Each item is flagged `duplicate` when a note with
     // its id already exists; items without a valid id fall back to an identical title+body
     // match. Returns false (out empty) if the input is not a valid notes file.
     bool        PrepareImport(const std::string& json, std::vector<ImportItem>& out) const;
@@ -129,4 +129,4 @@ private:
     bool hasDuplicateOf_(const ImportItem& item) const;
 };
 
-} // namespace Magpie
+} // namespace Trailpack

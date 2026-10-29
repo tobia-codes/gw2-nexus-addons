@@ -2,7 +2,7 @@
 // Source: http://web.archive.org/web/20260920230502id_/https://wiki.guildwars2.com/index.php?title=Widget:Event_timer/data.json&action=raw
 #include "EventData.h"
 
-namespace Magpie { namespace Events {
+namespace Trailpack { namespace Events {
 
 static const uint16_t kS0[] = { 0, 180, 360, 540, 720, 900, 1080, 1260 };
 static const uint16_t kD0[] = { 15, 15, 15, 15, 15, 15, 15, 15 };
@@ -778,4 +778,4 @@ const EventDef kEvents[] = {
 };
 const size_t kEventCount = sizeof kEvents / sizeof kEvents[0];
 
-}} // namespace Magpie::Events
+}} // namespace Trailpack::Events

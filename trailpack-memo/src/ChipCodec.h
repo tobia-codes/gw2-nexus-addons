@@ -18,7 +18,7 @@
 #include <cstdint>
 #include "chat/ChatLinks.h"
 
-namespace Magpie {
+namespace Trailpack {
 
 // One atomic cell of the editor model.
 struct ParsedCell {
@@ -70,4 +70,4 @@ int WrapRowLength(int count, int start, float maxWidth, GetCell get)
 void                      AppendUtf8(std::string& s, uint32_t cp);
 std::vector<uint32_t>     DecodeUtf8(const std::string& s);
 
-} // namespace Magpie
+} // namespace Trailpack

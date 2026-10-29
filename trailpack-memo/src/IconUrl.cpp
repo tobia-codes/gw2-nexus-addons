@@ -1,6 +1,6 @@
 #include "IconUrl.h"
 
-namespace Magpie { namespace Icons {
+namespace Trailpack { namespace Icons {
 
 uint32_t UrlKey(const char* url)
 {
@@ -39,4 +39,4 @@ SplitUrl SplitIconUrl(const std::string& url)
     return { url.substr(0, pathStart), url.substr(pathStart) };
 }
 
-}} // namespace Magpie::Icons
+}} // namespace Trailpack::Icons

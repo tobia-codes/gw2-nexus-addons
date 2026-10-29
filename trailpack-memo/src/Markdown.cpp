@@ -3,7 +3,7 @@
 #include "Events.h"
 #include <algorithm>
 
-namespace Magpie { namespace Md {
+namespace Trailpack { namespace Md {
 
 // ---------------------------------------------------------------------------
 // Inline emphasis tokeniser — processes a plain-text segment for **bold** and
@@ -262,4 +262,4 @@ int UncheckAllTasks(std::string& body)
     return changed;
 }
 
-}} // namespace Magpie::Md
+}} // namespace Trailpack::Md

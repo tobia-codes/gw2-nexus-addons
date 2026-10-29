@@ -10,8 +10,8 @@
 #include "I18n.h"
 #include "NotesUi.h"
 
-using Magpie::I18n::Tr;
-using Magpie::I18n::TrN;
+using Trailpack::I18n::Tr;
+using Trailpack::I18n::TrN;
 using namespace NotesUi;
 
 void NotesWindow::renderModals_()
@@ -134,7 +134,7 @@ void NotesWindow::renderGroupNameModal_()
                                                           : groupNameBuffer_;
         if (groupNameId_.empty()) {
             store_.CreateGroup(name);
-        } else if (Magpie::Group* g = store_.GetGroup(groupNameId_)) {
+        } else if (Trailpack::Group* g = store_.GetGroup(groupNameId_)) {
             g->name = name;
         }
         Save();
@@ -152,7 +152,7 @@ void NotesWindow::renderDeleteGroupModal_()
     if (!beginModal_(Popup::DeleteGroup))
         return;
 
-    const Magpie::Group* g = store_.GetGroup(pendingDeleteGroupId_);
+    const Trailpack::Group* g = store_.GetGroup(pendingDeleteGroupId_);
     ImGui::Text(Tr("Delete the group \"%s\"?"), g != nullptr ? g->name.c_str() : "");
     ImGui::TextUnformatted(Tr("Its notes are kept and moved out of the group."));
     ImGui::Spacing();
@@ -205,7 +205,7 @@ void NotesWindow::renderBulkDeleteModal_()
         const float rowH = ImGui::GetFrameHeightWithSpacing();
         const size_t rows = notes.size() + store_.Groups().size() + 1;
         ImGui::BeginChild("##bulk_list", ImVec2(360.0f, rowH * (float)std::min<size_t>(rows, 12)), false);
-        auto noteRow = [&](const Magpie::Note& n) {
+        auto noteRow = [&](const Trailpack::Note& n) {
             ImGui::PushID(n.id.c_str());
             bool on = isSelected(n.id);
             if (ImGui::Checkbox(n.title.empty() ? Tr("(untitled)") : n.title.c_str(), &on))
@@ -213,11 +213,11 @@ void NotesWindow::renderBulkDeleteModal_()
             ImGui::PopID();
         };
         for (const auto& g : store_.Groups()) {
-            std::vector<const Magpie::Note*> members;
+            std::vector<const Trailpack::Note*> members;
             for (const auto& n : notes) if (n.groupId == g.id) members.push_back(&n);
             if (members.empty()) continue;
             bool all = std::all_of(members.begin(), members.end(),
-                                   [&](const Magpie::Note* n) { return isSelected(n->id); });
+                                   [&](const Trailpack::Note* n) { return isSelected(n->id); });
             ImGui::PushID(g.id.c_str());
             ImGui::PushStyleColor(ImGuiCol_Text, groupColor_(g));
             if (ImGui::Checkbox(g.name.empty() ? Tr("(untitled)") : g.name.c_str(), &all))
@@ -229,7 +229,7 @@ void NotesWindow::renderBulkDeleteModal_()
             ImGui::Unindent();
         }
         const bool anyUngrouped = std::any_of(notes.begin(), notes.end(),
-            [](const Magpie::Note& n) { return n.groupId.empty(); });
+            [](const Trailpack::Note& n) { return n.groupId.empty(); });
         if (anyUngrouped && !store_.Groups().empty()) ImGui::Spacing();
         for (const auto& n : notes)
             if (n.groupId.empty()) noteRow(n);
@@ -289,7 +289,7 @@ void NotesWindow::renderGroupColorModal_()
     if (!beginModal_(Popup::GroupColor))
         return;
 
-    Magpie::Group* g = store_.GetGroup(groupColorId_);
+    Trailpack::Group* g = store_.GetGroup(groupColorId_);
     bool close = (g == nullptr);
     if (g != nullptr) {
         ImGui::TextUnformatted(g->name.empty() ? Tr("(untitled)") : g->name.c_str());

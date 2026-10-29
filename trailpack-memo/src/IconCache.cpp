@@ -6,7 +6,7 @@
 #include <string>
 #include <cstdio>
 
-namespace Magpie { namespace Icons {
+namespace Trailpack { namespace Icons {
 
 // ── Internal state ────────────────────────────────────────────────────────────
 
@@ -159,4 +159,4 @@ Texture_t* Get(const char* url)
     return nullptr;
 }
 
-}} // namespace Magpie::Icons
+}} // namespace Trailpack::Icons

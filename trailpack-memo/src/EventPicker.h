@@ -6,11 +6,11 @@
 
 #include <string>
 
-namespace Magpie { namespace EventPicker {
+namespace Trailpack { namespace EventPicker {
 
 // Draw the picker's contents inside an open popup. `query` is the search text (kept by the
 // caller between frames); `focusSearch` focuses the search field once and is then cleared.
 // Returns the id of the picked event (click, or Enter for the first hit), else "".
 std::string Render(std::string& query, bool& focusSearch);
 
-}} // namespace Magpie::EventPicker
+}} // namespace Trailpack::EventPicker

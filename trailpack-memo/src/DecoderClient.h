@@ -2,7 +2,7 @@
 #include "nexus/Nexus.h"
 #include "DecoderRingApi.h"
 
-namespace Magpie { namespace Decoder {
+namespace Trailpack { namespace Decoder {
 
 // Subscribe READY/UNLOADING/RESOLVED, then raise PING. Call from AddonLoad
 // after APIDefs is set.
@@ -25,4 +25,4 @@ bool Present();
 // harmless otherwise.
 bool Resolve(uint8_t linkType, uint32_t id, const char* chatCode, DecoderRecord& out);
 
-}} // namespace Magpie::Decoder
+}} // namespace Trailpack::Decoder

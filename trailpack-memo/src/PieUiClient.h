@@ -2,7 +2,7 @@
 #include "nexus/Nexus.h"
 #include <string>
 
-namespace Magpie { namespace PieUi {
+namespace Trailpack { namespace PieUi {
 
 // Subscribe EV_PIE_UI_READY, then raise EV_PIE_UI_PING. Call from AddonLoad
 // after APIDefs is set.
@@ -29,4 +29,4 @@ bool Present();
 // call when Pie UI is absent — the raise is then a no-op.
 void OpenChatLink(const std::string& chatCode);
 
-}} // namespace Magpie::PieUi
+}} // namespace Trailpack::PieUi
