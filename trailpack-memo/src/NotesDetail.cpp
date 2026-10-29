@@ -22,7 +22,7 @@ void NotesWindow::renderDetailPane_()
     const bool ownBg = Theme::Colors().hasNoteBg;
     if (ownBg) ImGui::PushStyleColor(ImGuiCol_ChildBg, Theme::Colors().noteBg);
     Theme::PushNoteBorder();
-    ImGui::BeginChild("##notes_detail", ImVec2(0, 0), true);
+    ImGui::BeginChild("##notes_detail", ImVec2(0, 0), true, Theme::kPaneFlags);
     Theme::PopPaneBorder();
     if (ownBg) {
         ImGui::PopStyleColor();
@@ -117,7 +117,7 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
 
     ImGui::SameLine();
     Theme::PushNoteBorder();   // the preview pane is framed like the note
-    ImGui::BeginChild("##preview_col", ImVec2(0, 0), true);
+    ImGui::BeginChild("##preview_col", ImVec2(0, 0), true, Theme::kPaneFlags);
     Theme::PopPaneBorder();
     {
         const std::vector<Magpie::Md::Line>& lines = parsed_(previewParse_, bodyEditor_.GetText());

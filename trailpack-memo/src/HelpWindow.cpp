@@ -97,7 +97,7 @@ const Section kSections[] = {
       "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
       "- Language (Auto follows Nexus), quick access icon.\n"
       "- 'Font options': UI and note text size.\n"
-      "- 'Colour options': window (border on/off and colour, background, text), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text) and the daily / weekly badges.\n"
+      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text) and the daily / weekly badges.\n"
       "- 'Colour options' > Theme: Default, Light, Dark or one of your own; 'Save as theme' "
       "stores the current colours under a name. Borders are off by default.\n"
       "- 'Backup': 'Create backup...' saves all notes, groups and settings in one file; "

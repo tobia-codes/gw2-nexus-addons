@@ -22,7 +22,7 @@ static void DrawHamburger(float size)
     const float  padX = size * 0.25f;
     const float  gap  = size * 0.18f;
     const float  midY = (bMin.y + bMax.y) * 0.5f;
-    const ImU32  col  = ImGui::GetColorU32(ImGuiCol_Text);
+    const ImU32  col  = ImGui::GetColorU32(MenuIconColor());
     ImDrawList*  dl   = ImGui::GetWindowDrawList();
     for (int i = -1; i <= 1; ++i) {
         const float y = midY + i * gap;
@@ -54,7 +54,7 @@ float NotesWindow::renderListColumn_()
     Theme::PushDarkFrameBg();
     if (uc.hasListBg) ImGui::PushStyleColor(ImGuiCol_ChildBg, uc.listBg);
     Theme::PushListBorder();
-    ImGui::BeginChild("##notes_list", ImVec2(leftWidth, -buttonRowH), true);
+    ImGui::BeginChild("##notes_list", ImVec2(leftWidth, -buttonRowH), true, Theme::kPaneFlags);
     Theme::PopPaneBorder();
     if (uc.hasListBg) ImGui::PopStyleColor();
     Theme::PopFrameBg();
@@ -98,7 +98,15 @@ float NotesWindow::renderListColumn_()
     Theme::PopButton();
 
     ImGui::SameLine();
+    // Own colours if picked: hover / pressed are shades of the picked background.
+    const Theme::UserColors& mc = Theme::Colors();
+    if (mc.hasMenuButton) {
+        ImGui::PushStyleColor(ImGuiCol_Button,        mc.menuButton);
+        ImGui::PushStyleColor(ImGuiCol_ButtonHovered, Theme::FieldBg(mc.menuButton));
+        ImGui::PushStyleColor(ImGuiCol_ButtonActive,  Theme::FieldBg(Theme::FieldBg(mc.menuButton)));
+    }
     if (ImGui::Button("##notes_menu_btn", ImVec2(menuW, menuW))) ImGui::OpenPopup("##notes_menu");
+    if (mc.hasMenuButton) ImGui::PopStyleColor(3);
     DrawHamburger(menuW);
     if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", Tr("Menu"));
 

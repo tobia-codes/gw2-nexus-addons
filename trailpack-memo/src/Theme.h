@@ -72,6 +72,12 @@ struct UserColors {
     bool   showNoteBorder = false;
     bool   hasNoteBorder  = false;
     ImVec4 noteBorder     = { 0.0f, 0.0f, 0.0f, 0.0f };
+    // Menu button next to "Create New Note": background (unset: Nexus button) and icon
+    // (unset: window text).
+    bool   hasMenuButton  = false;
+    ImVec4 menuButton     = { 0.0f, 0.0f, 0.0f, 0.0f };
+    bool   hasMenuIcon    = false;
+    ImVec4 menuIcon       = { 0.0f, 0.0f, 0.0f, 0.0f };
 };
 UserColors& Colors();   // the live, mutable set (Theme.cpp)
 
@@ -79,8 +85,11 @@ UserColors& Colors();   // the live, mutable set (Theme.cpp)
 // popups opened inside the note pane push it back, so they ignore the note text colour.
 ImVec4 WindowText();
 
-// Border of a pane (child window): size and colour are read by BeginChild, so push right
+// Border and inner padding of a pane (child window): read by BeginChild, so push right
 // before it and pop right after (later ImGuiCol_Border users inside keep the window colour).
+// ImGui drops the padding of a border-less child unless it is begun with
+// ImGuiWindowFlags_AlwaysUseWindowPadding (kPaneFlags), so pass that too.
+constexpr ImGuiWindowFlags kPaneFlags = ImGuiWindowFlags_AlwaysUseWindowPadding;
 void PushPaneBorder(bool show, bool hasColor, const ImVec4& color);
 void PopPaneBorder();
 inline void PushListBorder() { const UserColors& c = Colors(); PushPaneBorder(c.showListBorder, c.hasListBorder, c.listBorder); }

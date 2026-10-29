@@ -37,7 +37,7 @@
   `addons/TrailpackMemo/exports/`.
 - **English and German UI**: follows the Nexus language by default, or set it in the addon
   options (Auto / English / Deutsch).
-- **Custom colours** under "Colour options", grouped as window (border on/off and colour, background, text), note
+- **Custom colours** under "Colour options", grouped as window (border on/off and colour, background, text, menu button and icon), note
   list (border on/off and colour, background, text, group names, the "No group" label), note
   (border on/off and colour, background, text) and daily / weekly badges (background and letter, each
   separately, with a live preview). Each row is a swatch that opens a picker with alpha, plus a

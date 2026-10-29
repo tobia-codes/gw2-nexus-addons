@@ -28,6 +28,8 @@ void PushWindowStyle() {
 
 void PushPaneBorder(bool show, bool hasColor, const ImVec4& color) {
     ImGui::PushStyleVar(ImGuiStyleVar_ChildBorderSize, show ? 1.0f : 0.0f);
+    const float f = ImGui::GetFontSize();
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(f * 0.5f, f * 0.4f));
     ImGui::PushStyleColor(ImGuiCol_Border, hasColor ? color : s_Colors.border);
 }
 
@@ -42,7 +44,7 @@ ImVec4 FieldBg(const ImVec4& bg) {
 
 void PopPaneBorder() {
     ImGui::PopStyleColor(1);
-    ImGui::PopStyleVar(1);
+    ImGui::PopStyleVar(2);
 }
 
 void PopWindowStyle() {

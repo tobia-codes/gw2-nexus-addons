@@ -244,7 +244,7 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
       "- Language (Auto follows Nexus), quick access icon.\n"
       "- 'Font options': UI and note text size.\n"
-      "- 'Colour options': window (border on/off and colour, background, text), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text) and the daily / weekly badges.\n"
+      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text) and the daily / weekly badges.\n"
       "- 'Colour options' > Theme: Default, Light, Dark or one of your own; 'Save as theme' "
       "stores the current colours under a name. Borders are off by default.\n"
       "- 'Backup': 'Create backup...' saves all notes, groups and settings in one file; "
@@ -253,7 +253,7 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "Nexus-Addon-Optionen > Trailpack Memo, oder Menü-Knopf > 'Einstellungen...':\n"
       "- Sprache (Automatisch folgt Nexus), Schnellzugriff-Icon.\n"
       "- 'Schriftoptionen': UI- und Notiz-Textgröße.\n"
-      "- 'Farboptionen': Fenster (Rahmen an/aus und Farbe, Hintergrund, Text), Notizliste (Rahmen an/aus und Farbe, Hintergrund, Text, Gruppennamen, 'Ohne Gruppe'), Notiz (Rahmen an/aus und Farbe, Hintergrund, Text) und die Täglich-/Wöchentlich-Badges.\n"
+      "- 'Farboptionen': Fenster (Rahmen an/aus und Farbe, Hintergrund, Text, Menü-Knopf und -Symbol), Notizliste (Rahmen an/aus und Farbe, Hintergrund, Text, Gruppennamen, 'Ohne Gruppe'), Notiz (Rahmen an/aus und Farbe, Hintergrund, Text) und die Täglich-/Wöchentlich-Badges.\n"
       "- 'Farboptionen' > Theme: Standard, Hell, Dunkel oder ein eigenes; 'Als Theme speichern' "
       "sichert die aktuellen Farben unter einem Namen. Rahmen sind standardmäßig aus.\n"
       "- 'Backup': 'Backup erstellen...' speichert alle Notizen, Gruppen und Einstellungen in einer "
@@ -294,6 +294,8 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Note list",                         "Notizliste" },
     { "Daily / weekly badges",             "Täglich-/Wöchentlich-Badges" },
     { "Reset all colours",                 "Alle Farben zurücksetzen" },
+    { "Menu button",                       "Menü-Knopf" },
+    { "Menu icon",                         "Menü-Symbol" },
     { "Theme",                             "Theme" },
     { "Save as theme",                     "Als Theme speichern" },
     { "Default (Nexus)",                   "Standard (Nexus)" },
