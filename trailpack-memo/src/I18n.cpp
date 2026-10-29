@@ -245,11 +245,19 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "- Language (Auto follows Nexus), quick access icon.\n"
       "- 'Font options': UI and note text size.\n"
       "- 'Colour options': window (border on/off and colour, background, text), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text) and the daily / weekly badges.\n"
+      "- 'Colour options' > Theme: Default, Light, Dark or one of your own; 'Save as theme' "
+      "stores the current colours under a name. Borders are off by default.\n"
+      "- 'Backup': 'Create backup...' saves all notes, groups and settings in one file; "
+      "'Restore backup...' replaces them with a backup's after you confirm.\n"
       "- Drag the divider between list and note to change the list width.",
       "Nexus-Addon-Optionen > Trailpack Memo, oder Menü-Knopf > 'Einstellungen...':\n"
       "- Sprache (Automatisch folgt Nexus), Schnellzugriff-Icon.\n"
       "- 'Schriftoptionen': UI- und Notiz-Textgröße.\n"
       "- 'Farboptionen': Fenster (Rahmen an/aus und Farbe, Hintergrund, Text), Notizliste (Rahmen an/aus und Farbe, Hintergrund, Text, Gruppennamen, 'Ohne Gruppe'), Notiz (Rahmen an/aus und Farbe, Hintergrund, Text) und die Täglich-/Wöchentlich-Badges.\n"
+      "- 'Farboptionen' > Theme: Standard, Hell, Dunkel oder ein eigenes; 'Als Theme speichern' "
+      "sichert die aktuellen Farben unter einem Namen. Rahmen sind standardmäßig aus.\n"
+      "- 'Backup': 'Backup erstellen...' speichert alle Notizen, Gruppen und Einstellungen in einer "
+      "Datei; 'Backup wiederherstellen...' ersetzt sie nach einer Rückfrage durch die des Backups.\n"
       "- Den Trenner zwischen Liste und Notiz ziehen ändert die Breite der Liste." },
     { "Your data",                         "Deine Daten" },
     { "Notes are saved in addons/TrailpackMemo/notes.json; the previous version is kept as "
@@ -286,6 +294,35 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Note list",                         "Notizliste" },
     { "Daily / weekly badges",             "Täglich-/Wöchentlich-Badges" },
     { "Reset all colours",                 "Alle Farben zurücksetzen" },
+    { "Theme",                             "Theme" },
+    { "Save as theme",                     "Als Theme speichern" },
+    { "Default (Nexus)",                   "Standard (Nexus)" },
+    { "Light",                             "Hell" },
+    { "Dark",                              "Dunkel" },
+    { "Custom",                            "Eigene" },
+    { "Delete theme",                      "Theme löschen" },
+    { "Name",                              "Name" },
+    { "Overwrite",                         "Überschreiben" },
+    { "Backup",                            "Backup" },
+    { "A backup saves all notes, groups and settings (including themes) in one file.",
+      "Ein Backup speichert alle Notizen, Gruppen und Einstellungen (inklusive Themes) in einer Datei." },
+    { "Create backup...",                  "Backup erstellen..." },
+    { "Restore backup...",                 "Backup wiederherstellen..." },
+    { "Create backup",                     "Backup erstellen" },
+    { "Restore backup",                    "Backup wiederherstellen" },
+    { "Trailpack Memo backup (*.json)",    "Trailpack-Memo-Backup (*.json)" },
+    { "Backup saved as %s.",               "Backup gespeichert als %s." },
+    { "%s is not a Trailpack Memo backup. Nothing was changed.",
+      "%s ist kein Trailpack-Memo-Backup. Es wurde nichts geändert." },
+    { "The backup could not be restored. Nothing was changed.",
+      "Das Backup konnte nicht wiederhergestellt werden. Es wurde nichts geändert." },
+    { "Backup restored: %d note.",         "Backup wiederhergestellt: %d Notiz." },
+    { "Backup restored: %d notes.",        "Backup wiederhergestellt: %d Notizen." },
+    { "Restore %s (%d note)? This replaces all notes and settings.",
+      "%s (%d Notiz) wiederherstellen? Das ersetzt alle Notizen und Einstellungen." },
+    { "Restore %s (%d notes)? This replaces all notes and settings.",
+      "%s (%d Notizen) wiederherstellen? Das ersetzt alle Notizen und Einstellungen." },
+    { "Restore",                           "Wiederherstellen" },
     { "Reset uses the Nexus default (gold for the border).",
       "Zurücksetzen nutzt den Nexus-Standard (Gold für den Rahmen)." },
 };

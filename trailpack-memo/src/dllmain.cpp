@@ -5,12 +5,15 @@
 #include <windows.h>
 #include <algorithm>
 #include <cstring>
+#include <ctime>
 #include <string>
 #include <fstream>
 #include <filesystem>
+#include <future>
 
 #include "nexus/Nexus.h"
 #include "imgui.h"
+#include "imgui_stdlib.h"
 #include "Theme.h"
 #include "NotesWindow.h"
 #include "DecoderClient.h"
@@ -19,6 +22,8 @@
 #include "FontScale.h"
 #include "SafeFile.h"
 #include "Settings.h"
+#include "Backup.h"
+#include "FileDialog.h"
 #include "HelpWindow.h"
 #include "NotesUi.h"
 #include "IconCache.h"
@@ -92,60 +97,71 @@ static std::string SettingsPath() {
     return (std::filesystem::path(dir) / "settings.json").string();
 }
 
-static void ApplySettings() {
+// Live colours (Theme::Colors) <-> a ColorSet (settings.json, themes).
+static void ApplyColors(const Magpie::ColorSet& s) {
     Theme::UserColors& c = Theme::Colors();
-    c.showBorder    = g_Settings.showBorder;
-    c.border        = ToImVec4(g_Settings.border);
-    c.hasBackground = g_Settings.background.set;
-    c.background    = ToImVec4(g_Settings.background.color);
-    c.hasText       = g_Settings.text.set;
-    c.text          = ToImVec4(g_Settings.text.color);
-    c.hasGroupName  = g_Settings.groupName.set;
-    c.groupName     = ToImVec4(g_Settings.groupName.color);
-    c.hasNoGroup    = g_Settings.noGroup.set;
-    c.noGroup       = ToImVec4(g_Settings.noGroup.color);
-    c.hasListBg     = g_Settings.listBackground.set;
-    c.listBg        = ToImVec4(g_Settings.listBackground.color);
-    c.hasListText   = g_Settings.listText.set;
-    c.listText      = ToImVec4(g_Settings.listText.color);
-    c.hasNoteBg     = g_Settings.noteBackground.set;
-    c.noteBg        = ToImVec4(g_Settings.noteBackground.color);
-    c.hasNoteText   = g_Settings.noteText.set;
-    c.noteText      = ToImVec4(g_Settings.noteText.color);
-    c.showListBorder = g_Settings.showListBorder;
-    c.hasListBorder  = g_Settings.listBorder.set;
-    c.listBorder     = ToImVec4(g_Settings.listBorder.color);
-    c.showNoteBorder = g_Settings.showNoteBorder;
-    c.hasNoteBorder  = g_Settings.noteBorder.set;
-    c.noteBorder     = ToImVec4(g_Settings.noteBorder.color);
-    c.dailyBadge      = ToImVec4(g_Settings.dailyBadge);
-    c.dailyBadgeText  = ToImVec4(g_Settings.dailyBadgeText);
-    c.weeklyBadge     = ToImVec4(g_Settings.weeklyBadge);
-    c.weeklyBadgeText = ToImVec4(g_Settings.weeklyBadgeText);
+    c.showBorder      = s.showBorder;
+    c.border          = ToImVec4(s.border);
+    c.hasBackground   = s.background.set;
+    c.background      = ToImVec4(s.background.color);
+    c.hasText         = s.text.set;
+    c.text            = ToImVec4(s.text.color);
+    c.hasGroupName    = s.groupName.set;
+    c.groupName       = ToImVec4(s.groupName.color);
+    c.hasNoGroup      = s.noGroup.set;
+    c.noGroup         = ToImVec4(s.noGroup.color);
+    c.hasListBg       = s.listBackground.set;
+    c.listBg          = ToImVec4(s.listBackground.color);
+    c.hasListText     = s.listText.set;
+    c.listText        = ToImVec4(s.listText.color);
+    c.hasNoteBg       = s.noteBackground.set;
+    c.noteBg          = ToImVec4(s.noteBackground.color);
+    c.hasNoteText     = s.noteText.set;
+    c.noteText        = ToImVec4(s.noteText.color);
+    c.showListBorder  = s.showListBorder;
+    c.hasListBorder   = s.listBorder.set;
+    c.listBorder      = ToImVec4(s.listBorder.color);
+    c.showNoteBorder  = s.showNoteBorder;
+    c.hasNoteBorder   = s.noteBorder.set;
+    c.noteBorder      = ToImVec4(s.noteBorder.color);
+    c.dailyBadge      = ToImVec4(s.dailyBadge);
+    c.dailyBadgeText  = ToImVec4(s.dailyBadgeText);
+    c.weeklyBadge     = ToImVec4(s.weeklyBadge);
+    c.weeklyBadgeText = ToImVec4(s.weeklyBadgeText);
+}
+
+static Magpie::ColorSet CollectColors() {
+    const Theme::UserColors& c = Theme::Colors();
+    Magpie::ColorSet s;
+    s.showBorder      = c.showBorder;
+    s.border          = ToRgba(c.border);
+    s.background      = { c.hasBackground, ToRgba(c.background) };
+    s.text            = { c.hasText,       ToRgba(c.text) };
+    s.groupName       = { c.hasGroupName,  ToRgba(c.groupName) };
+    s.noGroup         = { c.hasNoGroup,    ToRgba(c.noGroup) };
+    s.listBackground  = { c.hasListBg,     ToRgba(c.listBg) };
+    s.listText        = { c.hasListText,   ToRgba(c.listText) };
+    s.noteBackground  = { c.hasNoteBg,     ToRgba(c.noteBg) };
+    s.noteText        = { c.hasNoteText,   ToRgba(c.noteText) };
+    s.showListBorder  = c.showListBorder;
+    s.listBorder      = { c.hasListBorder, ToRgba(c.listBorder) };
+    s.showNoteBorder  = c.showNoteBorder;
+    s.noteBorder      = { c.hasNoteBorder, ToRgba(c.noteBorder) };
+    s.dailyBadge      = ToRgba(c.dailyBadge);
+    s.dailyBadgeText  = ToRgba(c.dailyBadgeText);
+    s.weeklyBadge     = ToRgba(c.weeklyBadge);
+    s.weeklyBadgeText = ToRgba(c.weeklyBadgeText);
+    return s;
+}
+
+static void ApplySettings() {
+    ApplyColors(g_Settings.colors);
     g_Notes.SetPreviewEnabled(g_Settings.editPreview);
     g_Notes.SetListWidth(g_Settings.listWidth);
 }
 
 static void CollectSettings() {
-    const Theme::UserColors& c = Theme::Colors();
-    g_Settings.showBorder  = c.showBorder;
-    g_Settings.border      = ToRgba(c.border);
-    g_Settings.background  = { c.hasBackground, ToRgba(c.background) };
-    g_Settings.text        = { c.hasText,       ToRgba(c.text) };
-    g_Settings.groupName   = { c.hasGroupName,  ToRgba(c.groupName) };
-    g_Settings.noGroup     = { c.hasNoGroup,    ToRgba(c.noGroup) };
-    g_Settings.listBackground = { c.hasListBg,   ToRgba(c.listBg) };
-    g_Settings.listText       = { c.hasListText, ToRgba(c.listText) };
-    g_Settings.noteBackground = { c.hasNoteBg,   ToRgba(c.noteBg) };
-    g_Settings.noteText       = { c.hasNoteText, ToRgba(c.noteText) };
-    g_Settings.showListBorder = c.showListBorder;
-    g_Settings.listBorder     = { c.hasListBorder, ToRgba(c.listBorder) };
-    g_Settings.showNoteBorder = c.showNoteBorder;
-    g_Settings.noteBorder     = { c.hasNoteBorder, ToRgba(c.noteBorder) };
-    g_Settings.dailyBadge      = ToRgba(c.dailyBadge);
-    g_Settings.dailyBadgeText  = ToRgba(c.dailyBadgeText);
-    g_Settings.weeklyBadge     = ToRgba(c.weeklyBadge);
-    g_Settings.weeklyBadgeText = ToRgba(c.weeklyBadgeText);
+    g_Settings.colors      = CollectColors();
     g_Settings.editPreview = g_Notes.PreviewEnabled();
     g_Settings.listWidth   = g_Notes.ListWidth();
 }
@@ -176,6 +192,99 @@ static void RemoveQAIcon() {
     if (!APIDefs || !g_QAIconAdded) return;
     APIDefs->QuickAccess_Remove(QA_ID);
     g_QAIconAdded = false;
+}
+
+// ── Backup (Settings > Backup) ────────────────────────────────────────────
+// One file with all notes and all settings (Backup.h). The Windows file dialog runs on a
+// worker thread and is polled by RenderOptions; a restore is confirmed inline first.
+static std::future<std::wstring> s_BackupDialog;   // valid while a dialog is open
+static bool        s_BackupSaving = false;          // true: create, false: restore
+static std::string s_BackupMessage;                 // result line under the buttons
+static std::string s_RestoreFile;                   // pending restore (confirm first)
+static std::string s_RestoreNotes, s_RestoreSettings;
+static int         s_RestoreNoteCount = 0;
+
+static std::filesystem::path BackupDir() {
+    const std::filesystem::path data = g_Notes.DataDir();
+    return data.empty() ? data : data / "backups";
+}
+
+static void StartBackupDialog(bool save) {
+    if (s_BackupDialog.valid()) return;   // one dialog at a time
+    std::error_code ec;
+    const std::filesystem::path dir = BackupDir();
+    if (!dir.empty()) std::filesystem::create_directories(dir, ec);
+
+    char name[64] = "";
+    const std::time_t now = std::time(nullptr);
+    std::strftime(name, sizeof name, "trailpack-backup-%Y-%m-%d.json", std::localtime(&now));
+
+    s_BackupSaving = save;
+    s_BackupMessage.clear();
+    s_RestoreFile.clear();
+    s_BackupDialog = std::async(std::launch::async, FileDialog::Run, save, dir.wstring(),
+                                save ? FileDialog::Widen(name) : std::wstring(),
+                                FileDialog::Widen(save ? Tr("Create backup") : Tr("Restore backup")),
+                                FileDialog::JsonFilter(Tr("Trailpack Memo backup (*.json)")));
+}
+
+static void PollBackupDialog() {
+    if (!s_BackupDialog.valid() ||
+        s_BackupDialog.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
+        return;
+    const std::filesystem::path path(s_BackupDialog.get());
+    if (path.empty()) return;   // cancelled
+
+    const std::string fileName = path.filename().u8string();
+    char msg[512];
+    if (s_BackupSaving) {
+        CollectSettings();
+        const std::string text = Magpie::Backup::Make(g_Notes.NotesJson(), g_Settings.ToJson(),
+                                                      (int64_t)std::time(nullptr));
+        const bool ok = !text.empty() && Magpie::SafeFile::WriteAtomic(path, text);
+        snprintf(msg, sizeof msg, ok ? Tr("Backup saved as %s.") : Tr("Could not write %s."),
+                 fileName.c_str());
+        s_BackupMessage = msg;
+        return;
+    }
+
+    // Restore: validate everything now, replace only after the user confirmed.
+    std::string text, notes, settings;
+    Magpie::NotesStore checkNotes;
+    Magpie::Settings   checkSettings;
+    if (!Magpie::SafeFile::Read(path, text) || !Magpie::Backup::Parse(text, notes, settings) ||
+        !checkNotes.FromJson(notes) || !checkSettings.FromJson(settings)) {
+        snprintf(msg, sizeof msg, Tr("%s is not a Trailpack Memo backup. Nothing was changed."),
+                 fileName.c_str());
+        s_BackupMessage = msg;
+        return;
+    }
+    s_RestoreFile      = fileName;
+    s_RestoreNotes     = std::move(notes);
+    s_RestoreSettings  = std::move(settings);
+    s_RestoreNoteCount = (int)checkNotes.Notes().size();
+}
+
+static void RestoreBackup() {
+    char msg[256];
+    if (!g_Notes.RestoreNotes(s_RestoreNotes)) {
+        s_BackupMessage = Tr("The backup could not be restored. Nothing was changed.");
+    } else {
+        Magpie::Settings restored;              // start from defaults: the backup is complete
+        restored.FromJson(s_RestoreSettings);
+        g_Settings = restored;
+        ApplySettings();
+        ApplyLanguage();
+        if (g_Settings.showQaIcon) AddQAIcon();
+        else                       RemoveQAIcon();
+        SaveSettings();
+        snprintf(msg, sizeof msg, Magpie::I18n::TrN(s_RestoreNoteCount, "Backup restored: %d note.",
+                 "Backup restored: %d notes."), s_RestoreNoteCount);
+        s_BackupMessage = msg;
+    }
+    s_RestoreFile.clear();
+    s_RestoreNotes.clear();
+    s_RestoreSettings.clear();
 }
 
 // ── Static addon definition ───────────────────────────────────────────────
@@ -264,6 +373,9 @@ void AddonLoad(AddonAPI_t* aApi) {
 
 // ── AddonUnload ───────────────────────────────────────────────────────────
 void AddonUnload() {
+    // A backup dialog still open on its worker thread must finish before the DLL goes away.
+    if (s_BackupDialog.valid()) s_BackupDialog.wait();
+
     // Drop Decoder Ring subscriptions + cache before APIDefs goes away.
     Magpie::Decoder::Shutdown();
 
@@ -412,7 +524,8 @@ static void RenderOptions() {
 
         // Column positions: right of the widest label (badge rows: preview + name).
         float labelW = 0.0f;
-        for (const char* l : { Tr("Border"), Tr("Background"), Tr("Text"), Tr("Group names"), Tr("No group") })
+        for (const char* l : { Tr("Theme"), Tr("Save as theme"), Tr("Border"), Tr("Background"), Tr("Text"),
+                               Tr("Group names"), Tr("No group") })
             labelW = std::max(labelW, ImGui::CalcTextSize(l).x);
         for (Magpie::NoteType t : { Magpie::NoteType::Daily, Magpie::NoteType::Weekly })
             labelW = std::max(labelW, badgeW + style.ItemSpacing.x + ImGui::CalcTextSize(NotesUi::TypeName(t)).x);
@@ -446,6 +559,71 @@ static void RenderOptions() {
             ImGui::Spacing();
             ImGui::TextDisabled("%s", text);
         };
+
+        // ── Theme: built-ins and the user's saved themes ─────────────────
+        // The combo shows the theme matching the current colours, else "Custom". Picking
+        // one replaces every colour option; single colours can still be changed afterwards.
+        {
+            const Magpie::ColorSet current = CollectColors();
+            struct Builtin { const char* name; Magpie::ColorSet colors; };
+            const Builtin builtins[] = {
+                { Tr("Default (Nexus)"), Magpie::ColorSet()        },
+                { Tr("Light"),           Magpie::ColorSet::Light() },
+                { Tr("Dark"),            Magpie::ColorSet::Dark()  },
+            };
+            std::string preview = Tr("Custom");
+            std::string currentUser;   // name of the matching user theme, if any
+            for (const auto& t : g_Settings.themes)
+                if (t.colors == current) { currentUser = preview = t.name; break; }
+            if (currentUser.empty())
+                for (const auto& b : builtins)
+                    if (b.colors == current) { preview = b.name; break; }
+
+            const float fieldW = ImGui::GetFontSize() * 12.0f;
+            Magpie::ColorSet pick;
+            bool picked = false;
+            ImGui::Indent();
+            label(Tr("Theme"));
+            ImGui::SetNextItemWidth(fieldW);
+            if (ImGui::BeginCombo("##theme", preview.c_str())) {
+                for (const auto& b : builtins)
+                    if (ImGui::Selectable(b.name, currentUser.empty() && b.colors == current)) {
+                        pick = b.colors; picked = true;
+                    }
+                if (!g_Settings.themes.empty()) ImGui::Separator();
+                for (size_t i = 0; i < g_Settings.themes.size(); ++i) {
+                    const Magpie::NamedTheme& t = g_Settings.themes[i];
+                    ImGui::PushID((int)i);   // a user theme may share a built-in's name
+                    if (ImGui::Selectable(t.name.c_str(), t.name == currentUser)) {
+                        pick = t.colors; picked = true;
+                    }
+                    ImGui::PopID();
+                }
+                ImGui::EndCombo();
+            }
+            if (picked) { ApplyColors(pick); s_ColorsDirty = true; }
+            if (!currentUser.empty()) {
+                ImGui::SameLine();
+                if (ImGui::Button(Tr("Delete theme"))) {
+                    g_Settings.DeleteTheme(currentUser);
+                    s_ColorsDirty = true;
+                }
+            }
+
+            // Save the current colours under a name (same name: overwritten).
+            static std::string s_ThemeName;
+            label(Tr("Save as theme"));
+            ImGui::SetNextItemWidth(fieldW);
+            ImGui::InputTextWithHint("##theme_name", Tr("Name"), &s_ThemeName);
+            ImGui::SameLine();
+            const bool exists = g_Settings.FindTheme(s_ThemeName) != nullptr;
+            if (ImGui::Button(exists ? Tr("Overwrite") : Tr("Save")) &&
+                g_Settings.SaveTheme(s_ThemeName, current)) {
+                s_ThemeName.clear();
+                s_ColorsDirty = true;
+            }
+            ImGui::Unindent();
+        }
 
         heading(Tr("Window"));
         ImGui::Indent();
@@ -489,7 +667,6 @@ static void RenderOptions() {
         optionalRow("no_group", Tr("No group"), c.hasNoGroup, c.noGroup, style.Colors[ImGuiCol_TextDisabled]);
         ImGui::Unindent();
 
-        // Daily / weekly badges: preview + name | background | letter | Reset (both).
         heading(Tr("Note"));
         ImGui::Indent();
         borderToggle("note_border_on", c.showNoteBorder);
@@ -498,6 +675,7 @@ static void RenderOptions() {
         optionalRow("note_text", Tr("Text"),       c.hasNoteText, c.noteText, paneText);
         ImGui::Unindent();
 
+        // Daily / weekly badges: preview + name | background | letter | Reset (both).
         heading(Tr("Daily / weekly badges"));
         ImGui::Indent();
         ImGui::SetCursorPosX(colSwatch); ImGui::TextDisabled("%s", Tr("Background"));
@@ -522,7 +700,7 @@ static void RenderOptions() {
 
         ImGui::Spacing();
         if (ImGui::Button(Tr("Reset all colours"))) {
-            c = Theme::UserColors();
+            ApplyColors(Magpie::ColorSet());
             s_ColorsDirty = true;
         }
     }
@@ -530,6 +708,34 @@ static void RenderOptions() {
     if (s_ColorsDirty && !ImGui::IsAnyItemActive()) {
         SaveSettings();
         s_ColorsDirty = false;
+    }
+
+    // ── Backup ────────────────────────────────────────────────────────────
+    // All notes, groups and settings (incl. themes) in one file; restoring replaces them.
+    PollBackupDialog();
+    if (ImGui::CollapsingHeader(Tr("Backup"))) {
+        ImGui::TextWrapped("%s", Tr("A backup saves all notes, groups and settings (including themes) in one file."));
+        if (ImGui::Button(Tr("Create backup..."))) StartBackupDialog(true);
+        ImGui::SameLine();
+        if (ImGui::Button(Tr("Restore backup..."))) StartBackupDialog(false);
+
+        if (!s_RestoreFile.empty()) {
+            char line[512];
+            snprintf(line, sizeof line,
+                     Magpie::I18n::TrN(s_RestoreNoteCount,
+                                       "Restore %s (%d note)? This replaces all notes and settings.",
+                                       "Restore %s (%d notes)? This replaces all notes and settings."),
+                     s_RestoreFile.c_str(), s_RestoreNoteCount);
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.75f, 0.35f, 1.0f));
+            ImGui::TextWrapped("%s", line);
+            ImGui::PopStyleColor();
+            Theme::PushGreenButton();
+            if (ImGui::Button(Tr("Restore"))) RestoreBackup();
+            Theme::PopButton();
+            ImGui::SameLine();
+            if (ImGui::Button(Tr("Cancel"))) s_RestoreFile.clear();
+        }
+        if (!s_BackupMessage.empty()) ImGui::TextWrapped("%s", s_BackupMessage.c_str());
     }
 }
 

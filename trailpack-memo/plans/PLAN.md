@@ -23,7 +23,9 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 | Module | Pure? | Role |
 |---|---|---|
 | `dllmain.cpp` | no | Nexus lifecycle, identity, keybind, quick access, options pane; maps `Settings` <-> live state |
-| `Settings.{h,cpp}` | yes | settings.json model with validation/clamping (`g_Settings`) |
+| `Settings.{h,cpp}` | yes | settings.json model with validation/clamping (`g_Settings`); `ColorSet` (all colour options) + built-in Light/Dark, user themes |
+| `Backup.{h,cpp}` | yes | Backup file format (`trailpack-memo-backup` v1: notes + settings) |
+| `FileDialog.{h,cpp}` | no | Windows open/save dialog (worker thread), JSON filter; used by export/import and backups |
 | `SafeFile.{h,cpp}` | yes | Atomic write (+ `.bak`), read, set aside unreadable files |
 | `NotesWindow.{h,cpp}` | no | Note state, load/save, navigation, frame layout, popup requests (`requestPopup_` / `beginModal_`), caches |
 | `NotesList.cpp` | no | Left column: groups, note rows, menu button, splitter |
@@ -113,6 +115,15 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   Pane borders: `show_{list,note}_border` + `color_{list,note}_border` (null = follow the window
   border colour), pushed via `Theme::PushListBorder/PushNoteBorder` around BeginChild only
   (ChildBorderSize + ImGuiCol_Border); the preview pane uses the note's border.
+  All colour options are one `Magpie::ColorSet` (`g_Settings.colors`; JSON keys stay flat);
+  dllmain `ApplyColors` / `CollectColors` map it to `Theme::UserColors`. Borders default off.
+  Themes: Default (= `ColorSet{}`), `ColorSet::Light()` / `Dark()` (window text stays Nexus's;
+  editor fields on a custom note background use `Theme::FieldBg`), user themes in
+  `settings.json` `themes` (`SaveTheme` / `DeleteTheme`). The combo shows the theme equal to the
+  current colours, else "Custom".
+  Backup (Settings > Backup, dllmain): `Backup::Make/Parse`; restore validates notes + settings
+  first, asks inline, then `NotesWindow::RestoreNotes` + settings from defaults. Default folder
+  `addons/TrailpackMemo/backups/`.
   "No group" label: `color_no_group` (null = Nexus disabled text), `NotesUi::NoGroupColor`.
   Options layout: label | swatch | Reset in fixed columns, subheadings Window / Note list /
   badges (2x2 table with preview), "Reset all colours" resets `Theme::UserColors`.

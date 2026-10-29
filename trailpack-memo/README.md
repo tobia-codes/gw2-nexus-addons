@@ -41,7 +41,12 @@
   list (border on/off and colour, background, text, group names, the "No group" label), note
   (border on/off and colour, background, text) and daily / weekly badges (background and letter, each
   separately, with a live preview). Each row is a swatch that opens a picker with alpha, plus a
-  Reset; "Reset all colours" restores every default.
+  Reset; "Reset all colours" restores every default. Borders are off by default.
+- **Themes**: pick *Default (Nexus)*, *Light* or *Dark* under "Colour options" > Theme, or save the
+  current colours as your own theme (*Save as theme*; same name overwrites, *Delete theme* removes it).
+- **Backup**: "Backup" in the settings: *Create backup...* saves all notes, groups and settings
+  (incl. themes) in one `.json` file (default folder `addons/TrailpackMemo/backups/`);
+  *Restore backup...* replaces everything with a backup's content after a confirmation.
 - **Settings window**: menu button -> *Settings...* opens the same options as the Nexus addon
   options in a window of its own.
 - **Two text sizes** (70-200 %) in the Nexus addon options under "Font options": one for the window's UI, one for the

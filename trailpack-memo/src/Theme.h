@@ -38,7 +38,7 @@ inline const ImVec4 BADGE_TEXT         = { 0.08f, 0.08f, 0.08f, 1.00f };
 // Border defaults to BORDER_GOLD. Background and text default to Nexus's own style;
 // they only override it once the user picks a colour (has* = true).
 struct UserColors {
-    bool   showBorder    = true;   // off: no window border (colour still used elsewhere)
+    bool   showBorder    = false;  // off: no window border (colour still used elsewhere)
     ImVec4 border        = BORDER_GOLD;
     bool   hasBackground = false;
     ImVec4 background    = { 0.0f, 0.0f, 0.0f, 0.0f };
@@ -65,11 +65,11 @@ struct UserColors {
     ImVec4 noteBg        = { 0.0f, 0.0f, 0.0f, 0.0f };
     bool   hasNoteText   = false;
     ImVec4 noteText      = { 0.0f, 0.0f, 0.0f, 0.0f };
-    // Pane borders (list / note): on by default; colour follows `border` until picked.
-    bool   showListBorder = true;
+    // Pane borders (list / note): off by default; colour follows `border` until picked.
+    bool   showListBorder = false;
     bool   hasListBorder  = false;
     ImVec4 listBorder     = { 0.0f, 0.0f, 0.0f, 0.0f };
-    bool   showNoteBorder = true;
+    bool   showNoteBorder = false;
     bool   hasNoteBorder  = false;
     ImVec4 noteBorder     = { 0.0f, 0.0f, 0.0f, 0.0f };
 };
@@ -85,6 +85,10 @@ void PushPaneBorder(bool show, bool hasColor, const ImVec4& color);
 void PopPaneBorder();
 inline void PushListBorder() { const UserColors& c = Colors(); PushPaneBorder(c.showListBorder, c.hasListBorder, c.listBorder); }
 inline void PushNoteBorder() { const UserColors& c = Colors(); PushPaneBorder(c.showNoteBorder, c.hasNoteBorder, c.noteBorder); }
+
+// Background of an input field on a pane background `bg`: slightly darker on a light
+// pane, slightly lighter on a dark one, opaque (the editor on a custom note background).
+ImVec4 FieldBg(const ImVec4& bg);
 
 // Push ImGuiCol_Text for a scope when `set` (e.g. note text); no-op otherwise.
 struct TextColorScope {

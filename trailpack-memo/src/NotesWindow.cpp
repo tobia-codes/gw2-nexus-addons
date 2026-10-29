@@ -120,6 +120,27 @@ void NotesWindow::Shutdown()
     Save();
 }
 
+bool NotesWindow::RestoreNotes(const std::string& json)
+{
+    Magpie::NotesStore restored;
+    if (!restored.FromJson(json)) return false;
+    store_ = std::move(restored);
+
+    cancelEdit_();
+    pendingSelectId_.clear();
+    pendingCreate_ = false;
+    pendingEditId_.clear();
+    pendingDeleteId_.clear();
+    pendingDeleteGroupId_.clear();
+    groupColorId_.clear();
+    bulkSelected_.clear();
+    viewParse_.valid = previewParse_.valid = false;
+    taskCache_.clear();
+    selectFirst_();
+    Save();
+    return true;
+}
+
 // ── Internal helpers ──────────────────────────────────────────────────────
 
 void NotesWindow::selectFirst_()

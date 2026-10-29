@@ -10,6 +10,7 @@
 #include "Reset.h"
 #include "SafeFile.h"
 #include "Settings.h"
+#include "Backup.h"
 #include <filesystem>
 #include <set>
 #include <vector>
@@ -669,46 +670,37 @@ static void test_settings_roundtrip()
 {
     Magpie::Settings a;
     a.showQaIcon    = false;
-    a.showBorder    = false;
-    a.showNoteBorder = false;
-    a.listBorder    = { true, Magpie::Rgba{ 0.0f, 0.0f, 0.7f, 1.0f } };
     a.editPreview   = true;
     a.uiTextScale   = 150;
     a.noteTextScale = 80;
     a.listWidth     = 333.0f;
     a.language      = Magpie::Settings::Language::De;
-    a.border        = Magpie::Rgba{ 0.5f, 0.25f, 1.0f, 1.0f };
-    a.groupName     = { true, Magpie::Rgba{ 1.0f, 0.0f, 0.0f, 1.0f } };
-    a.noGroup       = { true, Magpie::Rgba{ 0.0f, 0.5f, 0.0f, 1.0f } };
-    a.listBackground = { true, Magpie::Rgba{ 0.2f, 0.2f, 0.2f, 1.0f } };
-    a.noteText       = { true, Magpie::Rgba{ 0.9f, 0.9f, 0.1f, 1.0f } };
-    a.dailyBadge      = Magpie::Rgba{ 0.1f, 0.2f, 0.3f, 1.0f };
-    a.dailyBadgeText  = Magpie::Rgba{ 1.0f, 1.0f, 1.0f, 0.5f };
-    a.weeklyBadge     = Magpie::Rgba{ 0.0f, 1.0f, 0.0f, 1.0f };
-    a.weeklyBadgeText = Magpie::Rgba{ 0.0f, 0.0f, 1.0f, 1.0f };
+    Magpie::ColorSet& c = a.colors;
+    c.showBorder      = true;
+    c.showListBorder  = true;
+    c.listBorder      = { true, Magpie::Rgba{ 0.0f, 0.0f, 0.7f, 1.0f } };
+    c.border          = Magpie::Rgba{ 0.5f, 0.25f, 1.0f, 1.0f };
+    c.groupName       = { true, Magpie::Rgba{ 1.0f, 0.0f, 0.0f, 1.0f } };
+    c.noGroup         = { true, Magpie::Rgba{ 0.0f, 0.5f, 0.0f, 1.0f } };
+    c.listBackground  = { true, Magpie::Rgba{ 0.2f, 0.2f, 0.2f, 1.0f } };
+    c.noteText        = { true, Magpie::Rgba{ 0.9f, 0.9f, 0.1f, 1.0f } };
+    c.dailyBadge      = Magpie::Rgba{ 0.1f, 0.2f, 0.3f, 1.0f };
+    c.dailyBadgeText  = Magpie::Rgba{ 1.0f, 1.0f, 1.0f, 0.5f };
+    c.weeklyBadge     = Magpie::Rgba{ 0.0f, 1.0f, 0.0f, 1.0f };
+    c.weeklyBadgeText = Magpie::Rgba{ 0.0f, 0.0f, 1.0f, 1.0f };
 
     Magpie::Settings b;
     CHECK(b.FromJson(a.ToJson()));
     CHECK(!b.showQaIcon);
-    CHECK(!b.showBorder);
-    CHECK(b.showListBorder && !b.showNoteBorder);
-    CHECK(b.listBorder.set && b.listBorder.color.b == 0.7f && !b.noteBorder.set);
     CHECK(b.editPreview);
     CHECK_EQ(b.uiTextScale, 150);
     CHECK_EQ(b.noteTextScale, 80);
     CHECK(b.listWidth == 333.0f);
     CHECK(b.language == Magpie::Settings::Language::De);
-    CHECK(b.border.g == 0.25f);
-    CHECK(b.groupName.set && b.groupName.color.r == 1.0f);
-    CHECK(!b.background.set && !b.text.set);         // null stays unset
-    CHECK(b.noGroup.set && b.noGroup.color.g == 0.5f);
-    CHECK(b.listBackground.set && b.listBackground.color.r == 0.2f);
-    CHECK(b.noteText.set && b.noteText.color.b == 0.1f);
-    CHECK(!b.listText.set && !b.noteBackground.set);
-    CHECK(b.dailyBadge.b == 0.3f);
-    CHECK(b.dailyBadgeText.a == 0.5f);
-    CHECK(b.weeklyBadge.g == 1.0f && b.weeklyBadge.r == 0.0f);
-    CHECK(b.weeklyBadgeText.b == 1.0f && b.weeklyBadgeText.r == 0.0f);
+    CHECK(b.colors == a.colors);                         // every colour option survives
+    CHECK(b.colors.showBorder && b.colors.showListBorder && !b.colors.showNoteBorder);
+    CHECK(!b.colors.background.set && !b.colors.text.set);   // null stays unset
+    CHECK(b.colors.dailyBadgeText.a == 0.5f);
 }
 
 static void test_settings_validation()
@@ -718,6 +710,9 @@ static void test_settings_validation()
     CHECK(!s.FromJson("[1,2]"));
     CHECK_EQ(s.uiTextScale, 100);                       // untouched on failure
 
+    // Defaults: no borders.
+    CHECK(!s.colors.showBorder && !s.colors.showListBorder && !s.colors.showNoteBorder);
+
     // Out-of-range / wrong types: clamped or ignored, everything else keeps defaults.
     CHECK(s.FromJson("{\"text_scale\": 999, \"note_text_scale\": 5, \"show_qa_icon\": \"yes\","
                      " \"language\": \"fr\", \"color_border\": [2, -1, 0.5],"
@@ -726,14 +721,81 @@ static void test_settings_validation()
     CHECK_EQ(s.noteTextScale, Magpie::Settings::kScaleMin);
     CHECK(s.showQaIcon);
     CHECK(s.language == Magpie::Settings::Language::Auto);
-    CHECK(s.border.r == 0.90f);                         // 3 components: ignored
-    CHECK(s.text.set && s.text.color.a == 1.0f);        // clamped
+    CHECK(s.colors.border.r == 0.90f);                  // 3 components: ignored
+    CHECK(s.colors.text.set && s.colors.text.color.a == 1.0f);   // clamped
     CHECK(s.listWidth == Magpie::Settings::kDefaultListWidth);
 
     // Badge colours: a missing or malformed value keeps the default.
     CHECK(s.FromJson("{\"color_daily_badge\": null, \"color_weekly_badge_text\": [1, 1]}"));
-    CHECK(s.dailyBadge.r == 0.90f && s.dailyBadge.g == 0.62f);
-    CHECK(s.weeklyBadgeText.r == 0.08f);
+    CHECK(s.colors.dailyBadge.r == 0.90f && s.colors.dailyBadge.g == 0.62f);
+    CHECK(s.colors.weeklyBadgeText.r == 0.08f);
+}
+
+static void test_settings_themes()
+{
+    // Built-ins differ from the default and from each other; equality ignores the stored
+    // value of an unset optional colour.
+    const Magpie::ColorSet def, light = Magpie::ColorSet::Light(), dark = Magpie::ColorSet::Dark();
+    CHECK(light != def && dark != def && light != dark);
+    Magpie::ColorSet unsetDiffers;
+    unsetDiffers.text.color = Magpie::Rgba{ 0.1f, 0.1f, 0.1f, 1.0f };   // still unset
+    CHECK(unsetDiffers == def);
+
+    Magpie::Settings s;
+    CHECK(!s.SaveTheme("   ", light));                  // empty name
+    CHECK(s.SaveTheme("  Mine ", light));               // trimmed
+    CHECK(s.FindTheme("Mine") != nullptr && s.FindTheme("Mine")->colors == light);
+    CHECK(s.SaveTheme("Mine", dark));                   // same name: replaced
+    CHECK_EQ(s.themes.size(), (size_t)1);
+    CHECK(s.FindTheme("Mine")->colors == dark);
+    CHECK(s.SaveTheme("Other", def));
+
+    // Round trip keeps names, order and colours; a nameless entry is skipped.
+    Magpie::Settings b;
+    CHECK(b.FromJson(s.ToJson()));
+    CHECK_EQ(b.themes.size(), (size_t)2);
+    CHECK_EQ(b.themes[0].name, std::string("Mine"));
+    CHECK(b.themes[0].colors == dark && b.themes[1].colors == def);
+    CHECK(b.FromJson("{\"themes\": [{\"show_border\": true}, {\"name\": \"X\", \"show_border\": true}]}"));
+    CHECK_EQ(b.themes.size(), (size_t)1);
+    CHECK(b.themes[0].name == "X" && b.themes[0].colors.showBorder);
+
+    CHECK(b.DeleteTheme("X"));
+    CHECK(!b.DeleteTheme("X"));
+    CHECK(b.themes.empty());
+}
+
+static void test_backup()
+{
+    Magpie::NotesStore store;
+    store.Create("First");
+    store.Create("Second");
+    Magpie::Settings settings;
+    settings.uiTextScale = 120;
+    settings.SaveTheme("Mine", Magpie::ColorSet::Dark());
+
+    const std::string text = Magpie::Backup::Make(store.ToJson(), settings.ToJson(), 1700000000);
+    CHECK(!text.empty());
+
+    std::string notes, cfg;
+    CHECK(Magpie::Backup::Parse(text, notes, cfg));
+    Magpie::NotesStore restored;
+    CHECK(restored.FromJson(notes));
+    CHECK_EQ(restored.Notes().size(), (size_t)2);
+    CHECK_EQ(restored.Notes()[0].id, store.Notes()[0].id);   // ids stay stable
+    Magpie::Settings restoredSettings;
+    CHECK(restoredSettings.FromJson(cfg));
+    CHECK_EQ(restoredSettings.uiTextScale, 120);
+    CHECK(restoredSettings.FindTheme("Mine") != nullptr);
+
+    // Not a backup: invalid input, a notes export, a newer version, missing parts.
+    CHECK(Magpie::Backup::Make("not json", "{}", 0).empty());
+    CHECK(!Magpie::Backup::Parse("not json", notes, cfg));
+    CHECK(!Magpie::Backup::Parse(store.ExportJson({}), notes, cfg));
+    CHECK(!Magpie::Backup::Parse("{\"format\":\"trailpack-memo-backup\",\"version\":2,"
+                                 "\"notes\":[],\"settings\":{}}", notes, cfg));
+    CHECK(!Magpie::Backup::Parse("{\"format\":\"trailpack-memo-backup\",\"version\":1,"
+                                 "\"notes\":[]}", notes, cfg));
 }
 
 static void test_delete_many()
@@ -1615,6 +1677,8 @@ int main()
     test_safe_file_write_backup_and_set_aside();
     test_settings_roundtrip();
     test_settings_validation();
+    test_settings_themes();
+    test_backup();
     test_delete_many();
     test_i18n_lookup_and_fallback();
     test_i18n_table_is_consistent();

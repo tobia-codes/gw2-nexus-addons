@@ -67,7 +67,11 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
 
     // Editable title, with the note's type (applies at once) beside it.
     const float typeW = ButtonWidth(Tr("Weekly"), 60.0f) + ImGui::GetFrameHeight();
-    Theme::PushEditBg();
+    // On a custom note background the fields take a shade of it (FieldBg), so a light
+    // theme doesn't put note-coloured text on Nexus's dark field.
+    const Theme::UserColors& uc = Theme::Colors();
+    const ImVec4 fieldBg = uc.hasNoteBg ? Theme::FieldBg(uc.noteBg) : Theme::EDIT_BG;
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, fieldBg);
     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - typeW - ImGui::GetStyle().ItemSpacing.x);
     {
         Theme::TextColorScope noteText(Theme::Colors().hasNoteText, Theme::Colors().noteText);
@@ -89,11 +93,12 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
 
     // Editable body: chat codes are atomic chip cells, markdown stays raw (edit = source).
     const ImU32 border = ImGui::GetColorU32(Theme::Colors().border);
-    const Theme::UserColors& uc = Theme::Colors();
     if (!showPreview_) {
         Magpie::FontScaleScope noteFont(noteTextScale_);
         Theme::TextColorScope noteText(uc.hasNoteText, uc.noteText);
+        if (uc.hasNoteBg) ImGui::PushStyleColor(ImGuiCol_FrameBg, fieldBg);
         bodyEditor_.Render("##body_edit", ImGui::GetContentRegionAvail().x, border, /*minLines=*/6);
+        if (uc.hasNoteBg) ImGui::PopStyleColor();
         return;
     }
 
@@ -103,7 +108,9 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
     {
         Magpie::FontScaleScope noteFont(noteTextScale_);
         Theme::TextColorScope noteText(uc.hasNoteText, uc.noteText);
+        if (uc.hasNoteBg) ImGui::PushStyleColor(ImGuiCol_FrameBg, fieldBg);
         bodyEditor_.Render("##body_edit", ImGui::GetContentRegionAvail().x, border, /*minLines=*/6);
+        if (uc.hasNoteBg) ImGui::PopStyleColor();
     }
     ImGui::EndChild();
 
