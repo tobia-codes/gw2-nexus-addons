@@ -41,8 +41,8 @@
   list (border on/off and colour, background, text, group names, the "No group" label), note
   (border on/off and colour, background, text) and daily / weekly badges (background and letter, each
   separately, with a live preview). Each row is a swatch that opens a picker with alpha, plus a
-  Reset; "Reset all colours" restores every default. Borders are off by default. Popups (menus, tooltips, the event picker, dialogs) are opaque black
-  with Nexus's text colour by default; both are settable under "Popups".
+  Reset; "Reset all colours" restores every default. Borders are off by default. Popups (menus, tooltips, the event picker, dialogs) are opaque and
+  follow the note list's colours by default, so they match the theme; both are settable under "Popups".
 - **Themes**: pick *Default (Nexus)*, *Light* or *Dark* under "Colour options" > Theme, or save the
   current colours as your own theme (*Save as theme*; same name overwrites, *Delete theme* removes it).
 - **Backup**: "Backup" in the settings: *Create backup...* saves all notes, groups and settings
@@ -79,7 +79,7 @@ If an LLM creating software upsets you, then perhaps this repo isn't for you. Mo
 
 - **Multiple notes**, two-pane: titles on the left, the selected note on the right. Create, rename, and delete.
 - **Markdown** in the rendered view: bold, italic, headings, and bullet lists. Edit mode shows the raw source.
-- **View / edit modes** with a distinct edit tint, Save / Cancel, and an unsaved-changes prompt so edits are never lost.
+- **View / edit modes** with a distinct edit tint, Save / Cancel, and an unsaved-changes prompt so edits are never lost. The editor wraps long lines at the field width (chips move to the next line as a whole).
 - **Chat-link chips** — paste any GW2 chat link (waypoint, item, skin, skill, build) into a note and it becomes an inline chip:
   - Shows the item's **icon and name** with a rich hover **tooltip** — item stats, rarity, flavour text and rune/sigil bonuses, skill facts, waypoint map, and full **recipe** breakdowns (ingredients, required rating, and the crafted item).
   - **Right-click** a chip to **Copy chat code** or **Open in wiki**.

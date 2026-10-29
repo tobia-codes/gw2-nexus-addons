@@ -9,10 +9,30 @@ static UserColors s_Colors;
 static int        s_PushedColors = 0;
 static ImVec4     s_WindowText   = { 1.0f, 1.0f, 1.0f, 1.0f };
 static ImVec4     s_NexusText    = { 1.0f, 1.0f, 1.0f, 1.0f };   // before our pushes
+static ImVec4     s_PopupBg      = { 0.0f, 0.0f, 0.0f, 1.0f };   // in use, set by PushWindowStyle
+static ImVec4     s_PopupText    = { 1.0f, 1.0f, 1.0f, 1.0f };
 
 UserColors& Colors() { return s_Colors; }
 ImVec4      WindowText() { return s_WindowText; }
-ImVec4      PopupText()  { return s_Colors.hasPopupText ? s_Colors.popupText : s_NexusText; }
+ImVec4      PopupText()  { return s_PopupText; }
+
+ImVec4 DefaultPopupBg() {
+    const ImGuiStyle& st = ImGui::GetStyle();
+    const ImVec4 list = s_Colors.hasListBg ? s_Colors.listBg : st.Colors[ImGuiCol_ChildBg];
+    const ImVec4 win  = s_Colors.hasBackground ? s_Colors.background : st.Colors[ImGuiCol_WindowBg];
+    const float  a    = list.w;
+    return ImVec4(list.x * a + win.x * (1.0f - a), list.y * a + win.y * (1.0f - a),
+                  list.z * a + win.z * (1.0f - a), 1.0f);
+}
+
+ImVec4 DefaultPopupText() {
+    return s_Colors.hasListText ? s_Colors.listText : ImGui::GetStyle().Colors[ImGuiCol_Text];
+}
+
+PopupTextScope::PopupTextScope() {
+    ImGui::PushStyleColor(ImGuiCol_Text, s_PopupText);
+    ImGui::PushStyleColor(ImGuiCol_FrameBg, FieldBg(s_PopupBg));
+}
 
 void Tooltip(const char* fmt, ...) {
     PopupTextScope text;
@@ -26,7 +46,10 @@ void PushWindowStyle() {
     s_PushedColors = 0;
     s_NexusText  = ImGui::GetStyle().Colors[ImGuiCol_Text];
     s_WindowText = s_Colors.hasText ? s_Colors.text : s_NexusText;
-    ImGui::PushStyleColor(ImGuiCol_PopupBg, s_Colors.popupBg);
+    // Popup colours are resolved here, before this window's own colours are pushed.
+    s_PopupBg   = s_Colors.hasPopupBg   ? s_Colors.popupBg   : DefaultPopupBg();
+    s_PopupText = s_Colors.hasPopupText ? s_Colors.popupText : DefaultPopupText();
+    ImGui::PushStyleColor(ImGuiCol_PopupBg, s_PopupBg);
     ++s_PushedColors;
     ImGui::PushStyleColor(ImGuiCol_Border, s_Colors.border);
     ++s_PushedColors;

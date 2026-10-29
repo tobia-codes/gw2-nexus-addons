@@ -99,7 +99,7 @@ static void colorsToJson(const ColorSet& c, nlohmann::json& j)
     j["color_note_border"]       = optional(c.noteBorder);
     j["color_menu_button"]       = optional(c.menuButton);
     j["color_menu_icon"]         = optional(c.menuIcon);
-    j["color_popup_background"]  = colorJson(c.popupBackground);
+    j["color_popup_bg"]          = optional(c.popupBackground);
     j["color_popup_text"]        = optional(c.popupText);
     j["color_daily_badge"]       = colorJson(c.dailyBadge);
     j["color_daily_badge_text"]  = colorJson(c.dailyBadgeText);
@@ -135,7 +135,9 @@ static void colorsFromJson(const nlohmann::json& j, ColorSet& c)
     optional("color_note_border", c.noteBorder);
     optional("color_menu_button", c.menuButton);
     optional("color_menu_icon", c.menuIcon);
-    color("color_popup_background", c.popupBackground);
+    // "color_popup_bg" replaces the short-lived "color_popup_background" (always opaque black,
+    // which would pin the old default), so old files fall back to the list colour.
+    optional("color_popup_bg", c.popupBackground);
     optional("color_popup_text", c.popupText);
     color("color_daily_badge", c.dailyBadge);
     color("color_daily_badge_text", c.dailyBadgeText);
