@@ -18,7 +18,8 @@
   *Export note...* saves just that one; *Import...* shows the notes in such a file (or in a
   Trailpack / Magpie Memo `notes.json`) and you tick which ones to add. Nothing is overwritten,
   and notes you already have are skipped: every note carries a unique id that travels with the
-  export (notes without one are matched by identical title + text). Dialogs open in
+  export (notes without one are matched by identical title + text). If the file holds a
+  *different* version of a note you have, you are offered **Update** for it (never pre-selected). Dialogs open in
   `addons/TrailpackMemo/exports/`.
 - **Custom colours** for the window border, background and text (colour pickers with alpha in
   the Nexus addon options, each with a Reset).

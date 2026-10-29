@@ -17,6 +17,8 @@ struct ImportItem {
     std::string title;
     std::string body;
     bool        duplicate = false;  // already in the store (or earlier in the same file)
+    bool        changed   = false;  // duplicate by id whose title/body differ from the local
+                                    // note -> can be offered as an update (UpdateImported)
 };
 
 // True if `id` has the globally unique format (32 lowercase hex chars).
@@ -49,6 +51,10 @@ public:
     // Append `items` as new notes, skipping duplicates (re-checked against the store). An
     // item keeps its id when it has one; otherwise it gets a fresh id. Returns the count added.
     int         AddImported(const std::vector<ImportItem>& items);
+    // Overwrite title + body of the local notes that share an item's id (the "changed"
+    // duplicates the user chose to update). Items without a matching note are ignored.
+    // Returns the number of notes actually changed.
+    int         UpdateImported(const std::vector<ImportItem>& items);
     // PrepareImport + AddImported of every item. Returns the count added, or -1 if invalid.
     int         ImportJson(const std::string& json);
 

@@ -169,11 +169,17 @@ bool NotesStore::PrepareImport(const std::string& json, std::vector<ImportItem>&
         it.title = obj["title"].get<std::string>();
         it.body  = obj["body"].get<std::string>();
 
-        it.duplicate = hasDuplicateOf_(it) ||
-            std::any_of(tmp.begin(), tmp.end(), [&](const ImportItem& prev) {
-                return it.id.empty() ? (prev.id.empty() && prev.title == it.title && prev.body == it.body)
-                                     : prev.id == it.id;
-            });
+        const bool repeat = std::any_of(tmp.begin(), tmp.end(), [&](const ImportItem& prev) {
+            return it.id.empty() ? (prev.id.empty() && prev.title == it.title && prev.body == it.body)
+                                 : prev.id == it.id;
+        });
+        it.duplicate = repeat || hasDuplicateOf_(it);
+        if (!repeat && !it.id.empty()) {
+            const auto local = std::find_if(notes_.begin(), notes_.end(),
+                                            [&](const Note& n) { return n.id == it.id; });
+            it.changed = local != notes_.end() &&
+                         (local->title != it.title || local->body != it.body);
+        }
         tmp.push_back(std::move(it));
     }
 
@@ -192,6 +198,19 @@ int NotesStore::AddImported(const std::vector<ImportItem>& items)
         ++added;
     }
     return added;
+}
+
+int NotesStore::UpdateImported(const std::vector<ImportItem>& items)
+{
+    int updated = 0;
+    for (const auto& item : items) {
+        Note* n = IsNoteId(item.id) ? Get(item.id) : nullptr;
+        if (n == nullptr || (n->title == item.title && n->body == item.body)) continue;
+        n->title = item.title;
+        n->body  = item.body;
+        ++updated;
+    }
+    return updated;
 }
 
 int NotesStore::ImportJson(const std::string& json)

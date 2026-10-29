@@ -52,7 +52,8 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 - Export/import: `NotesStore::ExportJson` / `PrepareImport` / `AddImported` (pure, host-tested;
   format `trailpack-memo-export` v1 with ids; import also takes a bare `notes.json` array). Import
   shows a selection modal; duplicates (same id, or same title + body when the file has no valid
-  id) are shown locked and never added. Windows file dialogs run on a worker thread
+  id) are never added; an id match whose title/body differ (`ImportItem::changed`) is offered as
+  an opt-in update (`UpdateImported`), locked while that note is open in the editor. Windows file dialogs run on a worker thread
   (`std::async`) and are polled in `Render()`.
 - User colours (border / background / text) in `Theme::Colors()`, pushed for the whole window by
   `Theme::PushWindowStyle()`; background/text only override Nexus's style once picked

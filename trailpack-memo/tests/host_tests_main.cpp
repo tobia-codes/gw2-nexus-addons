@@ -269,6 +269,46 @@ static void test_prepare_import_flags_duplicates()
     CHECK_EQ(dst.Notes()[1].title, std::string("B"));
 }
 
+static void test_changed_duplicate_can_be_updated()
+{
+    Magpie::NotesStore src;
+    const std::string id = src.Create("Daily").id;
+    src.Get(id)->body = "- [ ] old";
+    Magpie::NotesStore dst;
+    dst.ImportJson(src.ExportJson());
+
+    std::vector<Magpie::ImportItem> items;
+    CHECK(dst.PrepareImport(src.ExportJson(), items));
+    CHECK(items[0].duplicate);
+    CHECK(!items[0].changed);                 // identical -> nothing to update
+
+    src.Get(id)->body  = "- [ ] new";
+    src.Get(id)->title = "Daily v2";
+    CHECK(dst.PrepareImport(src.ExportJson(), items));
+    CHECK(items[0].duplicate);
+    CHECK(items[0].changed);
+    CHECK_EQ(dst.AddImported(items), 0);      // never added as a second copy
+    CHECK_EQ(dst.Notes()[0].body, std::string("- [ ] old"));   // untouched until asked
+
+    CHECK_EQ(dst.UpdateImported(items), 1);
+    CHECK(dst.Notes().size() == 1);
+    CHECK_EQ(dst.Notes()[0].id, id);
+    CHECK_EQ(dst.Notes()[0].title, std::string("Daily v2"));
+    CHECK_EQ(dst.Notes()[0].body, std::string("- [ ] new"));
+    CHECK_EQ(dst.UpdateImported(items), 0);   // already up to date
+}
+
+static void test_update_ignores_unknown_and_idless_items()
+{
+    Magpie::NotesStore dst;
+    dst.Create("A");
+    Magpie::ImportItem unknown;  unknown.id = std::string(32, 'b'); unknown.title = "X";
+    Magpie::ImportItem idless;   idless.title = "A"; idless.body = "changed";
+    CHECK_EQ(dst.UpdateImported({unknown, idless}), 0);
+    CHECK(dst.Notes().size() == 1);
+    CHECK_EQ(dst.Notes()[0].body, std::string(""));
+}
+
 static void test_prepare_import_flags_repeats_within_file()
 {
     Magpie::NotesStore dst;
@@ -1139,6 +1179,8 @@ int main()
     test_reimport_same_note_is_skipped();
     test_import_into_source_store_adds_nothing();
     test_prepare_import_flags_duplicates();
+    test_changed_duplicate_can_be_updated();
+    test_update_ignores_unknown_and_idless_items();
     test_prepare_import_flags_repeats_within_file();
     test_ids_are_unique_format();
     test_fromjson_migrates_legacy_ids();

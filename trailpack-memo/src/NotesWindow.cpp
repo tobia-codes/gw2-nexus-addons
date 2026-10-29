@@ -707,19 +707,21 @@ void NotesWindow::pollFileDialog_()
 
         std::vector<Magpie::ImportItem> items;
         const bool valid = f.is_open() && store_.PrepareImport(ss.str(), items);
-        const size_t fresh = std::count_if(items.begin(), items.end(),
-                                           [](const Magpie::ImportItem& i) { return !i.duplicate; });
+        const size_t offered = std::count_if(items.begin(), items.end(),
+            [](const Magpie::ImportItem& i) { return !i.duplicate || i.changed; });
         if (!valid) {
             snprintf(msg, sizeof msg,
                      "%s is not a Trailpack Memo export or notes file.\nNothing was imported.",
                      fileName.c_str());
         } else if (items.empty()) {
             snprintf(msg, sizeof msg, "%s contains no notes.", fileName.c_str());
-        } else if (fresh == 0) {
-            snprintf(msg, sizeof msg, "All notes in %s already exist.\nNothing was imported.",
+        } else if (offered == 0) {
+            snprintf(msg, sizeof msg,
+                     "All notes in %s already exist and are up to date.\nNothing was imported.",
                      fileName.c_str());
         } else {
-            // Let the user pick: every new note pre-selected, duplicates shown but locked.
+            // Let the user pick: new notes pre-selected; updates of existing notes are
+            // offered but never pre-selected; unchanged duplicates are shown locked.
             importItems_ = std::move(items);
             importChecked_.assign(importItems_.size(), 0);
             for (size_t i = 0; i < importItems_.size(); ++i)
@@ -766,22 +768,46 @@ void NotesWindow::renderImportModal_()
     ImGui::Text("Notes in %s:", importFile_.c_str());
     ImGui::Spacing();
 
+    // An update is only possible when the local note is not open in the editor
+    // (saving the edit afterwards would silently undo the update).
+    auto updatable = [&](const Magpie::ImportItem& item) {
+        return item.changed && !(mode_ == Mode::Edit && selectedId_ == item.id);
+    };
+    auto selectable = [&](const Magpie::ImportItem& item) {
+        return !item.duplicate || updatable(item);
+    };
+
     // Scrollable list once the file holds more than a handful of notes.
     const float rowH  = ImGui::GetFrameHeightWithSpacing();
     const float listH = rowH * (float)std::min<size_t>(importItems_.size(), 10);
     ImGui::BeginChild("##import_list", ImVec2(400.0f, listH), false);
-    int selected = 0;
+    int toAdd = 0, toUpdate = 0;
     for (size_t i = 0; i < importItems_.size(); ++i) {
         const Magpie::ImportItem& item = importItems_[i];
         ImGui::PushID((int)i);
         const char* title = item.title.empty() ? "(untitled)" : item.title.c_str();
-        if (item.duplicate) {
-            // Already in the notes (same id, or same title + text): never imported again.
-            ImGui::TextDisabled("[-] %s  (already exists)", title);
-        } else {
+        if (selectable(item)) {
             bool on = importChecked_[i] != 0;
-            if (ImGui::Checkbox(title, &on)) importChecked_[i] = on ? 1 : 0;
-            if (on) ++selected;
+            if (item.duplicate) {
+                // Exists locally with different title/text: ask before replacing it.
+                char label[300];
+                snprintf(label, sizeof label, "Update: %s", title);
+                ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.75f, 0.35f, 1.0f));
+                if (ImGui::Checkbox(label, &on)) importChecked_[i] = on ? 1 : 0;
+                ImGui::PopStyleColor(1);
+                if (ImGui::IsItemHovered())
+                    ImGui::SetTooltip("You already have this note, but the file's version differs.\n"
+                                      "Tick to replace your title and text with the file's version.");
+                if (on) ++toUpdate;
+            } else {
+                if (ImGui::Checkbox(title, &on)) importChecked_[i] = on ? 1 : 0;
+                if (on) ++toAdd;
+            }
+        } else if (item.changed) {
+            ImGui::TextDisabled("[-] %s  (open in the editor - save or cancel first)", title);
+        } else {
+            // Already in the notes (same id, or same title + text) and identical.
+            ImGui::TextDisabled("[-] %s  (already up to date)", title);
         }
         ImGui::PopID();
     }
@@ -790,7 +816,7 @@ void NotesWindow::renderImportModal_()
     ImGui::Spacing();
     if (ImGui::SmallButton("All")) {
         for (size_t i = 0; i < importItems_.size(); ++i)
-            importChecked_[i] = importItems_[i].duplicate ? 0 : 1;
+            importChecked_[i] = selectable(importItems_[i]) ? 1 : 0;
     }
     ImGui::SameLine();
     if (ImGui::SmallButton("None")) {
@@ -798,24 +824,35 @@ void NotesWindow::renderImportModal_()
     }
     ImGui::Separator();
 
-    char label[48];
-    snprintf(label, sizeof label, "Import %d note%s", selected, selected == 1 ? "" : "s");
+    char label[64];
+    if (toAdd > 0 && toUpdate > 0)
+        snprintf(label, sizeof label, "Import %d, update %d", toAdd, toUpdate);
+    else if (toUpdate > 0)
+        snprintf(label, sizeof label, "Update %d note%s", toUpdate, toUpdate == 1 ? "" : "s");
+    else
+        snprintf(label, sizeof label, "Import %d note%s", toAdd, toAdd == 1 ? "" : "s");
     Theme::PushGreenButton();
-    const bool doImport = ImGui::Button(label, ImVec2(140, 0)) && selected > 0;
+    const bool doImport = ImGui::Button(label, ImVec2(160, 0)) && (toAdd + toUpdate) > 0;
     Theme::PopButton();
     ImGui::SameLine();
     const bool cancel = ImGui::Button("Cancel", ImVec2(80, 0));
 
     if (doImport) {
-        std::vector<Magpie::ImportItem> chosen;
-        for (size_t i = 0; i < importItems_.size(); ++i)
-            if (importChecked_[i]) chosen.push_back(importItems_[i]);
+        std::vector<Magpie::ImportItem> adds, updates;
+        for (size_t i = 0; i < importItems_.size(); ++i) {
+            const Magpie::ImportItem& item = importItems_[i];
+            if (!importChecked_[i] || !selectable(item)) continue;
+            (item.duplicate ? updates : adds).push_back(item);
+        }
 
         const size_t before = store_.Notes().size();
-        if (store_.AddImported(chosen) > 0) {
+        const int added   = store_.AddImported(adds);
+        const int updated = store_.UpdateImported(updates);
+        if (added + updated > 0) {
             Save();
-            // Show the first imported note, unless an edit is in progress.
-            if (mode_ == Mode::View) selectedId_ = store_.Notes()[before].id;
+            // Show the first imported (else updated) note, unless an edit is in progress.
+            if (mode_ == Mode::View)
+                selectedId_ = added > 0 ? store_.Notes()[before].id : updates.front().id;
         }
     }
     if (doImport || cancel) {
