@@ -216,7 +216,9 @@ void NotesWindow::resolvePending_()
         mode_ = Mode::View;
         bodyEditor_.Clear();
         titleBuffer_.clear();
+        if (pendingEditId_ == selectedId_) enterEdit_(store_.Get(selectedId_));
     }
+    pendingEditId_.clear();
 }
 
 void NotesWindow::requestSelect_(const std::string& id)
@@ -303,6 +305,7 @@ void NotesWindow::renderUnsavedModal_()
 
         if (ImGui::Button(Tr("Cancel"), ImVec2(ButtonWidth(Tr("Cancel"), 80), 0))) {
             pendingSelectId_.clear();
+            pendingEditId_.clear();
             pendingCreate_ = false;
             ImGui::CloseCurrentPopup();
         }
@@ -602,24 +605,15 @@ void NotesWindow::Render()
             ImGui::TextColored(TypeColor(note->type), "[%s]", ResetText(note->type).c_str());
         }
 
-        // Edit button right-aligned before Delete.
-        const float editW   = ButtonWidth(Tr("Edit"), 60.0f);
-        const float deleteW = ButtonWidth(Tr("Delete"), 60.0f);
+        // Edit button right-aligned (deleting is in the right-click menu and "Delete notes...").
+        const float editW = ButtonWidth(Tr("Edit"), 60.0f);
         {
             float avail = ImGui::GetContentRegionAvail().x;
-            ImGui::SameLine(ImGui::GetCursorPosX() + avail - editW - deleteW - ImGui::GetStyle().ItemSpacing.x);
+            ImGui::SameLine(ImGui::GetCursorPosX() + avail - editW);
         }
         Theme::PushGreenButton();
         if (ImGui::Button(Tr("Edit"), ImVec2(editW, 0))) {
             enterEdit_(note);
-        }
-        Theme::PopButton();
-
-        ImGui::SameLine();
-
-        Theme::PushAmberButton();
-        if (ImGui::Button(Tr("Delete"), ImVec2(deleteW, 0))) {
-            deleteClickedId = note->id;   // confirm before deleting
         }
         Theme::PopButton();
 
@@ -634,6 +628,21 @@ void NotesWindow::Render()
 
     // Open the delete-confirmation modal in the parent-window scope (matches the
     // BeginPopupModal in renderDeleteModal_).
+    // "Edit" from a context menu: select the note (may ask about unsaved changes first),
+    // then open it in the editor.
+    if (!editRequestId_.empty()) {
+        const std::string id = editRequestId_;
+        editRequestId_.clear();
+        if (store_.Get(id) != nullptr && !(mode_ == Mode::Edit && selectedId_ == id)) {
+            pendingEditId_ = id;
+            if (id != selectedId_) requestSelect_(id);
+            if (selectedId_ == id && mode_ == Mode::View) {   // selected without a modal
+                enterEdit_(store_.Get(id));
+                pendingEditId_.clear();
+            }
+        }
+    }
+
     if (deleteClickedId.empty() && !deleteRequestId_.empty())
         deleteClickedId = deleteRequestId_;
     deleteRequestId_.clear();
@@ -720,6 +729,8 @@ void NotesWindow::renderViewBody_(Magpie::Note* note)
         ImGui::OpenPopup("##view_ctx");
     }
     if (ImGui::BeginPopup("##view_ctx")) {
+        if (ImGui::MenuItem(Tr("Edit"))) editRequestId_ = note->id;
+        ImGui::Separator();
         const Magpie::Md::TaskCount tc = Magpie::Md::CountTasks(note->body);
         if (ImGui::MenuItem(Tr("Uncheck all tasks"), nullptr, false, tc.done > 0)) {
             Magpie::Md::UncheckAllTasks(note->body);
@@ -1126,6 +1137,10 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent, std::st
     }
 
     if (ImGui::BeginPopupContextItem("##row_ctx")) {
+        if (ImGui::MenuItem(Tr("Edit"), nullptr, false,
+                            !(mode_ == Mode::Edit && selectedId_ == note.id)))
+            editRequestId_ = note.id;
+        ImGui::Separator();
         typeMenu_(note.id);
         if (ImGui::MenuItem(Tr("Export note..."))) startExport_(note.id);
         if (!store_.Groups().empty() && ImGui::BeginMenu(Tr("Move to group"))) {
