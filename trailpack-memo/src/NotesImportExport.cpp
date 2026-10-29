@@ -3,8 +3,6 @@
 
 #include "NotesWindow.h"
 
-#include <windows.h>
-#include <commdlg.h>
 #include <algorithm>
 #include <cctype>
 #include <cstdio>
@@ -15,22 +13,15 @@
 #include "Theme.h"
 #include "I18n.h"
 #include "NotesUi.h"
+#include "FileDialog.h"
 
 namespace fs = std::filesystem;
 using Magpie::I18n::Tr;
 using Magpie::I18n::TrN;
 using namespace NotesUi;
+using FileDialog::Widen;
 
 namespace {
-
-std::wstring Widen(const std::string& utf8)
-{
-    if (utf8.empty()) return std::wstring();
-    const int n = MultiByteToWideChar(CP_UTF8, 0, utf8.data(), (int)utf8.size(), nullptr, 0);
-    std::wstring w(n, L'\0');
-    MultiByteToWideChar(CP_UTF8, 0, utf8.data(), (int)utf8.size(), &w[0], n);
-    return w;
-}
 
 // A note title as a safe file name: ASCII letters/digits/-/_ kept, spaces -> '_'.
 std::string FileNameFor(const std::string& title)
@@ -45,37 +36,10 @@ std::string FileNameFor(const std::string& title)
     return out.empty() ? "note" : out;
 }
 
-// Modal Windows open/save dialog (runs on a worker thread). Returns the chosen
-// path, or empty if cancelled.
-std::wstring RunFileDialog(bool save, std::wstring dir, std::wstring fileName,
-                           std::wstring title, std::wstring filter)
-{
-    wchar_t buf[MAX_PATH * 4] = L"";
-    if (save) fileName.copy(buf, (sizeof buf / sizeof buf[0]) - 1);
-
-    OPENFILENAMEW ofn = {};
-    ofn.lStructSize     = sizeof ofn;
-    ofn.lpstrFilter     = filter.c_str();   // "label\0pattern\0...\0" (see DialogFilter)
-    ofn.lpstrFile       = buf;
-    ofn.nMaxFile        = sizeof buf / sizeof buf[0];
-    ofn.lpstrInitialDir = dir.empty() ? nullptr : dir.c_str();
-    ofn.lpstrDefExt     = L"json";
-    ofn.lpstrTitle      = title.c_str();
-    ofn.Flags = OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR |
-                (save ? OFN_OVERWRITEPROMPT : OFN_FILEMUSTEXIST);
-
-    const BOOL ok = save ? GetSaveFileNameW(&ofn) : GetOpenFileNameW(&ofn);
-    return ok ? std::wstring(buf) : std::wstring();
-}
-
-// Dialog file-type filter in the current language: pairs of label + pattern, each
-// NUL-terminated, plus a final NUL.
+// Dialog file-type filter for note files, in the current language.
 std::wstring DialogFilter()
 {
-    std::wstring f;
-    f += Widen(Tr("Trailpack Memo notes (*.json)")); f += L'\0'; f += L"*.json"; f += L'\0';
-    f += Widen(Tr("All files (*.*)"));               f += L'\0'; f += L"*.*";    f += L'\0';
-    return f;
+    return FileDialog::JsonFilter(Tr("Trailpack Memo notes (*.json)"));
 }
 
 } // namespace
@@ -102,7 +66,7 @@ void NotesWindow::startExport_(const std::string& id)
     ioAction_        = IoAction::Export;
     ioExportId_      = id;
     ioExportGroupId_.clear();
-    ioDialog_   = std::async(std::launch::async, RunFileDialog, true,
+    ioDialog_   = std::async(std::launch::async, FileDialog::Run, true,
                              exportDir_.wstring(), Widen(name),
                              Widen(Tr("Export notes")), DialogFilter());
 }
@@ -119,7 +83,7 @@ void NotesWindow::startExportGroup_(const std::string& groupId)
     ioAction_        = IoAction::Export;
     ioExportId_.clear();
     ioExportGroupId_ = groupId;
-    ioDialog_ = std::async(std::launch::async, RunFileDialog, true,
+    ioDialog_ = std::async(std::launch::async, FileDialog::Run, true,
                            exportDir_.wstring(), Widen(FileNameFor(group->name) + ".json"),
                            Widen(Tr("Export notes")), DialogFilter());
 }
@@ -131,7 +95,7 @@ void NotesWindow::startImport_()
     if (!exportDir_.empty()) fs::create_directories(exportDir_, ec);
 
     ioAction_ = IoAction::Import;
-    ioDialog_ = std::async(std::launch::async, RunFileDialog, false,
+    ioDialog_ = std::async(std::launch::async, FileDialog::Run, false,
                            exportDir_.wstring(), std::wstring(),
                            Widen(Tr("Import notes")), DialogFilter());
 }

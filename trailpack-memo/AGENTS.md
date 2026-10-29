@@ -48,9 +48,9 @@ New identifiers that the game or Nexus can see (signature, ids, events, textures
 - **Vendored codec is byte-identical:** `src/chat/ChatLinks.{h,cpp}`, `src/chat/SpecData.h` come
   from Pie UI. Never edit them; a codec bug is fixed upstream and re-vendored.
 - **Pure units stay pure** (no ImGui/Nexus/Win32 includes) so the host-test target builds:
-  `NotesStore`, `Markdown`, `MarkdownEdit`, `ChipCodec`, `ChipResolver`, `ChipColor`, `IconUrl`,
-  `chat/ChatLinks`. Put new logic into a pure unit + host test (`tests/host_tests_main.cpp`) where
-  possible.
+  `NotesStore`, `Settings`, `Backup`, `Markdown`, `MarkdownEdit`, `ChipCodec`, `ChipResolver`,
+  `ChipColor`, `IconUrl`, `chat/ChatLinks`. Put new logic into a pure unit + host test
+  (`tests/host_tests_main.cpp`) where possible.
 - **UI text is translated (English + German):** wrap every user-visible literal in
   `Magpie::I18n::Tr("English text")` and add the German line to the table in `src/I18n.cpp`
   (same printf specifiers — host-tested). Plurals via `TrN`, popups via `PopupName` (stable

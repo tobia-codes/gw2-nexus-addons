@@ -12,6 +12,8 @@ if(NOT GW2_HOST_TESTS)
         src/Reset.cpp
         src/SafeFile.cpp
         src/Settings.cpp
+        src/Backup.cpp
+        src/FileDialog.cpp
         src/NotesWindow.cpp
         src/NotesList.cpp
         src/NotesDetail.cpp
@@ -63,6 +65,7 @@ else()
         src/Reset.cpp
         src/SafeFile.cpp
         src/Settings.cpp
+        src/Backup.cpp
         src/Markdown.cpp
         src/MarkdownEdit.cpp
         src/chat/ChatLinks.cpp

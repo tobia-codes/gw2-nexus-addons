@@ -44,6 +44,14 @@ public:
     // True once after menu -> "Settings..." (caller opens its settings window).
     bool ConsumeOpenSettings()      { bool o = openSettings_; openSettings_ = false; return o; }
 
+    // Backups (dllmain): all notes as notes.json text, and replace them all from such a
+    // text. RestoreNotes validates first (false = nothing changed), drops an open edit and
+    // any pending navigation, and saves at once.
+    std::string NotesJson() const   { return store_.ToJson(); }
+    bool        RestoreNotes(const std::string& json);
+    // The addon data folder (notes.json's), for the backup dialog; empty if unknown.
+    std::filesystem::path DataDir() const { return notesFile_.parent_path(); }
+
 private:
     enum class Mode { View, Edit };
 
