@@ -41,6 +41,8 @@ public:
     void  SetListWidth(float w)     { listWidth_ = w; }
     // True once after the user changed a persisted UI setting (caller saves settings).
     bool ConsumeSettingsChanged()   { bool c = settingsChanged_; settingsChanged_ = false; return c; }
+    // True once after menu -> "Settings..." (caller opens its settings window).
+    bool ConsumeOpenSettings()      { bool o = openSettings_; openSettings_ = false; return o; }
 
 private:
     enum class Mode { View, Edit };
@@ -76,6 +78,7 @@ private:
     float noteTextScale_   = 1.0f;
     float listWidth_       = kDefaultListWidth;
     bool  settingsChanged_ = false;
+    bool  openSettings_    = false;
 
     // ── Navigation requests ───────────────────────────────────────────────
     // When a navigation is requested while the edit is dirty it is stashed here and the

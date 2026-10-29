@@ -40,6 +40,7 @@ AddonAPI_t*      APIDefs         = nullptr;
 bool             g_WindowVisible = false;
 bool             g_QAIconAdded   = false;  // tracks whether the shortcut is currently registered
 bool             g_HelpVisible   = false;  // the guide window ("?" in the title bar)
+bool             g_SettingsVisible = false;  // own settings window (menu -> "Settings...")
 Magpie::Settings g_Settings;               // settings.json (see Settings.h); colours, preview
                                            // and list width live in Theme / g_Notes meanwhile
 NotesWindow      g_Notes;
@@ -50,6 +51,7 @@ void AddonUnload();
 void ProcessKeybind(const char* aIdentifier, bool aIsRelease);
 void AddonRender();
 void AddonOptions();
+static void RenderOptions();
 
 using Magpie::I18n::Tr;
 
@@ -258,7 +260,7 @@ void AddonUnload() {
 
 // ── AddonRender ───────────────────────────────────────────────────────────
 void AddonRender() {
-    if (!g_WindowVisible && !g_HelpVisible) return;
+    if (!g_WindowVisible && !g_HelpVisible && !g_SettingsVisible) return;
     ApplyLanguage();   // Auto follows a Nexus language switch without a restart
 
     // Fonts for sharp scaling, read outside any window (see FontScale.h).
@@ -277,16 +279,38 @@ void AddonRender() {
             g_Notes.SetNoteTextScale(g_Settings.noteTextScale / 100.0f);
             g_Notes.Render();
             if (g_Notes.ConsumeSettingsChanged()) SaveSettings();
+            if (g_Notes.ConsumeOpenSettings()) {
+                g_SettingsVisible = true;
+                ImGui::SetWindowFocus("###tpm_settings");
+            }
         }
         ImGui::End();
         Theme::PopWindowStyle();
     }
 
     Help::Render(&g_HelpVisible, g_Settings.uiTextScale / 100.0f);
+
+    // Own settings window: the same options as in Nexus (RenderOptions), so both stay in sync.
+    if (g_SettingsVisible) {
+        const std::string title = std::string(WINDOW_NAME) + " - " + Tr("Settings") + "###tpm_settings";
+        ImGui::SetNextWindowSize(ImVec2(480.0f, 420.0f), ImGuiCond_FirstUseEver);
+        Theme::PushWindowStyle();
+        if (ImGui::Begin(title.c_str(), &g_SettingsVisible)) {
+            Magpie::FontScaleScope uiFont(g_Settings.uiTextScale / 100.0f);
+            RenderOptions();
+        }
+        ImGui::End();
+        Theme::PopWindowStyle();
+    }
 }
 
 // ── AddonOptions ──────────────────────────────────────────────────────────
+// Nexus addon options pane; the settings window renders the same content.
 void AddonOptions() {
+    RenderOptions();
+}
+
+static void RenderOptions() {
     ApplyLanguage();
 
     // Language: Auto (= Nexus's language) or a fixed one. Language names stay native.

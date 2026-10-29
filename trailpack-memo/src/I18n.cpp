@@ -83,6 +83,7 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Daily / Weekly: checkboxes are unchecked after the reset.",
       "Täglich / Wöchentlich: Haken werden nach dem Reset entfernt." },
     { "Delete note...",                    "Notiz löschen..." },
+    { "Settings...",                       "Einstellungen..." },
     { "Delete notes...",                   "Notizen löschen..." },
     { "Delete Notes",                      "Notizen löschen" },
     { "Select the notes to delete:",       "Notizen zum Löschen auswählen:" },
@@ -240,12 +241,12 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "- 'Notizen löschen...' löscht mehrere Notizen auf einmal; Rechtsklick > 'Notiz löschen...' "
       "löscht eine." },
     { "Settings",                          "Einstellungen" },
-    { "Nexus addon options > Trailpack Memo:\n"
+    { "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
       "- Language (Auto follows Nexus), quick access icon.\n"
       "- 'Font options': UI and note text size.\n"
       "- 'Colour options': border, background, text, group names and the daily / weekly badges.\n"
       "- Drag the divider between list and note to change the list width.",
-      "Nexus-Addon-Optionen > Trailpack Memo:\n"
+      "Nexus-Addon-Optionen > Trailpack Memo, oder Menü-Knopf > 'Einstellungen...':\n"
       "- Sprache (Automatisch folgt Nexus), Schnellzugriff-Icon.\n"
       "- 'Schriftoptionen': UI- und Notiz-Textgröße.\n"
       "- 'Farboptionen': Rahmen, Hintergrund, Text, Gruppennamen und die Täglich-/Wöchentlich-Badges.\n"
