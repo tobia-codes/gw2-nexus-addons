@@ -27,6 +27,9 @@ namespace Magpie {
 
 namespace {
 
+bool s_DoneShowTime   = false;   // SetCheckedTaskChips
+bool s_DoneShowPopups = false;
+
 // Hanging-indent width for bullets, in "- " worth of pixels (measured live).
 // Italic shear factor: ~0.22 slants glyph tops to the right.
 constexpr float kItalicShear = 0.22f;
@@ -115,6 +118,12 @@ void DrawWord(ImDrawList* dl, ImFont* font, float fontSize,
 
 } // namespace
 
+void SetCheckedTaskChips(bool showTime, bool popups)
+{
+    s_DoneShowTime   = showTime;
+    s_DoneShowPopups = popups;
+}
+
 int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wrapWidth,
                    bool interactiveTasks)
 {
@@ -167,10 +176,13 @@ int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wr
             startX += mSize.x;  // continuation lines hang under the text
         }
 
-        // Checked tasks: dimmed text with a strike-through (chips keep their colour, but are
-        // struck through too).
+        // Checked tasks: dimmed text with a strike-through; chips per the "Events" options.
         const bool done = (line.block == Md::Block::Task && line.checked);
         const ImU32 lineCol = done ? doneCol : textCol;
+        ChipDoneStyle doneStyle;
+        doneStyle.showTime = s_DoneShowTime;
+        doneStyle.popups   = s_DoneShowPopups;
+        doneStyle.textCol  = doneCol;
         auto strike = [&](float x0, float x1) {
             const float y = penY + fontSize * 0.55f;
             dl->AddLine(ImVec2(x0, y), ImVec2(x1, y), lineCol, 1.0f);
@@ -201,28 +213,20 @@ int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wr
 
         // Lay out spans.
         for (const Md::Span& span : line.spans) {
-            if (span.kind == Md::Inline::Chip) {
-                // Measure chip width first (same computation DrawRichChip uses)
-                // so the wrap decision matches the draw.
-                const float chipW = MeasureRichChip(font, fontSize, span.text);
+            if (span.kind == Md::Inline::Chip || span.kind == Md::Inline::Event) {
+                // Chips wrap as one unit; measured first with the same inputs as the draw.
+                // In a checked task they follow the "Events" options and are struck through.
+                const bool event = span.kind == Md::Inline::Event;
+                const ChipDoneStyle* ds = done ? &doneStyle : nullptr;
+                const float chipW = event ? MeasureEventChip(font, fontSize, span.text, ds)
+                                          : MeasureRichChip(font, fontSize, span.text, ds);
                 if (penX + chipW > rightEdge && penX > startX) {
                     penX = startX;
                     penY += lineHeight;
                 }
-                const float w = DrawRichChip(dl, font, fontSize, ImVec2(penX, penY),
-                                             span.text, chipUid++);
-                if (done) strike(penX, penX + w);
-                penX += w;
-                continue;
-            }
-            if (span.kind == Md::Inline::Event) {
-                // Event timer chip with a live countdown; wraps as one unit like a chip.
-                const float chipW = MeasureEventChip(font, fontSize, span.text);
-                if (penX + chipW > rightEdge && penX > startX) {
-                    penX = startX;
-                    penY += lineHeight;
-                }
-                const float w = DrawEventChip(dl, font, fontSize, ImVec2(penX, penY), span.text, chipUid++);
+                const ImVec2 at(penX, penY);
+                const float w = event ? DrawEventChip(dl, font, fontSize, at, span.text, chipUid++, ds)
+                                      : DrawRichChip(dl, font, fontSize, at, span.text, chipUid++, ds);
                 if (done) strike(penX, penX + w);
                 penX += w;
                 continue;

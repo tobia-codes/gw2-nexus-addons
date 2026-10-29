@@ -53,9 +53,6 @@ struct UserColors {
     // Group names in the note list: default follows `border`; a group can override it.
     bool   hasGroupName  = false;
     ImVec4 groupName     = { 0.0f, 0.0f, 0.0f, 0.0f };
-    // "No group" label in the note list: default is Nexus's disabled-text colour.
-    bool   hasNoGroup    = false;
-    ImVec4 noGroup       = { 0.0f, 0.0f, 0.0f, 0.0f };
     // Daily / weekly badge in the note list (the badge colour also tints the countdown).
     ImVec4 dailyBadge      = BADGE_DAILY;
     ImVec4 dailyBadgeText  = BADGE_TEXT;
@@ -150,25 +147,40 @@ struct PopupTextScope {
 void PushWindowStyle();
 void PopWindowStyle();
 
-// Nexus's window and popup backgrounds made opaque (same colour, alpha 1), for the plain-styled
-// settings and guide windows. Create before ImGui::Begin, let it end after ImGui::End.
-struct OpaqueWindowScope {
-    OpaqueWindowScope() {
+// Corner rounding in px for the addon's windows (windows, panes, buttons, fields, popups, list
+// row highlight); set by dllmain from settings.json (`corner_rounding`, default 0 = square).
+void  SetRounding(float px);
+float Rounding();
+// Push / pop Rounding() for every rounded ImGui element (PushWindowStyle does this too).
+void  PushRounding();
+void  PopRounding();
+
+// ImGui::Begin with a taller title bar (more room around the close button): the title bar
+// reads FramePadding.y inside Begin, so it is raised only for that call. Always pair with
+// ImGui::End, like Begin.
+bool  BeginWindow(const char* name, bool* open);
+// FramePadding.y of that title bar (for items drawn into it, e.g. the "?" button).
+float TitleBarPadY();
+
+// The plain-styled settings and guide windows: Nexus's colours, but opaque window and popup
+// backgrounds (same colour, alpha 1) and the corner rounding option. Create before
+// ImGui::Begin, let it end after ImGui::End.
+struct PlainWindowScope {
+    PlainWindowScope() {
         for (ImGuiCol idx : { ImGuiCol_WindowBg, ImGuiCol_PopupBg }) {
             ImVec4 c = ImGui::GetStyle().Colors[idx];
             c.w      = 1.0f;
             ImGui::PushStyleColor(idx, c);
         }
+        PushRounding();
     }
-    ~OpaqueWindowScope() { ImGui::PopStyleColor(2); }
-    OpaqueWindowScope(const OpaqueWindowScope&) = delete;
-    OpaqueWindowScope& operator=(const OpaqueWindowScope&) = delete;
+    ~PlainWindowScope() {
+        PopRounding();
+        ImGui::PopStyleColor(2);
+    }
+    PlainWindowScope(const PlainWindowScope&) = delete;
+    PlainWindowScope& operator=(const PlainWindowScope&) = delete;
 };
-
-// Corner rounding in px for the note window (windows, panes, buttons, fields, popups, list row
-// highlight); set by dllmain from settings.json (`corner_rounding`, default 0 = square).
-void  SetRounding(float px);
-float Rounding();
 
 // Push green action-button colours. Call PopButton() after the button widget.
 inline void PushGreenButton() {

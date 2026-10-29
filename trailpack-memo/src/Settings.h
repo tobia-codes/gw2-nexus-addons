@@ -26,7 +26,6 @@ struct ColorSet {
     OptionalColor background;   // unset: Nexus style
     OptionalColor text;         // unset: Nexus style
     OptionalColor groupName;    // unset: follow `border`
-    OptionalColor noGroup;      // "No group" label; unset: Nexus disabled text
     OptionalColor listBackground;   // note list pane; unset: Nexus child background
     OptionalColor listText;         // note titles in the list; unset: window text
     OptionalColor noteBackground;   // note pane; unset: Nexus child background
@@ -72,6 +71,8 @@ struct Settings {
     int      uiTextScale   = 100;   // window UI text, percent
     int      noteTextScale = 100;   // note content, percent
     float    listWidth     = kDefaultListWidth;   // px; clamped to the window when drawn
+    bool     doneShowTime   = false;  // checked tasks: event chips keep their countdown
+    bool     doneShowPopups = false;  // checked tasks: chips keep tooltip + right-click menu
     float    cornerRounding = 0.0f;   // note window corners (windows, buttons, ...), 0..kRoundingMax px
     Language language      = Language::Auto;
 

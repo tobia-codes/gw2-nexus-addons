@@ -13,6 +13,7 @@
 #include "imgui.h"
 #include <string>
 #include <cstdint>
+#include "ChipDone.h"
 
 namespace Magpie {
 
@@ -30,13 +31,15 @@ uint32_t ChipDisplayColor(const std::string& code);
 
 // Width (advance) a rich chip will consume at the given font/size. Must match
 // what DrawRichChip produces so the renderer's wrap check stays consistent.
-float MeasureRichChip(ImFont* font, float fontSize, const std::string& code);
+float MeasureRichChip(ImFont* font, float fontSize, const std::string& code,
+                      const ChipDoneStyle* done = nullptr);
 
 // Draw a rich chip token at screen `pos`; returns its advance width (== the
 // value MeasureRichChip returned for the same args). Draws an optional icon +
 // the label over a tinted rounded background, and registers a hover tooltip and
 // a right-click context menu. `uid` disambiguates this chip's popup id.
+// In a checked task (`done`): label only, in the task's grey; no icon, tooltip, menu or click.
 float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& pos,
-                   const std::string& code, int uid);
+                   const std::string& code, int uid, const ChipDoneStyle* done = nullptr);
 
 } // namespace Magpie

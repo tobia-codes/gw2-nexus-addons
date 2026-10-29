@@ -78,11 +78,32 @@ void PushWindowStyle() {
         ++s_PushedColors;
     }
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, s_Colors.showBorder ? BORDER_SIZE : 0.0f);
-    for (ImGuiStyleVar v : { ImGuiStyleVar_WindowRounding, ImGuiStyleVar_ChildRounding,
-                             ImGuiStyleVar_FrameRounding, ImGuiStyleVar_PopupRounding,
-                             ImGuiStyleVar_GrabRounding, ImGuiStyleVar_ScrollbarRounding,
-                             ImGuiStyleVar_TabRounding })
-        ImGui::PushStyleVar(v, s_Rounding);
+    PushRounding();
+}
+
+static constexpr ImGuiStyleVar kRoundingVars[] = {
+    ImGuiStyleVar_WindowRounding, ImGuiStyleVar_ChildRounding, ImGuiStyleVar_FrameRounding,
+    ImGuiStyleVar_PopupRounding, ImGuiStyleVar_GrabRounding, ImGuiStyleVar_ScrollbarRounding,
+    ImGuiStyleVar_TabRounding,
+};
+
+float TitleBarPadY() {
+    return ImGui::GetStyle().FramePadding.y + 4.0f;
+}
+
+bool BeginWindow(const char* name, bool* open) {
+    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, TitleBarPadY()));
+    const bool shown = ImGui::Begin(name, open);
+    ImGui::PopStyleVar();
+    return shown;
+}
+
+void PushRounding() {
+    for (ImGuiStyleVar v : kRoundingVars) ImGui::PushStyleVar(v, s_Rounding);
+}
+
+void PopRounding() {
+    ImGui::PopStyleVar((int)(sizeof kRoundingVars / sizeof kRoundingVars[0]));
 }
 
 void PushPaneBorder(bool show, bool hasColor, const ImVec4& color) {
@@ -108,7 +129,8 @@ void PopPaneBorder() {
 
 void PopWindowStyle() {
     ImGui::PopStyleColor(s_PushedColors);
-    ImGui::PopStyleVar(8);
+    PopRounding();
+    ImGui::PopStyleVar(1);
     s_PushedColors = 0;
 }
 

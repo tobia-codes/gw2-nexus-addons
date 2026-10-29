@@ -53,12 +53,6 @@ ImVec4 TypeTextColor(Magpie::NoteType t)
     return t == Magpie::NoteType::Daily ? c.dailyBadgeText : c.weeklyBadgeText;
 }
 
-ImVec4 NoGroupColor()
-{
-    const Theme::UserColors& c = Theme::Colors();
-    return c.hasNoGroup ? c.noGroup : ImGui::GetStyle().Colors[ImGuiCol_TextDisabled];
-}
-
 ImVec4 ListTextColor()
 {
     const Theme::UserColors& c = Theme::Colors();

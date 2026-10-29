@@ -321,13 +321,13 @@ uint32_t ChipDisplayColor(const std::string& code)
 // Width = optional inline icon (square fontSize) + gap + coloured label text.
 // No box/padding — the chip is just coloured inline text (matching the chatbox).
 // Re-derives the same ChipState as the draw so the two agree.
-static float ComputeWidth(ImFont* font, float fontSize, const ChipState& st)
+static float ComputeWidth(ImFont* font, float fontSize, const ChipState& st, bool withIcon)
 {
     float w = 0.0f;
     // Icon is shown only when warm AND the texture is ready; the wrap pre-check
     // may briefly disagree with the draw on the single frame an icon finishes
     // loading — harmless (only affects a wrap decision, never correctness).
-    if (st.warm && st.rec.iconUrl[0]) {
+    if (withIcon && st.warm && st.rec.iconUrl[0]) {
         Magpie::Icons::RequestUrl(st.rec.iconUrl);
         if (Magpie::Icons::Get(st.rec.iconUrl) != nullptr) w += fontSize + kIconGap;
     }
@@ -335,16 +335,17 @@ static float ComputeWidth(ImFont* font, float fontSize, const ChipState& st)
     return w;
 }
 
-float MeasureRichChip(ImFont* font, float fontSize, const std::string& code)
+float MeasureRichChip(ImFont* font, float fontSize, const std::string& code,
+                      const ChipDoneStyle* done)
 {
-    return ComputeWidth(font, fontSize, Resolve(code));
+    return ComputeWidth(font, fontSize, Resolve(code), done == nullptr);
 }
 
 float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& pos,
-                   const std::string& code, int uid)
+                   const std::string& code, int uid, const ChipDoneStyle* done)
 {
     const ChipState st = Resolve(code);
-    const float width = ComputeWidth(font, fontSize, st);
+    const float width = ComputeWidth(font, fontSize, st, done == nullptr);
 
     // No box / border / background — the chip is coloured inline text. The rect
     // below is used only for hover/right-click hit-testing, never drawn.
@@ -355,7 +356,7 @@ float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& p
     float penX = pos.x;
 
     // Optional inline icon (square, fontSize x fontSize) — only when warm + ready.
-    if (st.warm && st.rec.iconUrl[0]) {
+    if (done == nullptr && st.warm && st.rec.iconUrl[0]) {
         Texture_t* tex = Magpie::Icons::Get(st.rec.iconUrl);  // never null Resource
         if (tex != nullptr) {
             const ImVec2 iMin(penX, pos.y);
@@ -366,7 +367,9 @@ float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& p
     }
 
     // Label as coloured inline text — colour conveys type (and item rarity).
-    dl->AddText(font, fontSize, ImVec2(penX, pos.y), st.color, st.label.c_str());
+    dl->AddText(font, fontSize, ImVec2(penX, pos.y), done != nullptr ? done->textCol : st.color,
+                st.label.c_str());
+    if (done != nullptr) return width;   // checked task: plain text (the options are events-only)
 
     // ── Interaction: manual hit-test against the chip rect ──────────────────
     // We are inside the view child window's draw, so OpenPopup/BeginPopup hash
@@ -383,7 +386,7 @@ float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& p
     // chat code, which Pie UI decodes itself — no Decoder Ring required.
     uint8_t pieType = 0; uint32_t pieId = 0;
     const char* pieLabel =
-        (LinkKey(code, pieType, pieId) && Magpie::PieUi::Present())
+        (done == nullptr && LinkKey(code, pieType, pieId) && Magpie::PieUi::Present())
             ? PieUiActionLabel(pieType) : "";
     const bool offerPie = pieLabel[0] != '\0';
 

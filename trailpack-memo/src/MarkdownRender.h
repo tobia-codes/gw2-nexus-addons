@@ -25,4 +25,8 @@ namespace Magpie {
 int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wrapWidth,
                    bool interactiveTasks = false);
 
+// Chips in checked tasks (Options > "Events", set by dllmain from settings.json):
+// event countdown kept (in a much lighter colour) / tooltips + right-click menu kept.
+void SetCheckedTaskChips(bool showTime, bool popups);
+
 } // namespace Magpie

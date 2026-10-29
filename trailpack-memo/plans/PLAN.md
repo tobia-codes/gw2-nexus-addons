@@ -57,7 +57,9 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 ### Fork features (beyond upstream)
 
 - GFM task lists `- [ ]` / `- [x]`: clickable in view mode (saves immediately), checked items dimmed
-  and struck through, `done/total` progress in the note list, context menu "Uncheck all tasks".
+  and struck through (chips too: grey name only by default; `done_show_time` keeps the event
+  countdown in a lighter event colour, `done_show_popups` keeps tooltip + right-click menu; Options > "Events", event chips only --
+  `ChipDoneStyle` in `ChipDone.h`, set via `SetCheckedTaskChips`), `done/total` progress in the note list, context menu "Uncheck all tasks".
 - Edit toolbar B / I / H1 / H2 / list / task + `Ctrl+B` / `Ctrl+I`, toggles off when reapplied.
 - Enter continues bullet/task lists; Enter on an empty item ends the list.
 - Optional side-by-side live preview, persisted in `settings.json`.
@@ -77,7 +79,8 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   delete notes. Buttons are opaque (Nexus's translucent ones are blended in `PushWindowStyle`);
   the edit toolbar wraps in a narrow pane. Corner rounding of the whole note window (window,
   panes, frames, popups, grabs, scrollbars, list rows): `corner_rounding` (0-12 px, default 0),
-  Options > "Layout options" (slider + number field), pushed by `PushWindowStyle`. ImGui's
+  Options > "Layout options" (slider + number field), pushed by `PushRounding` (from `PushWindowStyle`; settings + guide window via
+  `Theme::PlainWindowScope`, which also makes their background opaque). ImGui's
   TextInput cursor shows as a gear in GW2: `AddonRender` swaps ours for the arrow.
 - Note types Note/Daily/Weekly (`Note::type`, `Note::resetStamp` = last reset applied, both in
   notes.json + export). `Reset.{h,cpp}` (pure): last/next daily (00:00 UTC) and weekly
@@ -147,7 +150,8 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   `PopupTextScope` also gives input fields a shade of the popup background; `Theme::PopupTextScope` first inside each `BeginPopup` block / around
   `BeginTooltip` and Combos, `Theme::Tooltip` instead of `ImGui::SetTooltip`, all modals via
   `renderModals_`. New popups must do the same.
-  "No group" label: `color_no_group` (null = Nexus disabled text), `NotesUi::NoGroupColor`.
+  Ungrouped notes follow the groups without a heading; dropping a note on empty list space
+  (`BeginDragDropTargetCustom` over the list) or "Remove from group" ungroups it.
   Options layout: label | swatch | Reset in fixed columns, subheadings Window / Note list /
   badges (2x2 table with preview), "Reset all colours" resets `Theme::UserColors`.
 - Two text sizes (70-200 %, Nexus options > "Font options"; colours under "Colour options", both
