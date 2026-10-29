@@ -105,6 +105,11 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   colours (`color_daily_badge[_text]`, `color_weekly_badge[_text]`, defaults in `Theme::BADGE_*`)
   are read by `NotesUi::TypeColor` / `TypeTextColor`; the badge colour also tints the countdown.
   Window border on/off: `show_border` (`UserColors::showBorder`, `PushWindowStyle` sets size 0).
+  List / note panes: `color_{list,note}_{background,text}` (`UserColors::*Bg/*Text`). A picked
+  pane background is pushed as ChildBg for that child only; inside the note pane nested children
+  get ChildBg = transparent, so the colour is exact (Nexus's own ChildBg is translucent and was
+  stacked on WindowBg). Note text uses `Theme::TextColorScope` around title / body / editor /
+  preview; chip tooltips and menus push `Theme::WindowText()` back. List text: `ListTextColor`.
   "No group" label: `color_no_group` (null = Nexus disabled text), `NotesUi::NoGroupColor`.
   Options layout: label | swatch | Reset in fixed columns, subheadings Window / Note list /
   badges (2x2 table with preview), "Reset all colours" resets `Theme::UserColors`.

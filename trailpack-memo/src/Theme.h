@@ -55,8 +55,31 @@ struct UserColors {
     ImVec4 dailyBadgeText  = BADGE_TEXT;
     ImVec4 weeklyBadge     = BADGE_WEEKLY;
     ImVec4 weeklyBadgeText = BADGE_TEXT;
+    // Note list and note pane, each unset = as before (Nexus child background, window text).
+    // A picked background is drawn exactly: nested panes inside the note are transparent.
+    bool   hasListBg     = false;
+    ImVec4 listBg        = { 0.0f, 0.0f, 0.0f, 0.0f };
+    bool   hasListText   = false;
+    ImVec4 listText      = { 0.0f, 0.0f, 0.0f, 0.0f };
+    bool   hasNoteBg     = false;
+    ImVec4 noteBg        = { 0.0f, 0.0f, 0.0f, 0.0f };
+    bool   hasNoteText   = false;
+    ImVec4 noteText      = { 0.0f, 0.0f, 0.0f, 0.0f };
 };
 UserColors& Colors();   // the live, mutable set (Theme.cpp)
+
+// Window text colour (user-set, else Nexus's), captured by PushWindowStyle. Tooltips and
+// popups opened inside the note pane push it back, so they ignore the note text colour.
+ImVec4 WindowText();
+
+// Push ImGuiCol_Text for a scope when `set` (e.g. note text); no-op otherwise.
+struct TextColorScope {
+    bool pushed;
+    TextColorScope(bool set, const ImVec4& col) : pushed(set) { if (pushed) ImGui::PushStyleColor(ImGuiCol_Text, col); }
+    ~TextColorScope() { if (pushed) ImGui::PopStyleColor(); }
+    TextColorScope(const TextColorScope&) = delete;
+    TextColorScope& operator=(const TextColorScope&) = delete;
+};
 
 // ── Scoped helpers ────────────────────────────────────────────────────────
 // Push the window border + user colours (border, background, text) for the whole

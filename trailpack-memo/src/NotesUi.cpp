@@ -42,6 +42,12 @@ ImVec4 NoGroupColor()
     return c.hasNoGroup ? c.noGroup : ImGui::GetStyle().Colors[ImGuiCol_TextDisabled];
 }
 
+ImVec4 ListTextColor()
+{
+    const Theme::UserColors& c = Theme::Colors();
+    return c.hasListText ? c.listText : ImGui::GetStyle().Colors[ImGuiCol_Text];
+}
+
 std::string ResetText(Magpie::NoteType t)
 {
     if (t == Magpie::NoteType::Note) return std::string();

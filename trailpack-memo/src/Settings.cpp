@@ -41,6 +41,10 @@ std::string Settings::ToJson() const
     j["color_text"]       = optional(text);
     j["color_group_name"] = optional(groupName);
     j["color_no_group"]   = optional(noGroup);
+    j["color_list_background"] = optional(listBackground);
+    j["color_list_text"]       = optional(listText);
+    j["color_note_background"] = optional(noteBackground);
+    j["color_note_text"]       = optional(noteText);
     j["color_daily_badge"]       = colorJson(dailyBadge);
     j["color_daily_badge_text"]  = colorJson(dailyBadgeText);
     j["color_weekly_badge"]      = colorJson(weeklyBadge);
@@ -96,6 +100,10 @@ bool Settings::FromJson(const std::string& json)
     optional("color_text", text);
     optional("color_group_name", groupName);
     optional("color_no_group", noGroup);
+    optional("color_list_background", listBackground);
+    optional("color_list_text", listText);
+    optional("color_note_background", noteBackground);
+    optional("color_note_text", noteText);
     return true;
 }
 

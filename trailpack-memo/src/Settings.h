@@ -36,6 +36,10 @@ struct Settings {
     OptionalColor text;         // unset: Nexus style
     OptionalColor groupName;    // unset: follow `border`
     OptionalColor noGroup;      // "No group" label; unset: Nexus disabled text
+    OptionalColor listBackground;   // note list pane; unset: Nexus child background
+    OptionalColor listText;         // note titles in the list; unset: window text
+    OptionalColor noteBackground;   // note pane; unset: Nexus child background
+    OptionalColor noteText;         // note title, body, editor; unset: window text
     Rgba          dailyBadge     { 0.90f, 0.62f, 0.20f, 1.0f };   // amber
     Rgba          dailyBadgeText { 0.08f, 0.08f, 0.08f, 1.0f };
     Rgba          weeklyBadge    { 0.40f, 0.60f, 0.95f, 1.0f };   // blue

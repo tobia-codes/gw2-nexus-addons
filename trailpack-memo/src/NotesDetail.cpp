@@ -17,7 +17,15 @@ using namespace NotesUi;
 
 void NotesWindow::renderDetailPane_()
 {
+    // Own background (if picked), drawn exactly: the nested panes (view body, editor and
+    // preview columns) get a transparent background so no second layer tints it.
+    const bool ownBg = Theme::Colors().hasNoteBg;
+    if (ownBg) ImGui::PushStyleColor(ImGuiCol_ChildBg, Theme::Colors().noteBg);
     ImGui::BeginChild("##notes_detail", ImVec2(0, 0), true);
+    if (ownBg) {
+        ImGui::PopStyleColor();
+        ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.0f, 0.0f, 0.0f, 0.0f));
+    }
 
     Magpie::Note* note = selectedId_.empty() ? nullptr : store_.Get(selectedId_);
     if (note == nullptr) {
@@ -31,6 +39,7 @@ void NotesWindow::renderDetailPane_()
         renderViewMode_(*note);
     }
 
+    if (ownBg) ImGui::PopStyleColor();
     ImGui::EndChild();
 }
 
@@ -58,7 +67,10 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
     const float typeW = ButtonWidth(Tr("Weekly"), 60.0f) + ImGui::GetFrameHeight();
     Theme::PushEditBg();
     ImGui::SetNextItemWidth(ImGui::GetContentRegionAvail().x - typeW - ImGui::GetStyle().ItemSpacing.x);
-    ImGui::InputText("##title", &titleBuffer_);
+    {
+        Theme::TextColorScope noteText(Theme::Colors().hasNoteText, Theme::Colors().noteText);
+        ImGui::InputText("##title", &titleBuffer_);
+    }
     Theme::PopFrameBg();
     ImGui::SameLine();
     ImGui::SetNextItemWidth(typeW);
@@ -75,8 +87,10 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
 
     // Editable body: chat codes are atomic chip cells, markdown stays raw (edit = source).
     const ImU32 border = ImGui::GetColorU32(Theme::Colors().border);
+    const Theme::UserColors& uc = Theme::Colors();
     if (!showPreview_) {
         Magpie::FontScaleScope noteFont(noteTextScale_);
+        Theme::TextColorScope noteText(uc.hasNoteText, uc.noteText);
         bodyEditor_.Render("##body_edit", ImGui::GetContentRegionAvail().x, border, /*minLines=*/6);
         return;
     }
@@ -86,6 +100,7 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
     ImGui::BeginChild("##edit_col", ImVec2(half, 0), false);
     {
         Magpie::FontScaleScope noteFont(noteTextScale_);
+        Theme::TextColorScope noteText(uc.hasNoteText, uc.noteText);
         bodyEditor_.Render("##body_edit", ImGui::GetContentRegionAvail().x, border, /*minLines=*/6);
     }
     ImGui::EndChild();
@@ -95,6 +110,7 @@ void NotesWindow::renderEditMode_(Magpie::Note& note)
     {
         const std::vector<Magpie::Md::Line>& lines = parsed_(previewParse_, bodyEditor_.GetText());
         Magpie::FontScaleScope noteFont(noteTextScale_);
+        Theme::TextColorScope noteText(uc.hasNoteText, uc.noteText);
         Magpie::RenderMarkdown(lines, fontBig_(), ImGui::GetContentRegionAvail().x);
     }
     ImGui::EndChild();
@@ -104,7 +120,10 @@ void NotesWindow::renderViewMode_(Magpie::Note& note)
 {
     // Title (+ type and reset countdown), Edit on the right. Deleting lives in the
     // right-click menus and "Delete notes...".
-    ImGui::Text("%s", note.title.c_str());
+    {
+        Theme::TextColorScope noteText(Theme::Colors().hasNoteText, Theme::Colors().noteText);
+        ImGui::Text("%s", note.title.c_str());
+    }
     if (note.type != Magpie::NoteType::Note) {
         ImGui::SameLine();
         ImGui::TextColored(TypeColor(note.type), "[%s]", ResetText(note.type).c_str());
@@ -173,6 +192,7 @@ void NotesWindow::renderViewBody_(Magpie::Note* note)
     int clickedTask = -1;
     {
         Magpie::FontScaleScope noteFont(noteTextScale_);
+        Theme::TextColorScope noteText(Theme::Colors().hasNoteText, Theme::Colors().noteText);
         clickedTask = Magpie::RenderMarkdown(lines, fontBig_(),
                                              ImGui::GetContentRegionAvail().x,
                                              /*interactiveTasks=*/true);

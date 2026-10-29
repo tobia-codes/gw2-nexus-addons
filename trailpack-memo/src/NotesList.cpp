@@ -49,8 +49,12 @@ float NotesWindow::renderListColumn_()
     ImGui::BeginGroup();
 
     // The list fills the column minus the button row (negative height = fill minus px).
+    // Own background (if picked) is read at BeginChild, so it is popped right after.
+    const Theme::UserColors& uc = Theme::Colors();
     Theme::PushDarkFrameBg();
+    if (uc.hasListBg) ImGui::PushStyleColor(ImGuiCol_ChildBg, uc.listBg);
     ImGui::BeginChild("##notes_list", ImVec2(leftWidth, -buttonRowH), true);
+    if (uc.hasListBg) ImGui::PopStyleColor();
     Theme::PopFrameBg();
 
     // Groups first (each followed by its notes unless collapsed), then ungrouped notes.
@@ -221,7 +225,7 @@ void NotesWindow::renderNoteRow_(const Magpie::Note& note, float indent)
     dl->PushClipRect(rowPos, ImVec2(titleRight, rowPos.y + rowH), true);
     const float badgeW = DrawTypeBadge(dl, ImVec2(rowPos.x + indent, rowPos.y), rowH, note.type);
     const float titleX = rowPos.x + indent + (badgeW > 0.0f ? badgeW + 4.0f : 0.0f);
-    dl->AddText(ImVec2(titleX, rowPos.y), ImGui::GetColorU32(ImGuiCol_Text), note.title.c_str());
+    dl->AddText(ImVec2(titleX, rowPos.y), ImGui::GetColorU32(ListTextColor()), note.title.c_str());
     dl->PopClipRect();
 
     // Hover: full title when clipped, and the reset countdown for daily/weekly lists.
