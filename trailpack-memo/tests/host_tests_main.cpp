@@ -684,7 +684,7 @@ static void test_settings_roundtrip()
     c.showListBorder  = true;
     c.listBorder      = { true, Magpie::Rgba{ 0.0f, 0.0f, 0.7f, 1.0f } };
     c.menuIcon        = { true, Magpie::Rgba{ 0.3f, 0.3f, 0.3f, 1.0f } };
-    c.popupBackground = Magpie::Rgba{ 0.1f, 0.1f, 0.2f, 0.9f };
+    c.popupBackground = { true, Magpie::Rgba{ 0.1f, 0.1f, 0.2f, 0.9f } };
     c.popupText       = { true, Magpie::Rgba{ 1.0f, 0.9f, 0.6f, 1.0f } };
     c.border          = Magpie::Rgba{ 0.5f, 0.25f, 1.0f, 1.0f };
     c.groupName       = { true, Magpie::Rgba{ 1.0f, 0.0f, 0.0f, 1.0f } };
@@ -709,7 +709,7 @@ static void test_settings_roundtrip()
     CHECK(!b.colors.background.set && !b.colors.text.set);   // null stays unset
     CHECK(b.colors.dailyBadgeText.a == 0.5f);
     CHECK(b.colors.menuIcon.set && !b.colors.menuButton.set);
-    CHECK(b.colors.popupBackground.b == 0.2f && b.colors.popupText.set);
+    CHECK(b.colors.popupBackground.set && b.colors.popupBackground.color.b == 0.2f && b.colors.popupText.set);
 }
 
 static void test_settings_validation()
@@ -719,9 +719,13 @@ static void test_settings_validation()
     CHECK(!s.FromJson("[1,2]"));
     CHECK_EQ(s.uiTextScale, 100);                       // untouched on failure
 
-    // Defaults: no borders; popups opaque black with Nexus text.
+    // Defaults: no borders; popups follow the note list (unset).
     CHECK(!s.colors.showBorder && !s.colors.showListBorder && !s.colors.showNoteBorder);
-    CHECK(s.colors.popupBackground == (Magpie::Rgba{ 0.0f, 0.0f, 0.0f, 1.0f }) && !s.colors.popupText.set);
+    CHECK(!s.colors.popupBackground.set && !s.colors.popupText.set);
+    // The short-lived "color_popup_background" (always opaque black) is ignored.
+    Magpie::Settings old;
+    CHECK(old.FromJson("{\"color_popup_background\": [0, 0, 0, 1]}"));
+    CHECK(!old.colors.popupBackground.set);
 
     // Out-of-range / wrong types: clamped or ignored, everything else keeps defaults.
     CHECK(s.FromJson("{\"text_scale\": 999, \"note_text_scale\": 5, \"show_qa_icon\": \"yes\","
@@ -1092,6 +1096,57 @@ static void test_event_tokens()
     Magpie::I18n::SetLang(Magpie::I18n::Lang::De);
     CHECK_EQ(FormatDuration(90 * 60), std::string("1 Std 30 Min"));
     Magpie::I18n::SetLang(before);
+}
+
+// ── Editor soft wrap (ChipCodec WrapRowLength) ──────────────────────────────────
+
+// Cells from a pattern: 'a' = 10 px glyph, ' ' = 10 px space, '\n' = newline, 'C' = 50 px chip.
+static std::vector<Magpie::WrapCell> wrapCells(const std::string& pattern)
+{
+    std::vector<Magpie::WrapCell> v;
+    for (char ch : pattern) {
+        Magpie::WrapCell c;
+        c.width   = ch == 'C' ? 50.0f : ch == '\n' ? 0.0f : 10.0f;
+        c.newline = ch == '\n';
+        c.space   = ch == ' ';
+        v.push_back(c);
+    }
+    return v;
+}
+
+static int wrapLen(const std::vector<Magpie::WrapCell>& v, int start, float maxW)
+{
+    return Magpie::WrapRowLength((int)v.size(), start, maxW,
+                                 [&v](int i) { return v[i]; });
+}
+
+static void test_soft_wrap()
+{
+    // Fits: the whole text is one row.
+    auto v = wrapCells("aaa aaa");
+    CHECK_EQ(wrapLen(v, 0, 1000.0f), 7);
+    // Too wide (60 px): break after the space; the space stays on the first row.
+    CHECK_EQ(wrapLen(v, 0, 60.0f), 4);
+    CHECK_EQ(wrapLen(v, 4, 60.0f), 3);
+    // A newline ends the row and belongs to it.
+    v = wrapCells("aa\naa");
+    CHECK_EQ(wrapLen(v, 0, 1000.0f), 3);
+    CHECK_EQ(wrapLen(v, 3, 1000.0f), 2);
+    // A word longer than the row: hard break before the overflowing cell.
+    v = wrapCells("aaaaaa");
+    CHECK_EQ(wrapLen(v, 0, 35.0f), 3);
+    // Spaces may hang past the edge, so the next row doesn't start with one.
+    v = wrapCells("aaa   aa");
+    CHECK_EQ(wrapLen(v, 0, 30.0f), 6);
+    // A chip is atomic: it moves to the next row as a whole ...
+    v = wrapCells("aa C");
+    CHECK_EQ(wrapLen(v, 0, 60.0f), 3);
+    CHECK_EQ(wrapLen(v, 3, 60.0f), 1);
+    // ... and a chip wider than the row still takes a row of its own (always >= 1 cell).
+    v = wrapCells("CC");
+    CHECK_EQ(wrapLen(v, 0, 20.0f), 1);
+    CHECK_EQ(wrapLen(v, 1, 20.0f), 1);
+    CHECK_EQ(wrapLen(v, 2, 20.0f), 0);   // at the end: nothing left
 }
 
 static void test_delete_many()
@@ -1984,6 +2039,7 @@ int main()
 #endif
     test_events_search_and_format();
     test_event_tokens();
+    test_soft_wrap();
     test_delete_many();
     test_i18n_lookup_and_fallback();
     test_i18n_table_is_consistent();

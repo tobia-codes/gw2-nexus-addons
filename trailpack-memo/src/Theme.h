@@ -34,9 +34,6 @@ inline const ImVec4 BADGE_DAILY        = { 0.90f, 0.62f, 0.20f, 1.00f };   // am
 inline const ImVec4 BADGE_WEEKLY       = { 0.40f, 0.60f, 0.95f, 1.00f };   // blue
 inline const ImVec4 BADGE_TEXT         = { 0.08f, 0.08f, 0.08f, 1.00f };
 
-// ── Popups (menus, tooltips, modals): opaque black for maximum contrast ───
-inline const ImVec4 POPUP_BG           = { 0.00f, 0.00f, 0.00f, 1.00f };
-
 // ── Event chips (B5; made configurable in stage 6) ────────────────────────
 inline const ImVec4 EVENT_UPCOMING     = { 0.30f, 0.80f, 0.80f, 1.00f };   // teal
 inline const ImVec4 EVENT_ACTIVE       = { 0.40f, 0.85f, 0.35f, 1.00f };   // green
@@ -86,8 +83,10 @@ struct UserColors {
     bool   hasMenuIcon    = false;
     ImVec4 menuIcon       = { 0.0f, 0.0f, 0.0f, 0.0f };
     // Popups of the addon windows (menus, tooltips, pickers, modals): background (pushed with
-    // the window style) and text (unset: Nexus text; applied by PopupTextScope / Tooltip).
-    ImVec4 popupBg        = POPUP_BG;
+    // the window style) and text (applied by PopupTextScope / Tooltip). Unset, they follow the
+    // note list -- its colour made opaque, and its text colour -- so popups match the look.
+    bool   hasPopupBg     = false;
+    ImVec4 popupBg        = { 0.0f, 0.0f, 0.0f, 0.0f };
     bool   hasPopupText   = false;
     ImVec4 popupText      = { 0.0f, 0.0f, 0.0f, 0.0f };
 };
@@ -111,7 +110,13 @@ inline void PushNoteBorder() { const UserColors& c = Colors(); PushPaneBorder(c.
 // pane, slightly lighter on a dark one, opaque (the editor on a custom note background).
 ImVec4 FieldBg(const ImVec4& bg);
 
-// Popup text colour (user-set, else Nexus's own text colour, even if the window has its own).
+// Popup defaults, computed from the CURRENT ImGui style (call while no window style is pushed,
+// e.g. in the options): the note list's colour as it shows on screen (its own, else Nexus's
+// child background over the window background), opaque; the list's text colour, else Nexus's.
+ImVec4 DefaultPopupBg();
+ImVec4 DefaultPopupText();
+
+// Popup text colour in use (user-set, else the default above).
 ImVec4 PopupText();
 
 // SetTooltip in the popup text colour.
@@ -126,10 +131,14 @@ struct TextColorScope {
     TextColorScope& operator=(const TextColorScope&) = delete;
 };
 
-// The popup text colour for a scope: put it first inside `if (ImGui::BeginPopup...(...)) {`
-// (or around BeginTooltip / a Combo) so menus and tooltips get it, not the window.
-struct PopupTextScope : TextColorScope {
-    PopupTextScope() : TextColorScope(true, PopupText()) {}
+// Popup colours for a scope: text, and input fields as a shade of the popup background (so a
+// light popup doesn't put dark text on Nexus's dark field). Put it first inside
+// `if (ImGui::BeginPopup...(...)) {` (or around BeginTooltip / a Combo).
+struct PopupTextScope {
+    PopupTextScope();
+    ~PopupTextScope() { ImGui::PopStyleColor(2); }
+    PopupTextScope(const PopupTextScope&) = delete;
+    PopupTextScope& operator=(const PopupTextScope&) = delete;
 };
 
 // ── Scoped helpers ────────────────────────────────────────────────────────

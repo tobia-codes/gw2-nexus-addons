@@ -37,8 +37,8 @@ struct ColorSet {
     OptionalColor noteBorder;       // unset: follow `border`
     OptionalColor menuButton;       // menu button next to "Create New Note"; unset: Nexus button
     OptionalColor menuIcon;         // its three lines; unset: window text
-    Rgba          popupBackground{ 0.0f, 0.0f, 0.0f, 1.0f };   // menus, tooltips, modals: opaque black
-    OptionalColor popupText;        // unset: Nexus text
+    OptionalColor popupBackground;  // menus, tooltips, modals; unset: the list's colour, opaque
+    OptionalColor popupText;        // unset: the list's text colour, else Nexus text
     Rgba          dailyBadge     { 0.90f, 0.62f, 0.20f, 1.0f };   // amber
     Rgba          dailyBadgeText { 0.08f, 0.08f, 0.08f, 1.0f };
     Rgba          weeklyBadge    { 0.40f, 0.60f, 0.95f, 1.0f };   // blue

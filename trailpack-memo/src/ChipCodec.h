@@ -37,6 +37,35 @@ std::vector<ParsedCell> ParseToCells(const std::string& utf8);
 // ParseToCells for any string it produced.
 std::string CellsToText(const std::vector<ParsedCell>& cells);
 
+// --- Soft wrap (the editor's visual rows) ---
+// One cell as the wrap sees it: its width, and whether it is a '\n' or a space.
+struct WrapCell {
+    float width   = 0.0f;
+    bool  newline = false;
+    bool  space   = false;
+};
+
+// Number of cells in the visual row that starts at `start` (of `count`), for rows at most
+// `maxWidth` wide: up to and including a newline; else as many cells as fit, broken after the
+// last space (spaces may hang past the edge, so no row starts with one), or -- for a word or a
+// chip wider than the row -- before the cell that overflows. At least 1 while start < count.
+// `get(i)` returns the WrapCell of cell i.
+template <class GetCell>
+int WrapRowLength(int count, int start, float maxWidth, GetCell get)
+{
+    float w = 0.0f;
+    int lastSpace = -1;
+    for (int i = start; i < count; ++i) {
+        const WrapCell c = get(i);
+        if (c.newline) return i - start + 1;
+        if (c.space) { lastSpace = i; w += c.width; continue; }
+        if (w + c.width > maxWidth && i > start)
+            return lastSpace >= start ? lastSpace - start + 1 : i - start;
+        w += c.width;
+    }
+    return count - start;
+}
+
 // --- UTF-8 helpers (shared with the widget) ---
 void                      AppendUtf8(std::string& s, uint32_t cp);
 std::vector<uint32_t>     DecodeUtf8(const std::string& s);

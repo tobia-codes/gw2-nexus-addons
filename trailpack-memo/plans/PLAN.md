@@ -40,7 +40,7 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 | `Markdown.{h,cpp}` | yes | Line parser (Paragraph/Heading/Bullet/Task; Text/Bold/Italic/Chip spans); task count/toggle/uncheck-all |
 | `MarkdownEdit.{h,cpp}` | yes | Toolbar commands on a cell model: wrap bold/italic, toggle line prefixes, list continuation on Enter |
 | `MarkdownRender.{h,cpp}` | no | ImGui view rendering: FontBig headings, faux bold (double draw), faux italic (shear), checkboxes, rich chips |
-| `ChipTextEdit.{h,cpp}` | no | Multi-line stb_textedit editor with atomic chip cells (adapted from Pie UI), `ApplyEdit` for toolbar ops |
+| `ChipTextEdit.{h,cpp}` | no | Multi-line stb_textedit editor with atomic chip cells (adapted from Pie UI), `ApplyEdit` for toolbar ops; soft wrap at the field width (`RowLen` -> `WrapRowLength` in `ChipCodec.h`, used by layout, caret, selection and drawing) |
 | `ChipCodec.{h,cpp}` | yes | Text <-> cell round-trip (chat codes -> one chip cell), UTF-8 helpers |
 | `ChipResolver.{h,cpp}` | yes | Offline structural label + colour from the codec (`[Item]`, `[Mirage Build]`) |
 | `ChipColor.{h,cpp}` | yes | GW2 link colours (per type, per item rarity) |
@@ -133,9 +133,10 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
   Panes (list, note, preview) always have inner padding: `PushPaneBorder` also pushes
   WindowPadding, and they are begun with `Theme::kPaneFlags` (AlwaysUseWindowPadding) because
   ImGui drops the padding of border-less children.
-  Popups (menus, tooltips, event picker, modals) of the note window: `color_popup_background`
-  (default opaque black, pushed as ImGuiCol_PopupBg by `PushWindowStyle`) and `color_popup_text`
-  (null = Nexus text): `Theme::PopupTextScope` first inside each `BeginPopup` block / around
+  Popups (menus, tooltips, event picker, modals) of the note window: `color_popup_bg` (null =
+  `Theme::DefaultPopupBg()`: the list colour as shown, opaque; pushed as ImGuiCol_PopupBg by
+  `PushWindowStyle`) and `color_popup_text` (null = list text, else Nexus text);
+  `PopupTextScope` also gives input fields a shade of the popup background; `Theme::PopupTextScope` first inside each `BeginPopup` block / around
   `BeginTooltip` and Combos, `Theme::Tooltip` instead of `ImGui::SetTooltip`, all modals via
   `renderModals_`. New popups must do the same.
   "No group" label: `color_no_group` (null = Nexus disabled text), `NotesUi::NoGroupColor`.

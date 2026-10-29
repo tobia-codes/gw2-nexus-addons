@@ -50,6 +50,7 @@ struct ChipTextEdit {
     bool   focused    = false;
     bool   focusNext  = false;
     float  scrollX    = 0.0f;      // (unused in multi-line; kept for ABI/state symmetry)
+    float  wrapWidth  = 1.0e9f;    // soft-wrap width of the text area, set by each Render
     unsigned int blurSeen = 0;     // last RequestChipBlur() sequence this instance acted on
 
     ~ChipTextEdit();

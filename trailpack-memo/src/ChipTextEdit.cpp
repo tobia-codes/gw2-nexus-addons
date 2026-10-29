@@ -40,19 +40,29 @@ static float ChipTE_GetWidth(ChipTextEdit* o, int ls, int i) {
     return IsNewlineCell(c) ? -1.0f : c.width;
 }
 
-// Lay out ONE row beginning at cell `n`: sum the widths of this row's NON-newline cells, and count
-// cells until (and including) a trailing newline cell, or to end of text. This is what lets stb map
-// (x,y) clicks to the right row and Up/Down move between rows.
+// Cells of the visual row starting at `n`: soft-wrapped at o->wrapWidth (ChipCodec's
+// WrapRowLength), up to and including a newline cell. Every row-aware place uses this, so
+// clicks, Up/Down, Home/End, caret, selection and drawing all agree.
+static int RowLen(const ChipTextEdit* o, int n) {
+    return WrapRowLength((int)o->cells.size(), n, o->wrapWidth, [o](int i) {
+        const ChipCell& c = o->cells[i];
+        WrapCell w;
+        w.width   = c.width;
+        w.newline = IsNewlineCell(c);
+        w.space   = !c.isChip && c.cp == ' ';
+        return w;
+    });
+}
+
+// Lay out ONE visual row beginning at cell `n`: its cells (RowLen) and the summed width of its
+// NON-newline cells. This is what lets stb map (x,y) clicks to the right row and Up/Down move
+// between rows.
 static void  ChipTE_Layout(StbTexteditRow* r, ChipTextEdit* o, int n) {
     const float lh = ImGui::GetTextLineHeight();
-    const int total = (int)o->cells.size();
+    const int count = RowLen(o, n);
     float w = 0.0f;
-    int count = 0;
-    for (int i = n; i < total; ++i) {
-        ++count;
-        if (IsNewlineCell(o->cells[i])) break;  // include the newline cell, then stop
-        w += o->cells[i].width;
-    }
+    for (int i = n; i < n + count; ++i)
+        if (!IsNewlineCell(o->cells[i])) w += o->cells[i].width;
     r->x0 = 0.0f;
     r->x1 = w;
     r->baseline_y_delta = lh;
@@ -247,23 +257,36 @@ void ChipTextEdit::ApplyEdit(const Md::EditResult& r) {
 }
 
 // ---- row / position geometry ------------------------------------------------------------------
-// Number of rows = newline cells + 1.
-static int RowCount(const std::vector<ChipCell>& cells) {
-    int rows = 1;
-    for (const auto& c : cells) if (IsNewlineCell(c)) ++rows;
-    return rows;
+// First cell of every visual row (soft wrap included); a trailing newline opens an empty last
+// row. Never empty: an empty text is one row starting at 0.
+static std::vector<int> RowStarts(const ChipTextEdit& o) {
+    std::vector<int> starts{ 0 };
+    const int n = (int)o.cells.size();
+    for (int i = 0; i < n;) {
+        i += RowLen(&o, i);
+        if (i < n || (i == n && IsNewlineCell(o.cells[n - 1]))) starts.push_back(i);
+    }
+    return starts;
 }
 
-// Map caret index `i` (0..size) to (row, x-offset-within-row). x is the sum of NON-newline cell
-// widths since the start of the row containing position i.
-static void CaretPos(const std::vector<ChipCell>& cells, int i, int& row, float& x) {
-    row = 0; x = 0.0f;
-    const int n = (int)cells.size();
-    if (i > n) i = n;
-    for (int k = 0; k < i; ++k) {
-        if (IsNewlineCell(cells[k])) { ++row; x = 0.0f; }
-        else                          { x += cells[k].width; }
-    }
+// Row of cell position `i` (a position on a row boundary belongs to the row it starts).
+static int RowOf(const std::vector<int>& starts, int i) {
+    return (int)(std::upper_bound(starts.begin(), starts.end(), i) - starts.begin()) - 1;
+}
+
+// x of position `i` within the row starting at `rowStart` (newline cells have no width).
+static float XInRow(const std::vector<ChipCell>& cells, int rowStart, int i) {
+    float x = 0.0f;
+    for (int k = rowStart; k < i; ++k) if (!IsNewlineCell(cells[k])) x += cells[k].width;
+    return x;
+}
+
+// Map caret index `i` (0..size) to (visual row, x-offset-within-row).
+static void CaretPos(const std::vector<ChipCell>& cells, const std::vector<int>& starts, int i,
+                     int& row, float& x) {
+    i = ClampI(i, 0, (int)cells.size());
+    row = RowOf(starts, i);
+    x = XInRow(cells, starts[row], i);
 }
 
 bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minLines) {
@@ -279,7 +302,10 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
     const float fs = ImGui::GetFontSize();
     const ImVec2 pad(std::max(style.FramePadding.x, fs * 0.5f), std::max(style.FramePadding.y, fs * 0.4f));
 
-    const int rows = std::max(RowCount(cells), std::max(1, minLines));
+    // Soft wrap at the text area's width (before any stb call, which lays out rows).
+    wrapWidth = std::max(1.0f, width - pad.x * 2.0f);
+
+    const int rows = std::max((int)RowStarts(*this).size(), std::max(1, minLines));
     const float contentH = rows * lh;
     const float h = contentH + pad.y * 2.0f;
 
@@ -381,6 +407,7 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
     if ((int)cells.size() != sizeBefore) changed = true;
 
     // ---- draw ----
+    const std::vector<int> rowStarts = RowStarts(*this);   // after this frame's edits
     ImDrawList* dl = ImGui::GetWindowDrawList();
     const ImVec2 p1(p0.x + width, p0.y + h);
     dl->AddRectFilled(p0, p1, ImGui::GetColorU32(ImGuiCol_FrameBg), style.FrameRounding);
@@ -391,24 +418,17 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
     // Selection: one rect per row the [a,b) range covers.
     if (focused && s.select_start != s.select_end) {
         int a = std::min(s.select_start, s.select_end), b = std::max(s.select_start, s.select_end);
-        int rowA; float xA; CaretPos(cells, a, rowA, xA);
-        // Walk from a to b, emitting a rect when we cross a row boundary or reach b.
-        int curRow = rowA; float rowStartX = xA; float x = xA;
+        // One rect per visual row the [a,b) range covers.
         const ImU32 selCol = ImGui::GetColorU32(ImGuiCol_TextSelectedBg);
-        auto emitSel = [&](int rr, float x0, float x1) {
+        for (int r = RowOf(rowStarts, a); r < (int)rowStarts.size() && rowStarts[r] < b; ++r) {
+            const int rs = rowStarts[r];
+            const int re = r + 1 < (int)rowStarts.size() ? rowStarts[r + 1] : (int)cells.size();
+            const int lo = std::max(a, rs), hi = std::min(b, re);
+            float x0 = XInRow(cells, rs, lo), x1 = XInRow(cells, rs, hi);
             if (x1 <= x0) x1 = x0 + 2.0f;   // a selected newline shows a thin marker
-            float yy = inner_min.y + rr * lh;
+            const float yy = inner_min.y + r * lh;
             dl->AddRectFilled(ImVec2(inner_min.x + x0, yy), ImVec2(inner_min.x + x1, yy + lh), selCol);
-        };
-        for (int k = a; k < b; ++k) {
-            if (IsNewlineCell(cells[k])) {
-                emitSel(curRow, rowStartX, x);
-                ++curRow; rowStartX = 0.0f; x = 0.0f;
-            } else {
-                x += cells[k].width;
-            }
         }
-        emitSel(curRow, rowStartX, x);
     }
 
     const ImU32 textCol = ImGui::GetColorU32(ImGuiCol_Text);
@@ -418,7 +438,16 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
     auto flushRun = [&]() {
         if (!run.empty()) { dl->AddText(ImVec2(runStart, y), textCol, run.c_str()); run.clear(); }
     };
-    for (auto& c : cells) {
+    int row = 0;
+    for (int k = 0; k < (int)cells.size(); ++k) {
+        // A new visual row (soft wrap, or after a newline) starts here.
+        if (row + 1 < (int)rowStarts.size() && k == rowStarts[row + 1]) {
+            flushRun();
+            ++row;
+            x = inner_min.x; runStart = x;
+            y = inner_min.y + row * lh;
+        }
+        const ChipCell& c = cells[k];
         if (c.isChip) {
             flushRun();
             ImU32 bg = (c.color & 0x00FFFFFF) | 0x33000000;   // faint tint of the chip colour
@@ -426,9 +455,7 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
             dl->AddText(ImVec2(x + 3, y), c.color, c.name.c_str());
             x += c.width; runStart = x;
         } else if (IsNewlineCell(c)) {
-            flushRun();
-            x = inner_min.x; runStart = x;
-            y += lh;
+            flushRun();   // the next row starts at the following cell (rowStarts)
         } else {
             AppendUtf8(run, c.cp);
             x += c.width;
@@ -438,7 +465,7 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
 
     // Caret at the cursor's (row, x).
     if (focused) {
-        int crow; float cx; CaretPos(cells, s.cursor, crow, cx);
+        int crow; float cx; CaretPos(cells, rowStarts, s.cursor, crow, cx);
         float caretX = inner_min.x + cx;
         float caretY = inner_min.y + crow * lh;
         if (std::fmod((float)ImGui::GetTime(), 1.0f) < 0.6f)
