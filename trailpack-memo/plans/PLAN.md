@@ -46,6 +46,8 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 - Edit toolbar B / I / H1 / H2 / list / task + `Ctrl+B` / `Ctrl+I`, toggles off when reapplied.
 - Enter continues bullet/task lists; Enter on an empty item ends the list.
 - Optional side-by-side live preview, persisted in `settings.json`.
+- Text-size setting (70-200 %, Nexus options, `text_scale` in `settings.json`) via
+  `SetWindowFontScale`; `RenderMarkdown` uses `ImGui::GetFontSize()` so view text follows it.
 
 ---
 

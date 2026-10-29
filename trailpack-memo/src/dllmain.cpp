@@ -35,6 +35,7 @@ AddonAPI_t*      APIDefs         = nullptr;
 bool             g_WindowVisible = false;
 bool             g_ShowQAIcon    = true;   // show the quick-access icon (persisted; default on)
 bool             g_QAIconAdded   = false;  // tracks whether the shortcut is currently registered
+int              g_TextScalePct  = 100;    // window text size in percent (persisted; 100 = Nexus default)
 NotesWindow      g_Notes;
 
 // ── Forward declarations ──────────────────────────────────────────────────
@@ -43,6 +44,9 @@ void AddonUnload();
 void ProcessKeybind(const char* aIdentifier, bool aIsRelease);
 void AddonRender();
 void AddonOptions();
+
+static constexpr int kTextScaleMin = 70;
+static constexpr int kTextScaleMax = 200;
 
 // ── Settings persistence (settings.json in the addon data dir) ────────────
 static std::string SettingsPath() {
@@ -60,6 +64,7 @@ static void SaveSettings() {
     nlohmann::json j;
     j["show_qa_icon"] = g_ShowQAIcon;
     j["edit_preview"] = g_Notes.PreviewEnabled();
+    j["text_scale"]   = g_TextScalePct;
     std::ofstream f(path, std::ios::out | std::ios::trunc);
     if (f.is_open()) f << j.dump(2);
 }
@@ -76,6 +81,10 @@ static void LoadSettings() {
         g_ShowQAIcon = j["show_qa_icon"].get<bool>();
     if (j.contains("edit_preview") && j["edit_preview"].is_boolean())
         g_Notes.SetPreviewEnabled(j["edit_preview"].get<bool>());
+    if (j.contains("text_scale") && j["text_scale"].is_number_integer()) {
+        const int pct = j["text_scale"].get<int>();
+        g_TextScalePct = pct < kTextScaleMin ? kTextScaleMin : pct > kTextScaleMax ? kTextScaleMax : pct;
+    }
 }
 
 // Add/remove the quick-access shortcut, keeping g_QAIconAdded in sync. The icon
@@ -197,6 +206,8 @@ void AddonRender() {
     Theme::PushWindowBorder();
 
     if (ImGui::Begin(WINDOW_NAME, &g_WindowVisible)) {
+        // Scales everything inside the window (child panes inherit it), not the title bar.
+        ImGui::SetWindowFontScale(g_TextScalePct / 100.0f);
         g_Notes.Render();
         if (g_Notes.ConsumeSettingsChanged()) SaveSettings();
     }
@@ -225,6 +236,15 @@ void AddonOptions() {
     if (ImGui::Checkbox("Show quick access icon", &g_ShowQAIcon)) {
         if (g_ShowQAIcon) AddQAIcon();
         else              RemoveQAIcon();
+        SaveSettings();
+    }
+
+    // Text size of the notes window (live; saved when the slider is released).
+    ImGui::SliderInt("Text size", &g_TextScalePct, kTextScaleMin, kTextScaleMax, "%d%%");
+    if (ImGui::IsItemDeactivatedAfterEdit()) SaveSettings();
+    ImGui::SameLine();
+    if (ImGui::Button("Reset") && g_TextScalePct != 100) {
+        g_TextScalePct = 100;
         SaveSettings();
     }
 }

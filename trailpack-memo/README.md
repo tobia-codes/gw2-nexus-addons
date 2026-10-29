@@ -14,6 +14,7 @@
 - **Markdown toolbar** in edit mode: **B**, *I*, H1, H2, bullet list, task -- works on the
   selection or the current line(s), and toggles off when applied again. `Ctrl+B` / `Ctrl+I` too.
 - **Live preview** beside the editor (`Preview` checkbox, remembered across sessions).
+- **Adjustable text size** (70-200 %) in the Nexus addon options; headings and chips scale along.
 - **Lists continue on Enter**: a new `- ` / `- [ ] ` is started automatically; Enter on an empty
   item ends the list.
 

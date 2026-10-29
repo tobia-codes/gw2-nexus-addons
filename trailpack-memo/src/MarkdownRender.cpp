@@ -129,7 +129,11 @@ int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wr
     float penX = origin.x;
     float penY = origin.y;
     float maxPenY = origin.y;
-    float lastLineHeight = ImGui::GetFont()->FontSize + kLeading;
+    // ImGui::GetFontSize() includes the window font scale (text-size setting) and any global
+    // scale; font->FontSize alone is the unscaled atlas size. Apply the same factor to FontBig.
+    const float baseSize  = ImGui::GetFontSize();
+    const float fontScale = baseSize / ImGui::GetFont()->FontSize;
+    float lastLineHeight = baseSize + kLeading;
 
     // Running per-chip id so each chip's right-click popup has a unique scope.
     int chipUid = 0;
@@ -138,10 +142,11 @@ int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wr
         const Md::Line& line = lines[lineIdx];
         // Choose active font.
         ImFont* font = ImGui::GetFont();
+        float fontSize = baseSize;
         if (line.block == Md::Block::Heading && fontBig != nullptr) {
             font = fontBig;
+            fontSize = fontBig->FontSize * fontScale;
         }
-        const float fontSize   = font->FontSize;
         const float lineHeight = fontSize + kLeading;
         lastLineHeight = lineHeight;
 
