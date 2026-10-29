@@ -65,12 +65,14 @@ struct Settings {
     static constexpr int   kScaleMin = 70;    // text sizes, percent
     static constexpr int   kScaleMax = 200;
     static constexpr float kDefaultListWidth = 200.0f;
+    static constexpr float kRoundingMax = 12.0f;   // corner rounding, px
 
     bool     showQaIcon    = true;
     bool     editPreview   = false;
     int      uiTextScale   = 100;   // window UI text, percent
     int      noteTextScale = 100;   // note content, percent
     float    listWidth     = kDefaultListWidth;   // px; clamped to the window when drawn
+    float    cornerRounding = 0.0f;   // note window corners (windows, buttons, ...), 0..kRoundingMax px
     Language language      = Language::Auto;
 
     ColorSet                colors;

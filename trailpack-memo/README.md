@@ -53,6 +53,9 @@
   options in a window of its own.
 - **Two text sizes** (70-200 %) in the Nexus addon options under "Font options": one for the window's UI, one for the
   note content (view, editor, preview); headings, checkboxes and chips scale along.
+- **Corner rounding** under "Layout options": rounding of the note window, its panes, buttons,
+  fields, popups and highlighted list rows, 0-12 px (slider plus number field for fine values);
+  default 0 = square. The settings and guide windows keep Nexus's style.
 - **Lists continue on Enter**: a new `- ` / `- [ ] ` is started automatically; Enter on an empty
   item ends the list.
 

@@ -182,6 +182,7 @@ std::string Settings::ToJson() const
     j["text_scale"]       = uiTextScale;
     j["note_text_scale"]  = noteTextScale;
     j["list_width"]       = listWidth;
+    j["corner_rounding"]     = cornerRounding;
     j["language"]         = languageKey(language);
     colorsToJson(colors, j);
     nlohmann::json list = nlohmann::json::array();
@@ -221,6 +222,10 @@ bool Settings::FromJson(const std::string& json)
     if (j.contains("list_width") && j["list_width"].is_number()) {
         const float w = j["list_width"].get<float>();
         if (w > 0.0f) listWidth = w;
+    }
+    if (j.contains("corner_rounding") && j["corner_rounding"].is_number()) {
+        const float r = j["corner_rounding"].get<float>();
+        cornerRounding = r < 0.0f ? 0.0f : r > kRoundingMax ? kRoundingMax : r;
     }
     if (j.contains("language") && j["language"].is_string()) {
         const std::string l = j["language"].get<std::string>();

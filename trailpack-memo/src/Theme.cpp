@@ -12,8 +12,11 @@ static ImVec4     s_WindowText   = { 1.0f, 1.0f, 1.0f, 1.0f };
 static ImVec4     s_NexusText    = { 1.0f, 1.0f, 1.0f, 1.0f };   // before our pushes
 static ImVec4     s_PopupBg      = { 0.0f, 0.0f, 0.0f, 1.0f };   // in use, set by PushWindowStyle
 static ImVec4     s_PopupText    = { 1.0f, 1.0f, 1.0f, 1.0f };
+static float      s_Rounding     = 0.0f;
 
 UserColors& Colors() { return s_Colors; }
+void        SetRounding(float px) { s_Rounding = px; }
+float       Rounding() { return s_Rounding; }
 ImVec4      WindowText() { return s_WindowText; }
 ImVec4      PopupText()  { return s_PopupText; }
 
@@ -75,6 +78,11 @@ void PushWindowStyle() {
         ++s_PushedColors;
     }
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, s_Colors.showBorder ? BORDER_SIZE : 0.0f);
+    for (ImGuiStyleVar v : { ImGuiStyleVar_WindowRounding, ImGuiStyleVar_ChildRounding,
+                             ImGuiStyleVar_FrameRounding, ImGuiStyleVar_PopupRounding,
+                             ImGuiStyleVar_GrabRounding, ImGuiStyleVar_ScrollbarRounding,
+                             ImGuiStyleVar_TabRounding })
+        ImGui::PushStyleVar(v, s_Rounding);
 }
 
 void PushPaneBorder(bool show, bool hasColor, const ImVec4& color) {
@@ -100,7 +108,7 @@ void PopPaneBorder() {
 
 void PopWindowStyle() {
     ImGui::PopStyleColor(s_PushedColors);
-    ImGui::PopStyleVar(1);
+    ImGui::PopStyleVar(8);
     s_PushedColors = 0;
 }
 

@@ -260,6 +260,7 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
       "- Language (Auto follows Nexus), quick access icon.\n"
       "- 'Font options': UI and note text size.\n"
+      "- 'Layout options': corner rounding of the note window, its buttons, fields, popups and list rows (0 = square).\n"
       "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names, 'No group'), note (border on/off and colour, background, text), popups (background, text) and the daily / weekly badges.\n"
       "- 'Colour options' > Theme: Default, Light, Dark or one of your own; 'Save as theme' "
       "stores the current colours under a name. Borders are off by default.\n"
@@ -269,6 +270,7 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "Nexus-Addon-Optionen > Trailpack Memo, oder Menü-Knopf > 'Einstellungen...':\n"
       "- Sprache (Automatisch folgt Nexus), Schnellzugriff-Icon.\n"
       "- 'Schriftoptionen': UI- und Notiz-Textgröße.\n"
+      "- 'Layout-Optionen': Eckenrundung des Notizfensters, seiner Buttons, Felder, Popups und Listenzeilen (0 = eckig).\n"
       "- 'Farboptionen': Fenster (Rahmen an/aus und Farbe, Hintergrund, Text, Menü-Knopf und -Symbol), Notizliste (Rahmen an/aus und Farbe, Hintergrund, Text, Gruppennamen, 'Ohne Gruppe'), Notiz (Rahmen an/aus und Farbe, Hintergrund, Text), Popups (Hintergrund, Text) und die Täglich-/Wöchentlich-Badges.\n"
       "- 'Farboptionen' > Theme: Standard, Hell, Dunkel oder ein eigenes; 'Als Theme speichern' "
       "sichert die aktuellen Farben unter einem Namen. Rahmen sind standardmäßig aus.\n"
@@ -298,6 +300,8 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Note text size",                    "Notiz-Textgröße" },
     { "Reset",                             "Zurücksetzen" },
     { "Font options",                      "Schriftoptionen" },
+    { "Layout options",                    "Layout-Optionen" },
+    { "Corner rounding",                   "Eckenrundung" },
     { "Colour options",                    "Farboptionen" },
     { "Border",                            "Rahmen" },
     { "Background",                        "Hintergrund" },
