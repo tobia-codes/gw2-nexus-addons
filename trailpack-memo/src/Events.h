@@ -17,6 +17,15 @@ namespace Magpie { namespace Events {
 // The event with this id, or nullptr (unknown id: e.g. removed from the data).
 const EventDef* Find(const std::string& id);
 
+// ── Note syntax {{event:<id>}} (D7) ─────────────────────────────────────────
+// An id is 1..64 of a-z, 0-9 and '-'. Unknown ids are still tokens (shown as "unknown").
+std::string Token(const std::string& id);
+// The first token in `s` at or after `from`: returns its offset and sets `length` and `id`;
+// std::string::npos if there is none.
+size_t FindToken(const std::string& s, size_t from, size_t& length, std::string& id);
+// True if all of `s` is one token (sets `id` when given).
+bool IsToken(const std::string& s, std::string* id = nullptr);
+
 // Where an event stands at `now`.
 struct Status {
     bool    active = false;   // an occurrence is running (start <= now < end)
@@ -41,5 +50,7 @@ std::vector<const EventDef*> Search(const std::string& query);
 // "in 1 h 23 min", "in 2 h"; while running "for 4 min" (DE: "in 23 Min", "seit 4 Min").
 // `seconds` = time until the start, or since the start when `active`.
 std::string FormatTime(int64_t seconds, bool active);
+// A plain duration in the current language: "30 min", "2 h", "1 h 30 min" (DE: "30 Min", ...).
+std::string FormatDuration(int64_t seconds);
 
 }} // namespace Magpie::Events

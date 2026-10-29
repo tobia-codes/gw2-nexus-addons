@@ -988,6 +988,69 @@ static void test_events_search_and_format()
     Magpie::I18n::SetLang(before);
 }
 
+// ── Event tokens in notes: {{event:<id>}} (stage 3) ────────────────────────────
+
+static void test_event_tokens()
+{
+    using namespace Magpie::Events;
+    CHECK_EQ(Token("tequatl-the-sunless"), std::string("{{event:tequatl-the-sunless}}"));
+
+    size_t len = 0;
+    std::string id;
+    const std::string s = "Boss {{event:tequatl-the-sunless}} then {{event:x1}}";
+    size_t at = FindToken(s, 0, len, id);
+    CHECK_EQ(at, (size_t)5);
+    CHECK_EQ(id, std::string("tequatl-the-sunless"));
+    CHECK_EQ(len, std::string("{{event:tequatl-the-sunless}}").size());
+    at = FindToken(s, at + len, len, id);
+    CHECK(at != std::string::npos && id == "x1");
+    CHECK_EQ(FindToken(s, at + len, len, id), std::string::npos);
+
+    // Not tokens: empty id, upper case / spaces, unclosed; an earlier broken one is skipped.
+    CHECK_EQ(FindToken("{{event:}}", 0, len, id), std::string::npos);
+    CHECK_EQ(FindToken("{{event:Teq}}", 0, len, id), std::string::npos);
+    CHECK_EQ(FindToken("{{event:a b}}", 0, len, id), std::string::npos);
+    CHECK_EQ(FindToken("{{event:abc", 0, len, id), std::string::npos);
+    CHECK_EQ(FindToken("{{event:x {{event:ok}}", 0, len, id), (size_t)10);
+
+    CHECK(IsToken("{{event:dragons-stand}}", &id) && id == "dragons-stand");
+    CHECK(!IsToken(" {{event:dragons-stand}}"));
+    CHECK(!IsToken("{{event:dragons-stand}}x"));
+
+    // Codec: a token is ONE chip cell between text cells; chat codes still work; round trip.
+    const std::string body = "a {{event:dragons-stand}} [&BNABAAA=]\n{{event:gone}}";
+    const std::vector<Magpie::ParsedCell> cells = Magpie::ParseToCells(body);
+    int chips = 0;
+    for (const auto& c : cells) if (c.isChip) ++chips;
+    CHECK_EQ(chips, 3);
+    CHECK(cells.size() > 2 && cells[2].isChip && cells[2].code == "{{event:dragons-stand}}");
+    CHECK(cells.back().isChip && cells.back().code == "{{event:gone}}");
+    CHECK_EQ(Magpie::CellsToText(cells), body);
+
+    // Parser: Event spans carry the id; text and emphasis around them stay intact.
+    const auto lines = Magpie::Md::Parse("- [ ] **Run** {{event:tequatl-the-sunless}} now");
+    CHECK_EQ(lines.size(), (size_t)1);
+    if (lines.size() == 1) {
+        const auto& sp = lines[0].spans;
+        bool event = false, bold = false;
+        for (const auto& x : sp) {
+            if (x.kind == Magpie::Md::Inline::Event) event = x.text == "tequatl-the-sunless";
+            if (x.kind == Magpie::Md::Inline::Bold)  bold  = x.text == "Run";
+        }
+        CHECK(event && bold);
+        CHECK(lines[0].block == Magpie::Md::Block::Task);
+    }
+
+    const Magpie::I18n::Lang before = Magpie::I18n::Current();
+    Magpie::I18n::SetLang(Magpie::I18n::Lang::En);
+    CHECK_EQ(FormatDuration(30 * 60), std::string("30 min"));
+    CHECK_EQ(FormatDuration(2 * 3600), std::string("2 h"));
+    CHECK_EQ(FormatDuration(90 * 60), std::string("1 h 30 min"));
+    Magpie::I18n::SetLang(Magpie::I18n::Lang::De);
+    CHECK_EQ(FormatDuration(90 * 60), std::string("1 Std 30 Min"));
+    Magpie::I18n::SetLang(before);
+}
+
 static void test_delete_many()
 {
     Magpie::NotesStore store;
@@ -1876,6 +1939,7 @@ int main()
     test_events_ignore_time_zone();
 #endif
     test_events_search_and_format();
+    test_event_tokens();
     test_delete_many();
     test_i18n_lookup_and_fallback();
     test_i18n_table_is_consistent();

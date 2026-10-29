@@ -5,12 +5,13 @@
 namespace Magpie { namespace Md {
 
 enum class Block  { Paragraph, Heading, Bullet, Task };
-enum class Inline { Text, Bold, Italic, Chip };
+enum class Inline { Text, Bold, Italic, Chip, Event };
 
 struct Span {
     Inline      kind;
     std::string text;   // literal display text (markers stripped) for Text/Bold/Italic;
-                        // the raw "[&...]" chat code for Chip
+                        // the raw "[&...]" chat code for Chip; the event id for Event
+                        // ("{{event:<id>}}", see Events.h)
 };
 
 struct Line {

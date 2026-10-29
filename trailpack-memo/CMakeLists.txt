@@ -32,6 +32,7 @@ if(NOT GW2_HOST_TESTS)
         src/ChipCodec.cpp
         src/ChipTextEdit.cpp
         src/ChipRich.cpp
+        src/EventChip.cpp
         src/DecoderClient.cpp
         src/PieUiClient.cpp
         src/IconUrl.cpp

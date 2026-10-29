@@ -133,16 +133,19 @@ Then check the summary, run the host tests, and review the diff of `src/events/`
 - [x] Add the new files to both CMake targets; list `Events` as a pure unit in `AGENTS.md`.
 
 ### Stage 3 — Chip in view, preview and editor
-- [ ] Parser: `{{event:<id>}}` -> `Event` span (`Markdown.{h,cpp}`) + host tests.
-- [ ] Codec / editor: one atomic cell per token (`ChipCodec`, `ChipTextEdit`); editor shows the
-      name only (D10); round-trip host tests.
-- [ ] `EventChip`: view / preview text with live countdown, unknown-id chip, tooltip (D11),
-      left-click copy + "Waypoint copied" hint, right-click menu (D12).
-- [ ] Tooltip local times: convert **each** start's Unix time on its own with `localtime`
+- [x] Token helpers in `Events` (`Token`, `FindToken`, `IsToken`; id = a-z 0-9 '-').
+- [x] Parser: `{{event:<id>}}` -> `Event` span (`Markdown.{h,cpp}`) + host tests.
+- [x] Codec / editor: one atomic cell per token (`ChipCodec`, `ChipTextEdit`, also on paste);
+      editor shows the name only (D10); round-trip host tests.
+- [x] `EventChip`: view / preview text with live countdown, unknown-id chip, tooltip (D11),
+      left-click copy + "Waypoint copied" hint, right-click menu (D12). Separator in the chip
+      text is " - " (AGENTS: no symbols like the middle dot outside letters).
+- [x] Tooltip local times: convert **each** start's Unix time on its own with `localtime`
       (Windows applies DST per date), never a fixed UTC offset -- so a start after the next
       daylight-saving switch shows the right hour. Countdowns stay UTC-only.
-- [ ] Guide + README lines; German texts.
-- [ ] User test: write `{{event:tequatl}}` by hand, check view, preview, editor, click, menu.
+- [x] Guide + README lines; German texts.
+- [ ] User test: write `{{event:tequatl-the-sunless}}` by hand, check view, preview, editor,
+      click, menu.
 
 ### Stage 4 — Picker in the edit toolbar
 - [ ] "Event" toolbar button, picker with search + collapsible categories, no countdown (D8).

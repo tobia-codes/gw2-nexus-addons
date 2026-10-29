@@ -85,6 +85,13 @@ const Section kSections[] = {
       "- With the Decoder Ring addon: icon, name and a detailed tooltip.\n"
       "- Right-click a chip: copy the chat code or open the wiki.\n"
       "- With Pie UI: left-click a waypoint chip to open the map there." },
+    { "Event timers",
+      "Write {{event:<id>}} in a note, e.g. {{event:tequatl-the-sunless}} - it becomes an event "
+      "chip.\n"
+      "- It shows the time until the next start, or since when the event is running.\n"
+      "- Hover it for the next starts in your local time, the duration, map and waypoint.\n"
+      "- Left-click copies the waypoint; right-click: copy waypoint or open the wiki.\n"
+      "- While editing, the chip shows the event name only." },
     { "Import, export and deleting",
       "All in the menu button and the right-click menus.\n"
       "- 'Export all...' saves every note and group to one file; right-click a note or group "
@@ -130,11 +137,16 @@ void DrawBody(const char* body)
 
 } // namespace
 
+std::string Title()
+{
+    return std::string("Trailpack Memo - ") + Tr("Guide") + "###tpm_help";
+}
+
 void Render(bool* open, float uiScale)
 {
     if (!*open) return;
 
-    const std::string title = std::string("Trailpack Memo - ") + Tr("Guide") + "###tpm_help";
+    const std::string title = Title();
     ImGui::SetNextWindowSize(ImVec2(460.0f, 520.0f), ImGuiCond_FirstUseEver);
     // Plain Nexus style (no user colours), so the guide stays readable with any theme.
     if (ImGui::Begin(title.c_str(), open)) {

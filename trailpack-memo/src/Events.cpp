@@ -23,6 +23,40 @@ const EventDef* Find(const std::string& id)
     return nullptr;
 }
 
+static const char kOpen[]  = "{{event:";
+static const char kClose[] = "}}";
+
+std::string Token(const std::string& id)
+{
+    return kOpen + id + kClose;
+}
+
+size_t FindToken(const std::string& s, size_t from, size_t& length, std::string& id)
+{
+    const size_t openLen = sizeof kOpen - 1;
+    for (size_t at = s.find(kOpen, from); at != std::string::npos; at = s.find(kOpen, at + 1)) {
+        size_t i = at + openLen;
+        while (i < s.size() && i - (at + openLen) < 64 &&
+               ((s[i] >= 'a' && s[i] <= 'z') || (s[i] >= '0' && s[i] <= '9') || s[i] == '-'))
+            ++i;
+        if (i > at + openLen && s.compare(i, 2, kClose) == 0) {
+            id = s.substr(at + openLen, i - (at + openLen));
+            length = i + 2 - at;
+            return at;
+        }
+    }
+    return std::string::npos;
+}
+
+bool IsToken(const std::string& s, std::string* id)
+{
+    size_t len = 0;
+    std::string found;
+    if (FindToken(s, 0, len, found) != 0 || len != s.size()) return false;
+    if (id != nullptr) *id = found;
+    return true;
+}
+
 Status State(const EventDef& e, int64_t now)
 {
     // Every event repeats daily from 00:00 UTC. An occurrence may run past midnight, so the
@@ -136,6 +170,18 @@ std::string FormatTime(int64_t seconds, bool active)
     } else {
         snprintf(buf, sizeof buf, active ? Tr("for %d h %d min") : Tr("in %d h %d min"), h, m);
     }
+    return buf;
+}
+
+std::string FormatDuration(int64_t seconds)
+{
+    if (seconds < 0) seconds = 0;
+    char buf[64];
+    const int m = (int)((seconds / 60) % 60);
+    const int h = (int)(seconds / 3600);
+    if (h == 0)      snprintf(buf, sizeof buf, Tr("%d min"), m);
+    else if (m == 0) snprintf(buf, sizeof buf, Tr("%d h"), h);
+    else             snprintf(buf, sizeof buf, Tr("%d h %d min"), h, m);
     return buf;
 }
 

@@ -21,6 +21,7 @@
 
 #include "imgui.h"
 #include "ChipRich.h"   // Magpie::DrawRichChip / MeasureRichChip (Task 13)
+#include "EventChip.h"  // Magpie::DrawEventChip / MeasureEventChip (event timers)
 
 namespace Magpie {
 
@@ -206,6 +207,16 @@ int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wr
                 const float w = DrawRichChip(dl, font, fontSize, ImVec2(penX, penY),
                                              span.text, chipUid++);
                 penX += w;
+                continue;
+            }
+            if (span.kind == Md::Inline::Event) {
+                // Event timer chip with a live countdown; wraps as one unit like a chip.
+                const float chipW = MeasureEventChip(font, fontSize, span.text);
+                if (penX + chipW > rightEdge && penX > startX) {
+                    penX = startX;
+                    penY += lineHeight;
+                }
+                penX += DrawEventChip(dl, font, fontSize, ImVec2(penX, penY), span.text, chipUid++);
                 continue;
             }
 
