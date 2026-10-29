@@ -100,7 +100,8 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 - User colours (border / background / text) in `Theme::Colors()`, pushed for the whole window by
   `Theme::PushWindowStyle()`; background/text only override Nexus's style once picked
   (`color_*` in `settings.json`, null = Nexus default).
-- Two text sizes (70-200 %, Nexus options): UI = `text_scale`, note content = `note_text_scale`,
+- Two text sizes (70-200 %, Nexus options > "Font options"; colours under "Colour options", both
+  collapsible sections in `AddonOptions`): UI = `text_scale`, note content = `note_text_scale`,
   both applied with `Magpie::FontScaleScope` (`FontScale.{h,cpp}`) -- the UI scope right after
   `Begin`, the note scope around view / editor / preview. It sets the font size directly
   (ImGui 1.80 inherits `SetWindowFontScale` only one child level deep) and draws enlarged text

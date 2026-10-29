@@ -38,8 +38,8 @@
 - **English and German UI**: follows the Nexus language by default, or set it in the addon
   options (Auto / English / Deutsch).
 - **Custom colours** for the window border, background, text and group names (colour pickers with alpha in
-  the Nexus addon options, each with a Reset).
-- **Two text sizes** (70-200 %) in the Nexus addon options: one for the window's UI, one for the
+  the Nexus addon options under "Colour options", each with a Reset).
+- **Two text sizes** (70-200 %) in the Nexus addon options under "Font options": one for the window's UI, one for the
   note content (view, editor, preview); headings, checkboxes and chips scale along.
 - **Lists continue on Enter**: a new `- ` / `- [ ] ` is started automatically; Enter on an empty
   item ends the list.

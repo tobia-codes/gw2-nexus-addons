@@ -314,69 +314,75 @@ void AddonOptions() {
         SaveSettings();
     }
 
+    // Fonts and colours sit in their own collapsible sections below the general options
+    // (Nexus draws the surrounding "Options" header; addons cannot add sibling headers).
+
+    // ── Font options ──────────────────────────────────────────────────────
     // Text sizes (live; saved when a slider is released): the window's UI elements,
     // and -- independently -- the note content (view, editor, preview).
-    auto sizeSlider = [](const char* id, const char* label, int& pct) {
-        ImGui::PushID(id);
-        ImGui::SliderInt(label, &pct, Magpie::Settings::kScaleMin, Magpie::Settings::kScaleMax, "%d%%");
-        if (ImGui::IsItemDeactivatedAfterEdit()) SaveSettings();
-        ImGui::SameLine();
-        if (ImGui::Button(Tr("Reset")) && pct != 100) {
-            pct = 100;
-            SaveSettings();
-        }
-        ImGui::PopID();
-    };
-    sizeSlider("ui_size",   Tr("UI text size"),   g_Settings.uiTextScale);
-    sizeSlider("note_size", Tr("Note text size"), g_Settings.noteTextScale);
+    if (ImGui::CollapsingHeader(Tr("Font options"))) {
+        auto sizeSlider = [](const char* id, const char* label, int& pct) {
+            ImGui::PushID(id);
+            ImGui::SliderInt(label, &pct, Magpie::Settings::kScaleMin, Magpie::Settings::kScaleMax, "%d%%");
+            if (ImGui::IsItemDeactivatedAfterEdit()) SaveSettings();
+            ImGui::SameLine();
+            if (ImGui::Button(Tr("Reset")) && pct != 100) {
+                pct = 100;
+                SaveSettings();
+            }
+            ImGui::PopID();
+        };
+        sizeSlider("ui_size",   Tr("UI text size"),   g_Settings.uiTextScale);
+        sizeSlider("note_size", Tr("Note text size"), g_Settings.noteTextScale);
+    }
 
-    // ── Colours ───────────────────────────────────────────────────────────
+    // ── Colour options ────────────────────────────────────────────────────
     // Picked live; saved once no picker is being dragged any more (not every frame).
+    // The save check runs even while the section is collapsed.
     static bool s_ColorsDirty = false;
-    Theme::UserColors& c = Theme::Colors();
-    const ImGuiColorEditFlags flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf;
+    if (ImGui::CollapsingHeader(Tr("Colour options"))) {
+        Theme::UserColors& c = Theme::Colors();
+        const ImGuiColorEditFlags flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf;
 
-    ImGui::Separator();
-    ImGui::TextUnformatted(Tr("Window colours"));
+        ImGui::PushID("border");
+        if (ImGui::ColorEdit4(Tr("Border"), &c.border.x, flags)) s_ColorsDirty = true;
+        ImGui::SameLine();
+        if (ImGui::Button(Tr("Reset"))) { c.border = Theme::BORDER_GOLD; s_ColorsDirty = true; }
+        ImGui::PopID();
 
-    ImGui::PushID("border");
-    if (ImGui::ColorEdit4(Tr("Border"), &c.border.x, flags)) s_ColorsDirty = true;
-    ImGui::SameLine();
-    if (ImGui::Button(Tr("Reset"))) { c.border = Theme::BORDER_GOLD; s_ColorsDirty = true; }
-    ImGui::PopID();
+        // Background / text show Nexus's current colour until the user picks their own.
+        ImGui::PushID("background");
+        ImVec4 bg = c.hasBackground ? c.background : ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
+        if (ImGui::ColorEdit4(Tr("Background"), &bg.x, flags)) {
+            c.background = bg; c.hasBackground = true; s_ColorsDirty = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(Tr("Reset"))) { c.hasBackground = false; s_ColorsDirty = true; }
+        ImGui::PopID();
 
-    // Background / text show Nexus's current colour until the user picks their own.
-    ImGui::PushID("background");
-    ImVec4 bg = c.hasBackground ? c.background : ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
-    if (ImGui::ColorEdit4(Tr("Background"), &bg.x, flags)) {
-        c.background = bg; c.hasBackground = true; s_ColorsDirty = true;
+        ImGui::PushID("text");
+        ImVec4 tx = c.hasText ? c.text : ImGui::GetStyle().Colors[ImGuiCol_Text];
+        if (ImGui::ColorEdit4(Tr("Text"), &tx.x, flags)) {
+            c.text = tx; c.hasText = true; s_ColorsDirty = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(Tr("Reset"))) { c.hasText = false; s_ColorsDirty = true; }
+        ImGui::PopID();
+
+        // Group names: follow the border colour until picked; single groups can override
+        // this via right-click -> "Group colour...".
+        ImGui::PushID("group_name");
+        ImVec4 gn = c.hasGroupName ? c.groupName : c.border;
+        if (ImGui::ColorEdit4(Tr("Group names"), &gn.x, flags)) {
+            c.groupName = gn; c.hasGroupName = true; s_ColorsDirty = true;
+        }
+        ImGui::SameLine();
+        if (ImGui::Button(Tr("Reset"))) { c.hasGroupName = false; s_ColorsDirty = true; }
+        ImGui::PopID();
+
+        ImGui::TextDisabled("%s", Tr("Reset uses the Nexus default (gold for the border)."));
+        ImGui::TextDisabled("%s", Tr("Group names follow the border until set; right-click a group for its own colour."));
     }
-    ImGui::SameLine();
-    if (ImGui::Button(Tr("Reset"))) { c.hasBackground = false; s_ColorsDirty = true; }
-    ImGui::PopID();
-
-    ImGui::PushID("text");
-    ImVec4 tx = c.hasText ? c.text : ImGui::GetStyle().Colors[ImGuiCol_Text];
-    if (ImGui::ColorEdit4(Tr("Text"), &tx.x, flags)) {
-        c.text = tx; c.hasText = true; s_ColorsDirty = true;
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(Tr("Reset"))) { c.hasText = false; s_ColorsDirty = true; }
-    ImGui::PopID();
-
-    // Group names: follow the border colour until picked; single groups can override
-    // this via right-click -> "Group colour...".
-    ImGui::PushID("group_name");
-    ImVec4 gn = c.hasGroupName ? c.groupName : c.border;
-    if (ImGui::ColorEdit4(Tr("Group names"), &gn.x, flags)) {
-        c.groupName = gn; c.hasGroupName = true; s_ColorsDirty = true;
-    }
-    ImGui::SameLine();
-    if (ImGui::Button(Tr("Reset"))) { c.hasGroupName = false; s_ColorsDirty = true; }
-    ImGui::PopID();
-
-    ImGui::TextDisabled("%s", Tr("Reset uses the Nexus default (gold for the border)."));
-    ImGui::TextDisabled("%s", Tr("Group names follow the border until set; right-click a group for its own colour."));
 
     if (s_ColorsDirty && !ImGui::IsAnyItemActive()) {
         SaveSettings();
