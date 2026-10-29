@@ -3,6 +3,7 @@
 // Stage 2: two-pane notes shell + JSON persistence.
 
 #include <windows.h>
+#include <algorithm>
 #include <cstring>
 #include <string>
 #include <fstream>
@@ -19,6 +20,7 @@
 #include "SafeFile.h"
 #include "Settings.h"
 #include "HelpWindow.h"
+#include "NotesUi.h"
 #include "IconCache.h"
 #include "EmbeddedIcon.h"   // MAGPIE_ICON[] + MAGPIE_ICON_size (generated from icon.png)
 
@@ -99,6 +101,8 @@ static void ApplySettings() {
     c.text          = ToImVec4(g_Settings.text.color);
     c.hasGroupName  = g_Settings.groupName.set;
     c.groupName     = ToImVec4(g_Settings.groupName.color);
+    c.hasNoGroup    = g_Settings.noGroup.set;
+    c.noGroup       = ToImVec4(g_Settings.noGroup.color);
     c.dailyBadge      = ToImVec4(g_Settings.dailyBadge);
     c.dailyBadgeText  = ToImVec4(g_Settings.dailyBadgeText);
     c.weeklyBadge     = ToImVec4(g_Settings.weeklyBadge);
@@ -113,6 +117,7 @@ static void CollectSettings() {
     g_Settings.background  = { c.hasBackground, ToRgba(c.background) };
     g_Settings.text        = { c.hasText,       ToRgba(c.text) };
     g_Settings.groupName   = { c.hasGroupName,  ToRgba(c.groupName) };
+    g_Settings.noGroup     = { c.hasNoGroup,    ToRgba(c.noGroup) };
     g_Settings.dailyBadge      = ToRgba(c.dailyBadge);
     g_Settings.dailyBadgeText  = ToRgba(c.dailyBadgeText);
     g_Settings.weeklyBadge     = ToRgba(c.weeklyBadge);
@@ -370,64 +375,109 @@ static void RenderOptions() {
 
     // ── Colour options ────────────────────────────────────────────────────
     // Picked live; saved once no picker is being dragged any more (not every frame).
-    // The save check runs even while the section is collapsed.
+    // The save check runs even while the section is collapsed. Rows are label | swatch
+    // (click: picker with RGBA + alpha) | Reset, in fixed columns so nothing gets cut off.
     static bool s_ColorsDirty = false;
     if (ImGui::CollapsingHeader(Tr("Colour options"))) {
         Theme::UserColors& c = Theme::Colors();
-        const ImGuiColorEditFlags flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf;
+        const ImGuiStyle& style = ImGui::GetStyle();
+        const ImGuiColorEditFlags flags = ImGuiColorEditFlags_AlphaBar | ImGuiColorEditFlags_AlphaPreviewHalf |
+                                          ImGuiColorEditFlags_NoInputs | ImGuiColorEditFlags_NoLabel;
+        const float swatchW = ImGui::GetFrameHeight();
+        const float badgeW  = ImGui::CalcTextSize("W").x + ImGui::GetFontSize() * 0.5f;
 
-        ImGui::PushID("border");
-        if (ImGui::ColorEdit4(Tr("Border"), &c.border.x, flags)) s_ColorsDirty = true;
-        ImGui::SameLine();
-        if (ImGui::Button(Tr("Reset"))) { c.border = Theme::BORDER_GOLD; s_ColorsDirty = true; }
-        ImGui::PopID();
+        // Column positions: right of the widest label (badge rows: preview + name).
+        float labelW = 0.0f;
+        for (const char* l : { Tr("Border"), Tr("Background"), Tr("Text"), Tr("Group names"), Tr("No group") })
+            labelW = std::max(labelW, ImGui::CalcTextSize(l).x);
+        for (Magpie::NoteType t : { Magpie::NoteType::Daily, Magpie::NoteType::Weekly })
+            labelW = std::max(labelW, badgeW + style.ItemSpacing.x + ImGui::CalcTextSize(NotesUi::TypeName(t)).x);
+        ImGui::Indent();
+        const float colSwatch = ImGui::GetCursorPosX() + labelW + style.ItemSpacing.x * 2.0f;
+        // Badge table: background and text swatches side by side, each under its header.
+        const float colText  = colSwatch + std::max(swatchW, ImGui::CalcTextSize(Tr("Background")).x) + style.ItemSpacing.x * 2.0f;
+        const float colReset = colText   + std::max(swatchW, ImGui::CalcTextSize(Tr("Text")).x) + style.ItemSpacing.x * 2.0f;
+        ImGui::Unindent();
 
-        // Background / text show Nexus's current colour until the user picks their own.
-        ImGui::PushID("background");
-        ImVec4 bg = c.hasBackground ? c.background : ImGui::GetStyle().Colors[ImGuiCol_WindowBg];
-        if (ImGui::ColorEdit4(Tr("Background"), &bg.x, flags)) {
-            c.background = bg; c.hasBackground = true; s_ColorsDirty = true;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button(Tr("Reset"))) { c.hasBackground = false; s_ColorsDirty = true; }
-        ImGui::PopID();
-
-        ImGui::PushID("text");
-        ImVec4 tx = c.hasText ? c.text : ImGui::GetStyle().Colors[ImGuiCol_Text];
-        if (ImGui::ColorEdit4(Tr("Text"), &tx.x, flags)) {
-            c.text = tx; c.hasText = true; s_ColorsDirty = true;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button(Tr("Reset"))) { c.hasText = false; s_ColorsDirty = true; }
-        ImGui::PopID();
-
-        // Group names: follow the border colour until picked; single groups can override
-        // this via right-click -> "Group colour...".
-        ImGui::PushID("group_name");
-        ImVec4 gn = c.hasGroupName ? c.groupName : c.border;
-        if (ImGui::ColorEdit4(Tr("Group names"), &gn.x, flags)) {
-            c.groupName = gn; c.hasGroupName = true; s_ColorsDirty = true;
-        }
-        ImGui::SameLine();
-        if (ImGui::Button(Tr("Reset"))) { c.hasGroupName = false; s_ColorsDirty = true; }
-        ImGui::PopID();
-
-        ImGui::TextDisabled("%s", Tr("Reset uses the Nexus default (gold for the border)."));
-        ImGui::TextDisabled("%s", Tr("Group names follow the border until set; right-click a group for its own colour."));
-
-        // Daily / weekly badges in the note list: background and letter, each separately.
-        ImGui::Separator();
-        auto badgeColor = [&](const char* id, const char* label, ImVec4& col, const ImVec4& def) {
+        auto label = [&](const char* text) {
+            ImGui::AlignTextToFramePadding();
+            ImGui::TextUnformatted(text);
+            ImGui::SameLine(colSwatch);
+        };
+        auto resetTip = [] {
+            if (ImGui::IsItemHovered()) ImGui::SetTooltip("%s", Tr("Reset uses the Nexus default (gold for the border)."));
+        };
+        // A colour that follows `fallback` until picked (has = false).
+        auto optionalRow = [&](const char* id, const char* text, bool& has, ImVec4& value, const ImVec4& fallback) {
             ImGui::PushID(id);
-            if (ImGui::ColorEdit4(label, &col.x, flags)) s_ColorsDirty = true;
+            label(text);
+            ImVec4 v = has ? value : fallback;
+            if (ImGui::ColorEdit4("##c", &v.x, flags)) { value = v; has = true; s_ColorsDirty = true; }
             ImGui::SameLine();
-            if (ImGui::Button(Tr("Reset"))) { col = def; s_ColorsDirty = true; }
+            if (ImGui::Button(Tr("Reset"))) { has = false; s_ColorsDirty = true; }
+            resetTip();
             ImGui::PopID();
         };
-        badgeColor("daily_badge",       Tr("Daily badge"),        c.dailyBadge,      Theme::BADGE_DAILY);
-        badgeColor("daily_badge_text",  Tr("Daily badge text"),   c.dailyBadgeText,  Theme::BADGE_TEXT);
-        badgeColor("weekly_badge",      Tr("Weekly badge"),       c.weeklyBadge,     Theme::BADGE_WEEKLY);
-        badgeColor("weekly_badge_text", Tr("Weekly badge text"),  c.weeklyBadgeText, Theme::BADGE_TEXT);
+        auto heading = [](const char* text) {
+            ImGui::Spacing();
+            ImGui::TextDisabled("%s", text);
+        };
+
+        heading(Tr("Window"));
+        ImGui::Indent();
+        ImGui::PushID("border");
+        label(Tr("Border"));
+        if (ImGui::ColorEdit4("##c", &c.border.x, flags)) s_ColorsDirty = true;
+        ImGui::SameLine();
+        if (ImGui::Button(Tr("Reset"))) { c.border = Theme::BORDER_GOLD; s_ColorsDirty = true; }
+        resetTip();
+        ImGui::PopID();
+        // Background / text show Nexus's current colour until the user picks their own.
+        optionalRow("background", Tr("Background"), c.hasBackground, c.background, style.Colors[ImGuiCol_WindowBg]);
+        optionalRow("text",       Tr("Text"),       c.hasText,       c.text,       style.Colors[ImGuiCol_Text]);
+        ImGui::Unindent();
+
+        heading(Tr("Note list"));
+        ImGui::Indent();
+        // Group names: follow the border colour until picked; single groups can override
+        // this via right-click -> "Group colour...".
+        optionalRow("group_name", Tr("Group names"), c.hasGroupName, c.groupName, c.border);
+        ImGui::SameLine();
+        ImGui::TextDisabled("(?)");
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", Tr("Group names follow the border until set; right-click a group for its own colour."));
+        // "No group" label: Nexus's disabled-text colour until picked.
+        optionalRow("no_group", Tr("No group"), c.hasNoGroup, c.noGroup, style.Colors[ImGuiCol_TextDisabled]);
+        ImGui::Unindent();
+
+        // Daily / weekly badges: preview + name | background | letter | Reset (both).
+        heading(Tr("Daily / weekly badges"));
+        ImGui::Indent();
+        ImGui::SetCursorPosX(colSwatch); ImGui::TextDisabled("%s", Tr("Background"));
+        ImGui::SameLine(colText);   ImGui::TextDisabled("%s", Tr("Text"));
+        auto badgeRow = [&](Magpie::NoteType t, ImVec4& bgCol, ImVec4& textCol, const ImVec4& bgDef) {
+            ImGui::PushID((int)t);
+            const ImVec2 p = ImGui::GetCursorScreenPos();
+            NotesUi::DrawTypeBadge(ImGui::GetWindowDrawList(), p, ImGui::GetFrameHeight(), t);
+            ImGui::Dummy(ImVec2(badgeW, ImGui::GetFrameHeight()));
+            ImGui::SameLine();
+            label(NotesUi::TypeName(t));
+            if (ImGui::ColorEdit4("##bg", &bgCol.x, flags)) s_ColorsDirty = true;
+            ImGui::SameLine(colText);
+            if (ImGui::ColorEdit4("##text", &textCol.x, flags)) s_ColorsDirty = true;
+            ImGui::SameLine(colReset);
+            if (ImGui::Button(Tr("Reset"))) { bgCol = bgDef; textCol = Theme::BADGE_TEXT; s_ColorsDirty = true; }
+            ImGui::PopID();
+        };
+        badgeRow(Magpie::NoteType::Daily,  c.dailyBadge,  c.dailyBadgeText,  Theme::BADGE_DAILY);
+        badgeRow(Magpie::NoteType::Weekly, c.weeklyBadge, c.weeklyBadgeText, Theme::BADGE_WEEKLY);
+        ImGui::Unindent();
+
+        ImGui::Spacing();
+        if (ImGui::Button(Tr("Reset all colours"))) {
+            c = Theme::UserColors();
+            s_ColorsDirty = true;
+        }
     }
 
     if (s_ColorsDirty && !ImGui::IsAnyItemActive()) {
