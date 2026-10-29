@@ -104,3 +104,7 @@ Host-side unit tests for the pure logic (note model, markdown parser, task lists
 ```
 cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host && ./build-host/trailpack_host_tests
 ```
+
+Event timer data (`src/events/EventData.{h,cpp}`) is generated from the GW2 wiki and API --
+don't edit it by hand; fix data in `tools/event_overrides.json` and re-run
+`python3 trailpack-memo/tools/gen_events.py` (details in [`plans/EVENTS.md`](plans/EVENTS.md)).
