@@ -225,6 +225,19 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "- Mit dem Addon Decoder Ring: Icon, Name und ausführlicher Tooltip.\n"
       "- Rechtsklick auf einen Chip: Chatcode kopieren oder Wiki öffnen.\n"
       "- Mit Pie UI: Linksklick auf einen Wegpunkt-Chip öffnet dort die Karte." },
+    { "Event timers",                      "Event-Timer" },
+    { "Write {{event:<id>}} in a note, e.g. {{event:tequatl-the-sunless}} - it becomes an event "
+      "chip.\n"
+      "- It shows the time until the next start, or since when the event is running.\n"
+      "- Hover it for the next starts in your local time, the duration, map and waypoint.\n"
+      "- Left-click copies the waypoint; right-click: copy waypoint or open the wiki.\n"
+      "- While editing, the chip shows the event name only.",
+      "Schreibe {{event:<id>}} in eine Notiz, z. B. {{event:tequatl-the-sunless}} - daraus wird ein "
+      "Event-Chip.\n"
+      "- Er zeigt die Zeit bis zum nächsten Start oder seit wann das Event läuft.\n"
+      "- Beim Darüberfahren: nächste Starts in deiner Ortszeit, Dauer, Karte und Wegpunkt.\n"
+      "- Linksklick kopiert den Wegpunkt; Rechtsklick: Wegpunkt kopieren oder Wiki öffnen.\n"
+      "- Beim Bearbeiten zeigt der Chip nur den Namen des Events." },
     { "Import, export and deleting",       "Import, Export und Löschen" },
     { "All in the menu button and the right-click menus.\n"
       "- 'Export all...' saves every note and group to one file; right-click a note or group "
@@ -307,6 +320,20 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "for %d min",                        "seit %d Min" },
     { "for %d h",                          "seit %d Std" },
     { "for %d h %d min",                   "seit %d Std %d Min" },
+    { "%d min",                            "%d Min" },
+    { "%d h",                              "%d Std" },
+    { "%d h %d min",                       "%d Std %d Min" },
+    { "Unknown event (%s)",                "Unbekanntes Event (%s)" },
+    { "Running since %s, ends at %s",      "Läuft seit %s, endet um %s" },
+    { "Next starts: %s",                   "Nächste Starts: %s" },
+    { "Duration: %s",                      "Dauer: %s" },
+    { "Map: %s",                           "Karte: %s" },
+    { "Waypoint: %s",                      "Wegpunkt: %s" },
+    { "Left-click: copy waypoint. Right-click: more.",
+      "Linksklick: Wegpunkt kopieren. Rechtsklick: mehr." },
+    { "No waypoint known for this event.", "Für dieses Event ist kein Wegpunkt bekannt." },
+    { "Waypoint copied",                   "Wegpunkt kopiert" },
+    { "Copy waypoint",                     "Wegpunkt kopieren" },
     { "Save as theme",                     "Als Theme speichern" },
     { "Default (Nexus)",                   "Standard (Nexus)" },
     { "Light",                             "Hell" },

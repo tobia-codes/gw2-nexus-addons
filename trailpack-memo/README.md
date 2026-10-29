@@ -84,6 +84,11 @@ If an LLM creating software upsets you, then perhaps this repo isn't for you. Mo
   - **Right-click** a chip to **Copy chat code** or **Open in wiki**.
   - **Left-click a waypoint chip to open the world map** at that point (needs [Pie UI](https://github.com/PieOrCake/pie_ui); see below).
   - Build links show their spec automatically (e.g. `[Mirage Build]`).
+- **Event timers** — write `{{event:<id>}}` (e.g. `{{event:tequatl-the-sunless}}`) and it becomes a live
+  chip: "Tequatl the Sunless - in 23 min" or "- for 4 min" while it runs. Hover for the next starts in
+  local time, duration, map and waypoint; left-click copies the waypoint, right-click offers
+  *Copy waypoint* / *Open in wiki*. ~100 fixed-schedule events (world bosses, metas, ...), computed
+  locally in UTC -- no internet needed.
 - **Works with or without [Decoder Ring](https://github.com/PieOrCake/decoder_ring)**: with it loaded, chips show full names and icons; without it, chips fall back to basic labels and the copy / wiki actions still work. Nothing breaks if it loads or unloads mid-session.
 - **Optional [Pie UI](https://github.com/PieOrCake/pie_ui) integration**: when Pie UI is loaded, left-clicking a waypoint chip opens and pans the in-game map to that point (Pie UI then lets you click to travel). Without Pie UI the option simply isn't shown; load it any time and it appears, no restart needed.
 

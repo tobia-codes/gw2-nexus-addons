@@ -1,5 +1,6 @@
 #include "Markdown.h"
 #include "chat/ChatLinks.h"
+#include "Events.h"
 #include <algorithm>
 
 namespace Magpie { namespace Md {
@@ -92,8 +93,17 @@ static std::vector<Span> ParseInline(const std::string& content)
             // Chat link chip — raw "[&...]" code
             result.push_back({ Inline::Chip, seg.raw });
         } else if (seg.kind == SegmentKind::Plain) {
-            // Tokenise for emphasis
-            TokeniseEmphasis(seg.raw, result);
+            // Event tokens become Event spans; the text around them is tokenised for emphasis.
+            size_t pos = 0, len = 0;
+            std::string id;
+            for (;;) {
+                const size_t at = Events::FindToken(seg.raw, pos, len, id);
+                TokeniseEmphasis(seg.raw.substr(pos, at == std::string::npos ? std::string::npos
+                                                                             : at - pos), result);
+                if (at == std::string::npos) break;
+                result.push_back({ Inline::Event, id });
+                pos = at + len;
+            }
         } else {
             // URL or AE2 — treat as plain text using the raw source slice
             result.push_back({ Inline::Text, seg.raw });

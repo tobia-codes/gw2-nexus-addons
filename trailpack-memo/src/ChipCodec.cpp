@@ -1,4 +1,5 @@
 #include "ChipCodec.h"
+#include "Events.h"
 
 namespace Magpie {
 
@@ -27,6 +28,24 @@ std::vector<uint32_t> DecodeUtf8(const std::string& s) {
 }
 
 // ---- pure parse / serialize -------------------------------------------------------------------
+// Text between chat links: event tokens become chip cells, everything else one cell per codepoint.
+static void AppendTextCells(const std::string& t, std::vector<ParsedCell>& cells) {
+    size_t pos = 0, len = 0;
+    std::string id;
+    for (;;) {
+        const size_t at = Events::FindToken(t, pos, len, id);
+        const std::string plain = t.substr(pos, at == std::string::npos ? std::string::npos : at - pos);
+        for (uint32_t cp : DecodeUtf8(plain)) {
+            ParsedCell c; c.isChip = false; c.cp = cp;
+            cells.push_back(std::move(c));
+        }
+        if (at == std::string::npos) return;
+        ParsedCell c; c.isChip = true; c.code = t.substr(at, len);
+        cells.push_back(std::move(c));
+        pos = at + len;
+    }
+}
+
 std::vector<ParsedCell> ParseToCells(const std::string& utf8) {
     using namespace PieUI::ChatLinks;
     std::vector<ParsedCell> cells;
@@ -36,12 +55,8 @@ std::vector<ParsedCell> ParseToCells(const std::string& utf8) {
             cells.push_back(std::move(c));
         } else {
             // Plain / Url: emit the source slice (raw), so the round-trip is byte-exact;
-            // each codepoint (including '\n') becomes its own text cell.
-            const std::string& t = seg.raw.empty() ? seg.display : seg.raw;
-            for (uint32_t cp : DecodeUtf8(t)) {
-                ParsedCell c; c.isChip = false; c.cp = cp;
-                cells.push_back(std::move(c));
-            }
+            // each codepoint (including '\n') becomes its own text cell, event tokens a chip.
+            AppendTextCells(seg.raw.empty() ? seg.display : seg.raw, cells);
         }
     }
     return cells;

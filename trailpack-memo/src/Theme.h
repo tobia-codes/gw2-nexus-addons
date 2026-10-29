@@ -34,6 +34,10 @@ inline const ImVec4 BADGE_DAILY        = { 0.90f, 0.62f, 0.20f, 1.00f };   // am
 inline const ImVec4 BADGE_WEEKLY       = { 0.40f, 0.60f, 0.95f, 1.00f };   // blue
 inline const ImVec4 BADGE_TEXT         = { 0.08f, 0.08f, 0.08f, 1.00f };
 
+// ── Event chips (B5; made configurable in stage 6) ────────────────────────
+inline const ImVec4 EVENT_UPCOMING     = { 0.30f, 0.80f, 0.80f, 1.00f };   // teal
+inline const ImVec4 EVENT_ACTIVE       = { 0.40f, 0.85f, 0.35f, 1.00f };   // green
+
 // ── User colours (Options pane, persisted in settings.json) ───────────────
 // Border defaults to BORDER_GOLD. Background and text default to Nexus's own style;
 // they only override it once the user picks a colour (has* = true).

@@ -9,7 +9,8 @@
 // without a renderer.
 //
 // A ParsedCell is one atomic unit of the editor model: either a chip (one whole
-// "[&base64]" chat code) or a single text codepoint (which may be '\n'). The
+// "[&base64]" chat code or one "{{event:<id>}}" token, see Events.h) or a single
+// text codepoint (which may be '\n'). The
 // widget's ChipCell mirrors this model, adding only per-frame render fields.
 //
 #include <string>
@@ -23,12 +24,12 @@ namespace Magpie {
 struct ParsedCell {
     bool        isChip = false;  // true: a whole chat code; false: a single text codepoint
     uint32_t    cp = 0;          // Unicode codepoint (text cell; may be '\n')
-    std::string code;            // "[&base64]" canonical chat code (chip cell)
+    std::string code;            // chip cell: "[&base64]" chat code or "{{event:<id>}}"
 };
 
-// Parse a UTF-8 string into ordered cells: each chat link / AE2 code becomes ONE
-// chip cell ({isChip=true, code}); all other text (incl. '\n') becomes one text
-// cell per codepoint ({isChip=false, cp}).
+// Parse a UTF-8 string into ordered cells: each chat link / AE2 code and each event
+// token becomes ONE chip cell ({isChip=true, code}); all other text (incl. '\n')
+// becomes one text cell per codepoint ({isChip=false, cp}).
 std::vector<ParsedCell> ParseToCells(const std::string& utf8);
 
 // Reassemble cells back into a UTF-8 string: a chip emits its code verbatim; a

@@ -1,8 +1,9 @@
 #include "ChipTextEdit.h"
 #include "ChipResolver.h"      // Magpie::ResolveChip (replaces Pie UI's RichLineResolveChip)
+#include "EventChip.h"         // event tokens: name-only label + colour (D10)
+#include "Events.h"
 #include "ChipRich.h"          // Magpie::ChipLabel (resolved name when Decoder Ring is warm)
 #include "ChipCodec.h"         // pure text<->cell model + UTF-8 helpers
-#include "chat/ChatLinks.h"    // SegmentLine (paste: parse [&..] into chips)
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -143,12 +144,16 @@ static void Measure(std::vector<ChipCell>& cells) {
     const float scale = ImGui::GetFontSize() / font->FontSize;
     for (auto& c : cells) {
         if (c.isChip) {
-            // Resolved name from Decoder Ring when warm; structural label otherwise
-            // (ChipLabel never returns empty). Colour matches the view-mode chips:
+            // Event token: its name only (no countdown, so the width stays put). Chat code:
+            // resolved name from Decoder Ring when warm, structural label otherwise
+            // (ChipLabel never returns empty); colour matches the view-mode chips:
             // native GW2 type colour, items by rarity (Basic until resolved).
-            std::string name = Magpie::ChipLabel(c.code);
-            c.name = name; c.color = Magpie::ChipDisplayColor(c.code);
-            c.width = ImGui::CalcTextSize(name.c_str()).x + 6.0f;   // small side padding
+            if (Events::IsToken(c.code)) {
+                c.name = Magpie::EventChipLabel(c.code); c.color = Magpie::EventChipColor(c.code);
+            } else {
+                c.name = Magpie::ChipLabel(c.code); c.color = Magpie::ChipDisplayColor(c.code);
+            }
+            c.width = ImGui::CalcTextSize(c.name.c_str()).x + 6.0f;   // small side padding
         } else if (IsNewlineCell(c)) {
             c.width = 0.0f;   // visual width; the GETWIDTH sentinel is handled in ChipTE_GetWidth
         } else {
@@ -163,9 +168,13 @@ void ChipTextEdit::InsertChip(const std::string& code) {
     STB_TexteditState& s = St(this);
     int at = ClampI(s.cursor, 0, (int)cells.size());
     ChipCell c; c.isChip = true; c.code = code;
-    ChipView v = Magpie::ResolveChip(code);
-    c.name = v.label.empty() ? "[link]" : v.label;
-    c.color = v.color;
+    if (Events::IsToken(code)) {
+        c.name = Magpie::EventChipLabel(code); c.color = Magpie::EventChipColor(code);
+    } else {
+        ChipView v = Magpie::ResolveChip(code);
+        c.name = v.label.empty() ? "[link]" : v.label;
+        c.color = v.color;
+    }
     cells.insert(cells.begin() + at, std::move(c));
     s.cursor = at + 1;
     s.select_start = s.select_end = s.cursor;
@@ -182,7 +191,9 @@ void ChipTextEdit::SetText(const std::string& utf8) {
     // Delegate the text->cell parse to the pure ChipCodec, then attach the widget's render fields.
     for (const auto& pc : ParseToCells(utf8)) {
         ChipCell c; c.isChip = pc.isChip; c.cp = pc.cp; c.code = pc.code;
-        if (c.isChip) {
+        if (c.isChip && Events::IsToken(c.code)) {
+            c.name = Magpie::EventChipLabel(c.code); c.color = Magpie::EventChipColor(c.code);
+        } else if (c.isChip) {
             ChipView v = Magpie::ResolveChip(c.code);
             c.name = v.label.empty() ? "[link]" : v.label;
             c.color = v.color;
@@ -263,9 +274,14 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
     Measure(cells);
     const float lh = ImGui::GetTextLineHeight();
 
+    // Inner padding like the list / note panes (Theme::PushPaneBorder): Nexus's FramePadding is
+    // only a few px, which glues the text to the border in a multi-line field.
+    const float fs = ImGui::GetFontSize();
+    const ImVec2 pad(std::max(style.FramePadding.x, fs * 0.5f), std::max(style.FramePadding.y, fs * 0.4f));
+
     const int rows = std::max(RowCount(cells), std::max(1, minLines));
     const float contentH = rows * lh;
-    const float h = contentH + style.FramePadding.y * 2.0f;
+    const float h = contentH + pad.y * 2.0f;
 
     ImVec2 p0 = ImGui::GetCursorScreenPos();
     ImGui::InvisibleButton(id, ImVec2(width, h));
@@ -288,8 +304,8 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
         StampChipFocus();
     }
 
-    const ImVec2 inner_min(p0.x + style.FramePadding.x, p0.y + style.FramePadding.y);
-    const float  inner_w = width - style.FramePadding.x * 2.0f;
+    const ImVec2 inner_min(p0.x + pad.x, p0.y + pad.y);
+    const float  inner_w = width - pad.x * 2.0f;
 
     bool changed = false;
     const int sizeBefore = (int)cells.size();
@@ -333,14 +349,10 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
         if (io.KeyCtrl && K(ImGuiKey_V)) {
             const char* clip = ImGui::GetClipboardText();
             if (clip && *clip) {
-                for (const auto& seg : PieUI::ChatLinks::SegmentLine(clip)) {
-                    if (seg.kind == PieUI::ChatLinks::SegmentKind::Link ||
-                        seg.kind == PieUI::ChatLinks::SegmentKind::Ae2) {
-                        InsertChip(seg.raw);
-                    } else {
-                        const std::string& t = seg.raw.empty() ? seg.display : seg.raw;
-                        for (unsigned int cp : DecodeUtf8(t)) if (cp >= 0x20 || cp == '\n') stb_textedit_key(this, &s, (int)cp);
-                    }
+                // Same parse as SetText: chat codes and event tokens become chips.
+                for (const auto& pc : ParseToCells(clip)) {
+                    if (pc.isChip) InsertChip(pc.code);
+                    else if (pc.cp >= 0x20 || pc.cp == '\n') stb_textedit_key(this, &s, (int)pc.cp);
                 }
                 changed = true;
             }
@@ -374,7 +386,7 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
     dl->AddRectFilled(p0, p1, ImGui::GetColorU32(ImGuiCol_FrameBg), style.FrameRounding);
     if (borderCol & 0xFF000000) dl->AddRect(p0, p1, borderCol, style.FrameRounding);
 
-    dl->PushClipRect(ImVec2(inner_min.x, p0.y), ImVec2(p1.x - style.FramePadding.x, p1.y), true);
+    dl->PushClipRect(ImVec2(inner_min.x, p0.y), ImVec2(p1.x - pad.x, p1.y), true);
 
     // Selection: one rect per row the [a,b) range covers.
     if (focused && s.select_start != s.select_end) {

@@ -293,6 +293,16 @@ static void RestoreBackup() {
     s_RestoreSettings.clear();
 }
 
+// The settings window's ImGui title in the current language (stable "###tpm_settings" id).
+static std::string SettingsTitle() {
+    return std::string(WINDOW_NAME) + " - " + Tr("Settings") + "###tpm_settings";
+}
+
+// Close-on-Escape names for the settings and guide windows. Nexus matches the full window
+// title, which is translated, so both languages are registered (built once at load; the
+// strings must stay alive while registered).
+static std::string s_EscapeTitles[4];
+
 // ── Static addon definition ───────────────────────────────────────────────
 static AddonDefinition_t AddonDef = {};
 
@@ -347,13 +357,20 @@ void AddonLoad(AddonAPI_t* aApi) {
     APIDefs->Localization_Set(KB_TOGGLE, "en", "Toggle Trailpack Memo");
     Magpie::I18n::SetLang(Magpie::I18n::Lang::De);
     APIDefs->Localization_Set(KB_TOGGLE, "de", Tr("Toggle Trailpack Memo"));
+    s_EscapeTitles[0] = SettingsTitle();
+    s_EscapeTitles[1] = Help::Title();
     Magpie::I18n::SetLang(Magpie::I18n::Lang::En);
+    s_EscapeTitles[2] = SettingsTitle();
+    s_EscapeTitles[3] = Help::Title();
 
     // Register toggle keybind (default CTRL+SHIFT+T; Magpie Memo keeps CTRL+SHIFT+M).
     APIDefs->InputBinds_RegisterWithString(KB_TOGGLE, ProcessKeybind, "CTRL+SHIFT+T");
 
-    // Close window on Escape.
+    // Close windows on Escape (settings / guide: in both languages, see s_EscapeTitles).
     APIDefs->GUI_RegisterCloseOnEscape(WINDOW_NAME, &g_WindowVisible);
+    for (int i = 0; i < 4; ++i)
+        APIDefs->GUI_RegisterCloseOnEscape(s_EscapeTitles[i].c_str(), i % 2 == 0 ? &g_SettingsVisible
+                                                                                 : &g_HelpVisible);
 
     // Initialise notes store (loads from disk).
     g_Notes.Init(APIDefs);
@@ -398,6 +415,7 @@ void AddonUnload() {
     RemoveQAIcon();
 
     APIDefs->GUI_DeregisterCloseOnEscape(WINDOW_NAME);
+    for (const std::string& t : s_EscapeTitles) APIDefs->GUI_DeregisterCloseOnEscape(t.c_str());
     APIDefs->InputBinds_Deregister(KB_TOGGLE);
     APIDefs->GUI_Deregister(AddonOptions);
     APIDefs->GUI_Deregister(AddonRender);
@@ -440,7 +458,7 @@ void AddonRender() {
     // Own settings window: the same options as in Nexus (RenderOptions), so both stay in sync.
     // Plain Nexus style (no user colours), so it stays readable whatever theme is picked.
     if (g_SettingsVisible) {
-        const std::string title = std::string(WINDOW_NAME) + " - " + Tr("Settings") + "###tpm_settings";
+        const std::string title = SettingsTitle();
         ImGui::SetNextWindowSize(ImVec2(480.0f, 420.0f), ImGuiCond_FirstUseEver);
         if (ImGui::Begin(title.c_str(), &g_SettingsVisible)) {
             Magpie::FontScaleScope uiFont(g_Settings.uiTextScale / 100.0f);
