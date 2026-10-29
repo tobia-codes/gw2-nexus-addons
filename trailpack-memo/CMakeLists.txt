@@ -6,6 +6,7 @@ if(NOT GW2_HOST_TESTS)
     add_library(TrailpackMemo SHARED
         src/dllmain.cpp
         src/Theme.cpp
+        src/FontScale.cpp
         src/NotesStore.cpp
         src/I18n.cpp
         src/NotesWindow.cpp

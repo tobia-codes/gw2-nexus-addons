@@ -21,6 +21,7 @@ public:
 
     // Note text size (view, editor, preview) as a factor of Nexus's base font size,
     // independent of the window's UI text size (set by dllmain from settings.json).
+    // Applied with Magpie::FontScaleScope (FontScale.h).
     void SetNoteTextScale(float scale) { noteTextScale_ = scale; }
     // True once after the user changed a persisted UI setting (caller saves settings).
     bool ConsumeSettingsChanged()   { bool c = settingsChanged_; settingsChanged_ = false; return c; }

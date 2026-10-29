@@ -37,6 +37,7 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 | `PieUiClient.{h,cpp}` | no | Pie UI consumer (`OpenChatLink`) |
 | `IconCache.{h,cpp}` / `IconUrl.{h,cpp}` | no / yes | URL -> texture via Nexus `Textures_*FromURL`, failure set (retryable); FNV-1a key, URL split |
 | `I18n.{h,cpp}` | yes | English -> German UI string table, `Tr` / `TrN`, current language |
+| `FontScale.{h,cpp}` | no | Scaled text without stretching the small font: `SetFontBase`, `FontScaleScope` |
 | `Theme.{h,cpp}` | no | Accent palette (gold border, green/amber buttons, edit tint) |
 | `chat/*` | yes | **Vendored** Pie UI codec — do not edit |
 
@@ -70,10 +71,13 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 - User colours (border / background / text) in `Theme::Colors()`, pushed for the whole window by
   `Theme::PushWindowStyle()`; background/text only override Nexus's style once picked
   (`color_*` in `settings.json`, null = Nexus default).
-- Two text sizes (70-200 %, Nexus options): UI = `text_scale` via `SetWindowFontScale` on the
-  main window; note content = `note_text_scale` via `NoteFontScope` (NotesWindow.cpp) around the
-  view, editor and preview. ImGui 1.80 inherits `SetWindowFontScale` only one child level deep, so
-  nested panes must not rely on it. `RenderMarkdown` sizes from `ImGui::GetFontSize()`.
+- Two text sizes (70-200 %, Nexus options): UI = `text_scale`, note content = `note_text_scale`,
+  both applied with `Magpie::FontScaleScope` (`FontScale.{h,cpp}`) -- the UI scope right after
+  `Begin`, the note scope around view / editor / preview. It sets the font size directly
+  (ImGui 1.80 inherits `SetWindowFontScale` only one child level deep) and draws enlarged text
+  from Nexus's FontBig scaled down instead of stretching the 15 px font (less blur). Headings use
+  `HeadingRatio()` so they stay larger than body text. Fully crisp text at every size would need
+  a TTF loaded at the exact size via `Fonts_AddFromFile` (not done: Nexus's font isn't a file).
 
 ---
 

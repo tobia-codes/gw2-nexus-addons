@@ -13,6 +13,7 @@
 // All rendered text is ASCII.
 
 #include "MarkdownRender.h"
+#include "FontScale.h"
 
 #include <cfloat>   // FLT_MAX
 #include <string>
@@ -145,7 +146,10 @@ int RenderMarkdown(const std::vector<Md::Line>& lines, ImFont* fontBig, float wr
         float fontSize = baseSize;
         if (line.block == Md::Block::Heading && fontBig != nullptr) {
             font = fontBig;
-            fontSize = fontBig->FontSize * fontScale;
+            // Headings keep FontBig's size relative to the NORMAL font. (The current font
+            // may itself be FontBig when large text is drawn from it -- see FontScale.h.)
+            fontSize = BaseFontPx() > 0.0f ? baseSize * HeadingRatio()
+                                           : fontBig->FontSize * fontScale;
         }
         const float lineHeight = fontSize + kLeading;
         lastLineHeight = lineHeight;

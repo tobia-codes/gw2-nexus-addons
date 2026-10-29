@@ -16,6 +16,7 @@
 #include "DecoderClient.h"
 #include "PieUiClient.h"
 #include "I18n.h"
+#include "FontScale.h"
 #include "IconCache.h"
 #include "EmbeddedIcon.h"   // MAGPIE_ICON[] + MAGPIE_ICON_size (generated from icon.png)
 
@@ -282,11 +283,17 @@ void AddonRender() {
     if (!g_WindowVisible) return;
     ApplyLanguage();   // Auto follows a Nexus language switch without a restart
 
+    // Fonts for sharp scaling, read outside any window (see FontScale.h).
+    {
+        auto* nl = static_cast<NexusLinkData_t*>(APIDefs->DataLink_Get(DL_NEXUS_LINK));
+        Magpie::SetFontBase(ImGui::GetFont(), nl != nullptr ? static_cast<ImFont*>(nl->FontBig) : nullptr);
+    }
+
     Theme::PushWindowStyle();
 
     if (ImGui::Begin(WINDOW_NAME, &g_WindowVisible)) {
-        // Scales everything inside the window (child panes inherit it), not the title bar.
-        ImGui::SetWindowFontScale(g_TextScalePct / 100.0f);
+        // UI text size for everything inside the window (not the title bar).
+        Magpie::FontScaleScope uiFont(g_TextScalePct / 100.0f);
         g_Notes.SetNoteTextScale(g_NoteScalePct / 100.0f);
         g_Notes.Render();
         if (g_Notes.ConsumeSettingsChanged()) SaveSettings();
