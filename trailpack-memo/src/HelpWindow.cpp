@@ -94,7 +94,7 @@ const Section kSections[] = {
       "- 'Delete notes...' deletes several notes at once; right-click > 'Delete note...' "
       "deletes one." },
     { "Settings",
-      "Nexus addon options > Trailpack Memo:\n"
+      "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
       "- Language (Auto follows Nexus), quick access icon.\n"
       "- 'Font options': UI and note text size.\n"
       "- 'Colour options': border, background, text, group names and the daily / weekly badges.\n"

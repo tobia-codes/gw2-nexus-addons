@@ -117,6 +117,8 @@ float NotesWindow::renderListColumn_()
             bulkConfirm_ = false;
             requestPopup_(Popup::BulkDelete);
         }
+        ImGui::Separator();
+        if (ImGui::MenuItem(Tr("Settings..."))) openSettings_ = true;
         ImGui::EndPopup();
     }
 

@@ -40,6 +40,8 @@
 - **Custom colours** for the window border, background, text, group names and the daily / weekly
   badges (background and letter, each separately; colour pickers with alpha in
   the Nexus addon options under "Colour options", each with a Reset).
+- **Settings window**: menu button -> *Settings...* opens the same options as the Nexus addon
+  options in a window of its own.
 - **Two text sizes** (70-200 %) in the Nexus addon options under "Font options": one for the window's UI, one for the
   note content (view, editor, preview); headings, checkboxes and chips scale along.
 - **Lists continue on Enter**: a new `- ` / `- [ ] ` is started automatically; Enter on an empty

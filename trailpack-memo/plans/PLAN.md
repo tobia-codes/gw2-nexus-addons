@@ -85,6 +85,8 @@ Forked from upstream commit `aa02219`. Host tests: 80 test functions in
 - Note ids are globally unique (32 hex, random 128 bit, `IsNoteId`); `FromJson` migrates legacy
   counter ids (`00000000`, Magpie Memo) and `NotesWindow::Init` saves right after loading so ids
   stay stable.
+- Menu -> "Settings..." opens an own settings window (`g_SettingsVisible`, dllmain) that renders
+  `RenderOptions()`, the same function Nexus's options pane (`AddonOptions`) calls.
 - Import / "Export all" live in a menu behind the square hamburger button next to "Create New
   Note" (single notes: right-click -> "Export note...").
 - Export/import: `NotesStore::ExportJson` / `PrepareImport` / `AddImported` (pure, host-tested;
