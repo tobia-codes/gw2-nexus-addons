@@ -16,6 +16,16 @@ std::wstring Widen(const std::string& utf8)
     return w;
 }
 
+std::string Narrow(const std::wstring& wide)
+{
+    if (wide.empty()) return std::string();
+    const int n = WideCharToMultiByte(CP_UTF8, 0, wide.data(), (int)wide.size(), nullptr, 0,
+                                      nullptr, nullptr);
+    std::string s(n, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, wide.data(), (int)wide.size(), &s[0], n, nullptr, nullptr);
+    return s;
+}
+
 std::wstring JsonFilter(const char* label)
 {
     std::wstring f;

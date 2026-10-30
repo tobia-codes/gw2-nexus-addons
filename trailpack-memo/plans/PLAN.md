@@ -11,7 +11,7 @@
 
 Base (CRUD + persistence, view/edit + unsaved modal, markdown render, chips with Decoder Ring,
 icon cache, Pie UI waypoint/open-link) and the features below are done. Standalone addon, C++
-namespace `Trailpack`. Host tests: 80 test functions in
+namespace `Trailpack`. Host tests: 81 test functions in
 `tests/host_tests_main.cpp`, all green.
 
 ### Module map (`src/`)
@@ -24,7 +24,7 @@ namespace `Trailpack`. Host tests: 80 test functions in
 | `events/EventData.{h,cpp}` | yes | **Generated** event table (`tools/gen_events.py`) — never edit by hand |
 | `Backup.{h,cpp}` | yes | Backup file format (`trailpack-memo-backup` v1: notes + settings) |
 | `FileDialog.{h,cpp}` | no | Windows open/save dialog (worker thread), JSON filter; used by export/import and backups |
-| `SafeFile.{h,cpp}` | yes | Atomic write (+ `.bak`), read, set aside unreadable files |
+| `SafeFile.{h,cpp}` | yes | Atomic write (+ `.bak`), read, set aside unreadable files; path helpers (UTF-8 strings, Win32 W-API / POSIX) replacing `std::filesystem` |
 | `NotesWindow.{h,cpp}` | no | Note state, load/save, navigation, frame layout, popup requests (`requestPopup_` / `beginModal_`), caches |
 | `NotesList.cpp` | no | Left column: groups, note rows, menu button, splitter |
 | `NotesDetail.cpp` | no | Right pane: view / edit modes, toolbar, rendered body |
@@ -202,6 +202,9 @@ with a live countdown and copy the waypoint on click.
 ---
 
 ## Changelog of this plan
+- 2026-10-30 — DLL size 1.87 MB -> 0.95 MB: streams and `std::filesystem` replaced by `SafeFile`,
+  own `__gnu_cxx::__verbose_terminate_handler` (drops the demangler). `--gc-sections` made it
+  bigger, `-flto` crashes MinGW GCC 13 (ICE) -- both not used.
 - 2026-10-29 — Plan set up in the monorepo; rules in `AGENTS.md`.
 - 2026-10-29 — B5 (event timers) planned with the user; details in `EVENTS.md`.
 - 2026-10-29 — Standalone: fork references removed, namespace `Magpie` -> `Trailpack`; B3 / B4

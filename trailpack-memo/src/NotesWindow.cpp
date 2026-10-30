@@ -5,13 +5,11 @@
 
 #include <cstdio>
 #include <ctime>
-#include <filesystem>
 #include "imgui.h"
 #include "Theme.h"
 #include "I18n.h"
 #include "SafeFile.h"
 
-namespace fs = std::filesystem;
 using Trailpack::I18n::Tr;
 
 // ── Popups ────────────────────────────────────────────────────────────────
@@ -55,11 +53,10 @@ void NotesWindow::Init(AddonAPI_t* api)
 
     const char* dir = api->Paths_GetAddonDirectory("TrailpackMemo");
     if (dir && dir[0] != '\0') {
-        fs::path addonDir(dir);
-        std::error_code ec;
-        fs::create_directories(addonDir, ec);   // no-op if already exists
-        notesFile_ = addonDir / "notes.json";
-        exportDir_ = addonDir / "exports";
+        const std::string addonDir(dir);
+        Trailpack::SafeFile::CreateDirectories(addonDir);   // no-op if already exists
+        notesFile_ = Trailpack::SafeFile::Join(addonDir, "notes.json");
+        exportDir_ = Trailpack::SafeFile::Join(addonDir, "exports");
     }
 
     loadNotes_();
@@ -68,16 +65,15 @@ void NotesWindow::Init(AddonAPI_t* api)
 
 void NotesWindow::loadNotes_()
 {
-    std::error_code ec;
-    if (notesFile_.empty() || !fs::exists(notesFile_, ec)) return;
+    if (notesFile_.empty() || !Trailpack::SafeFile::Exists(notesFile_)) return;
 
     std::string content;
     if (Trailpack::SafeFile::Read(notesFile_, content) && store_.FromJson(content)) {
         // First load of a version-1 file (plain array): keep a copy before it is
         // rewritten in the version-2 format, which older builds can't read.
-        const fs::path v1Backup = notesFile_.parent_path() / "notes.v1-backup.json";
+        const std::string v1Backup = Trailpack::SafeFile::Join(DataDir(), "notes.v1-backup.json");
         const size_t first = content.find_first_not_of(" \t\r\n");
-        if (first != std::string::npos && content[first] == '[' && !fs::exists(v1Backup, ec))
+        if (first != std::string::npos && content[first] == '[' && !Trailpack::SafeFile::Exists(v1Backup))
             Trailpack::SafeFile::WriteAtomic(v1Backup, content);
         // Save at once: loading may have replaced legacy ids, and exported ids must stay
         // stable across sessions.
@@ -86,8 +82,8 @@ void NotesWindow::loadNotes_()
     }
 
     // Unreadable: never overwrite it. Move it aside, then fall back to the last backup.
-    const fs::path aside = Trailpack::SafeFile::SetAside(notesFile_);
-    const std::string asideName = aside.empty() ? std::string("notes.json") : aside.filename().u8string();
+    const std::string aside = Trailpack::SafeFile::SetAside(notesFile_);
+    const std::string asideName = aside.empty() ? std::string("notes.json") : Trailpack::SafeFile::FileName(aside);
     std::string backup;
     const bool restored = Trailpack::SafeFile::Read(Trailpack::SafeFile::BackupPath(notesFile_), backup) &&
                           store_.FromJson(backup);

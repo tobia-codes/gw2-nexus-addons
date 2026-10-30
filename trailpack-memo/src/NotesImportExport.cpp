@@ -7,15 +7,12 @@
 #include <cctype>
 #include <cstdio>
 #include <ctime>
-#include <fstream>
-#include <sstream>
 #include "imgui.h"
 #include "Theme.h"
 #include "I18n.h"
 #include "NotesUi.h"
 #include "FileDialog.h"
 
-namespace fs = std::filesystem;
 using Trailpack::I18n::Tr;
 using Trailpack::I18n::TrN;
 using namespace NotesUi;
@@ -60,14 +57,13 @@ void NotesWindow::startExport_(const std::string& id)
         name = FileNameFor(note->title) + ".json";
     }
 
-    std::error_code ec;
-    if (!exportDir_.empty()) fs::create_directories(exportDir_, ec);
+    if (!exportDir_.empty()) Trailpack::SafeFile::CreateDirectories(exportDir_);
 
     ioAction_        = IoAction::Export;
     ioExportId_      = id;
     ioExportGroupId_.clear();
     ioDialog_   = std::async(std::launch::async, FileDialog::Run, true,
-                             exportDir_.wstring(), Widen(name),
+                             Widen(exportDir_), Widen(name),
                              Widen(Tr("Export notes")), DialogFilter());
 }
 
@@ -77,26 +73,24 @@ void NotesWindow::startExportGroup_(const std::string& groupId)
     const Trailpack::Group* group = store_.GetGroup(groupId);
     if (group == nullptr) return;
 
-    std::error_code ec;
-    if (!exportDir_.empty()) fs::create_directories(exportDir_, ec);
+    if (!exportDir_.empty()) Trailpack::SafeFile::CreateDirectories(exportDir_);
 
     ioAction_        = IoAction::Export;
     ioExportId_.clear();
     ioExportGroupId_ = groupId;
     ioDialog_ = std::async(std::launch::async, FileDialog::Run, true,
-                           exportDir_.wstring(), Widen(FileNameFor(group->name) + ".json"),
+                           Widen(exportDir_), Widen(FileNameFor(group->name) + ".json"),
                            Widen(Tr("Export notes")), DialogFilter());
 }
 
 void NotesWindow::startImport_()
 {
     if (ioDialog_.valid()) return;
-    std::error_code ec;
-    if (!exportDir_.empty()) fs::create_directories(exportDir_, ec);
+    if (!exportDir_.empty()) Trailpack::SafeFile::CreateDirectories(exportDir_);
 
     ioAction_ = IoAction::Import;
     ioDialog_ = std::async(std::launch::async, FileDialog::Run, false,
-                           exportDir_.wstring(), std::wstring(),
+                           Widen(exportDir_), std::wstring(),
                            Widen(Tr("Import notes")), DialogFilter());
 }
 
@@ -106,12 +100,12 @@ void NotesWindow::pollFileDialog_()
         ioDialog_.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
         return;
 
-    const fs::path path(ioDialog_.get());
+    const std::string path = FileDialog::Narrow(ioDialog_.get());
     const IoAction action = ioAction_;
     ioAction_ = IoAction::None;
     if (path.empty()) return;   // cancelled
 
-    const std::string fileName = path.filename().u8string();
+    const std::string fileName = Trailpack::SafeFile::FileName(path);
     char msg[512];
 
     if (action == IoAction::Export) {
@@ -128,9 +122,7 @@ void NotesWindow::pollFileDialog_()
             count = ids.empty() ? store_.Notes().size() : 1;
         }
 
-        std::ofstream f(path, std::ios::out | std::ios::trunc | std::ios::binary);
-        if (f.is_open()) f << json;
-        if (!(f.is_open() && f.good())) {
+        if (!Trailpack::SafeFile::Write(path, json)) {
             snprintf(msg, sizeof msg, Tr("Could not write %s."), fileName.c_str());
         } else if (count == 1) {
             snprintf(msg, sizeof msg, Tr("Exported 1 note to %s."), fileName.c_str());
@@ -138,12 +130,9 @@ void NotesWindow::pollFileDialog_()
             snprintf(msg, sizeof msg, Tr("Exported %d notes to %s."), (int)count, fileName.c_str());
         }
     } else {
-        std::ifstream f(path, std::ios::in | std::ios::binary);
-        std::ostringstream ss;
-        if (f.is_open()) ss << f.rdbuf();
-
+        std::string text;
         std::vector<Trailpack::ImportItem> items;
-        const bool valid = f.is_open() && store_.PrepareImport(ss.str(), items);
+        const bool valid = Trailpack::SafeFile::Read(path, text) && store_.PrepareImport(text, items);
         const size_t offered = std::count_if(items.begin(), items.end(),
             [](const Trailpack::ImportItem& i) { return !i.duplicate || i.changed; });
         if (!valid) {

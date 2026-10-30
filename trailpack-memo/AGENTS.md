@@ -52,6 +52,9 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
   `###id`), button widths via `ButtonWidth` (German labels are longer).
 - **Rendered characters:** ASCII plus Latin-1 letters (German umlauts/ß — Nexus's own German
   locale uses them). No em-dashes, arrows, Unicode bullets or other symbols.
+- **No `<fstream>`/`<sstream>`/`<iostream>`/`<filesystem>`** in addon code: with the static
+  libstdc++ they pull ~1 MB of locale code into the DLL. Files and paths go through `SafeFile`
+  (UTF-8 `std::string` paths; `FileDialog::Widen`/`Narrow` at the dialog boundary).
 - **No game-memory reading, no game-function hooks.** Anything that seems to need it is out of scope.
 - NotesWindow is split by area (see the header comment in `src/NotesWindow.h`). Open modals only
   via `requestPopup_` / render them with `beginModal_`; never call `ImGui::OpenPopup` for a modal

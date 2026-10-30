@@ -3,11 +3,10 @@
 
 #include <windows.h>
 #include <algorithm>
+#include <cstdlib>
 #include <cstring>
 #include <ctime>
 #include <string>
-#include <fstream>
-#include <filesystem>
 #include <future>
 
 #include "nexus/Nexus.h"
@@ -52,6 +51,12 @@ Trailpack::Settings g_Settings;               // settings.json (see Settings.h);
                                            // and list width live in Theme / g_Notes meanwhile
 NotesWindow      g_Notes;
 
+// Replaces libstdc++'s verbose std::terminate handler, which prints the demangled exception
+// type to stderr (invisible in the game anyway) and links in the ~50 KB C++ demangler.
+namespace __gnu_cxx {
+void __verbose_terminate_handler() { std::abort(); }
+}
+
 // ── Forward declarations ──────────────────────────────────────────────────
 void AddonLoad(AddonAPI_t* aApi);
 void AddonUnload();
@@ -92,9 +97,8 @@ static std::string SettingsPath() {
     if (!APIDefs) return std::string();
     const char* dir = APIDefs->Paths_GetAddonDirectory("TrailpackMemo");
     if (!dir || !*dir) return std::string();
-    std::error_code ec;
-    std::filesystem::create_directories(dir, ec);
-    return (std::filesystem::path(dir) / "settings.json").string();
+    Trailpack::SafeFile::CreateDirectories(dir);
+    return Trailpack::SafeFile::Join(dir, "settings.json");
 }
 
 // Live colours (Theme::Colors) <-> a ColorSet (settings.json, themes).
@@ -213,16 +217,15 @@ static std::string s_RestoreFile;                   // pending restore (confirm 
 static std::string s_RestoreNotes, s_RestoreSettings;
 static int         s_RestoreNoteCount = 0;
 
-static std::filesystem::path BackupDir() {
-    const std::filesystem::path data = g_Notes.DataDir();
-    return data.empty() ? data : data / "backups";
+static std::string BackupDir() {
+    const std::string data = g_Notes.DataDir();
+    return data.empty() ? data : Trailpack::SafeFile::Join(data, "backups");
 }
 
 static void StartBackupDialog(bool save) {
     if (s_BackupDialog.valid()) return;   // one dialog at a time
-    std::error_code ec;
-    const std::filesystem::path dir = BackupDir();
-    if (!dir.empty()) std::filesystem::create_directories(dir, ec);
+    const std::string dir = BackupDir();
+    if (!dir.empty()) Trailpack::SafeFile::CreateDirectories(dir);
 
     char name[64] = "";
     const std::time_t now = std::time(nullptr);
@@ -231,7 +234,7 @@ static void StartBackupDialog(bool save) {
     s_BackupSaving = save;
     s_BackupMessage.clear();
     s_RestoreFile.clear();
-    s_BackupDialog = std::async(std::launch::async, FileDialog::Run, save, dir.wstring(),
+    s_BackupDialog = std::async(std::launch::async, FileDialog::Run, save, FileDialog::Widen(dir),
                                 save ? FileDialog::Widen(name) : std::wstring(),
                                 FileDialog::Widen(save ? Tr("Create backup") : Tr("Restore backup")),
                                 FileDialog::JsonFilter(Tr("Trailpack Memo backup (*.json)")));
@@ -241,10 +244,10 @@ static void PollBackupDialog() {
     if (!s_BackupDialog.valid() ||
         s_BackupDialog.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
         return;
-    const std::filesystem::path path(s_BackupDialog.get());
+    const std::string path = FileDialog::Narrow(s_BackupDialog.get());
     if (path.empty()) return;   // cancelled
 
-    const std::string fileName = path.filename().u8string();
+    const std::string fileName = Trailpack::SafeFile::FileName(path);
     char msg[512];
     if (s_BackupSaving) {
         CollectSettings();

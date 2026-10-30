@@ -8,6 +8,7 @@
 namespace FileDialog {
 
 std::wstring Widen(const std::string& utf8);
+std::string  Narrow(const std::wstring& wide);   // UTF-16 -> UTF-8
 
 // File-type filter: `label` (e.g. "Trailpack Memo backup (*.json)") + *.json, then
 // "All files". Pairs of NUL-terminated strings plus a final NUL.

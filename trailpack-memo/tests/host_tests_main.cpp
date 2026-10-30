@@ -638,18 +638,22 @@ static void test_safe_file_write_backup_and_set_aside()
 {
     namespace fs = std::filesystem;
     using namespace Trailpack::SafeFile;
-    const fs::path dir = fs::temp_directory_path() / "tpm_safefile_test";
-    fs::remove_all(dir);
-    fs::create_directories(dir);
-    const fs::path file = dir / "notes.json";
+    const std::string root = (fs::temp_directory_path() / "tpm_safefile_test").string();
+    fs::remove_all(root);
+    const std::string dir = Join(Join(root, "sub"), "dir");
+    CHECK(!Exists(dir));
+    CHECK(CreateDirectories(dir));                    // parents created too
+    CHECK(fs::is_directory(dir));
+    CHECK(CreateDirectories(dir));                    // already there
+    const std::string file = Join(dir, "notes.json");
 
     std::string got;
     CHECK(!Read(file, got));                          // missing
     CHECK(WriteAtomic(file, "one", true));
     CHECK(Read(file, got));
     CHECK_EQ(got, std::string("one"));
-    CHECK(!fs::exists(BackupPath(file)));             // nothing to back up yet
-    CHECK(!fs::exists(dir / "notes.json.tmp"));       // temp file swapped in
+    CHECK(!Exists(BackupPath(file)));                 // nothing to back up yet
+    CHECK(!Exists(file + ".tmp"));                    // temp file swapped in
 
     CHECK(WriteAtomic(file, "two", true));
     CHECK(Read(file, got));
@@ -657,15 +661,41 @@ static void test_safe_file_write_backup_and_set_aside()
     CHECK(Read(BackupPath(file), got));
     CHECK_EQ(got, std::string("one"));                // previous version kept
 
-    const fs::path aside = SetAside(file);
-    CHECK_EQ(aside.filename().string(), std::string("notes.corrupt-1.json"));
-    CHECK(!fs::exists(file));
+    const std::string aside = SetAside(file);
+    CHECK_EQ(FileName(aside), std::string("notes.corrupt-1.json"));
+    CHECK_EQ(ParentPath(aside), dir);
+    CHECK(!Exists(file));
     CHECK(Read(aside, got));
     CHECK_EQ(got, std::string("two"));
     WriteAtomic(file, "three");
-    CHECK_EQ(SetAside(file).filename().string(), std::string("notes.corrupt-2.json"));
+    CHECK_EQ(FileName(SetAside(file)), std::string("notes.corrupt-2.json"));
 
-    fs::remove_all(dir);
+    const std::string bin = Join(dir, "bin.dat");     // binary-safe, no newline translation
+    const std::string data("a\r\n\0b\n", 6);
+    CHECK(Write(bin, data));
+    CHECK(Read(bin, got));
+    CHECK_EQ(got, data);
+    CHECK(Remove(bin));
+    CHECK(!Remove(bin));
+
+    fs::remove_all(root);
+}
+
+static void test_safe_file_paths()
+{
+    using namespace Trailpack::SafeFile;
+    CHECK_EQ(FileName("C:\\Guild Wars 2\\addons\\notes.json"), std::string("notes.json"));
+    CHECK_EQ(FileName("/a/b.json"), std::string("b.json"));
+    CHECK_EQ(FileName("b.json"), std::string("b.json"));
+    CHECK_EQ(FileName("dir/"), std::string(""));
+    CHECK_EQ(ParentPath("C:\\x\\y.json"), std::string("C:\\x"));
+    CHECK_EQ(ParentPath("/a//b"), std::string("/a"));
+    CHECK_EQ(ParentPath("b.json"), std::string(""));
+    CHECK_EQ(Join("", "n"), std::string("n"));
+    CHECK_EQ(Join("d/", "n"), std::string("d/n"));
+    CHECK_EQ(Join("d\\", "n"), std::string("d\\n"));
+    CHECK_EQ(FileName(Join("d", "n")), std::string("n"));
+    CHECK_EQ(ParentPath(Join("d", "n")), std::string("d"));
 }
 
 // ── Settings ───────────────────────────────────────────────────────────────────
@@ -2032,6 +2062,7 @@ int main()
     test_reset_skips_note_in_editor();
     test_type_persists_and_travels();
     test_safe_file_write_backup_and_set_aside();
+    test_safe_file_paths();
     test_settings_roundtrip();
     test_settings_validation();
     test_settings_themes();
