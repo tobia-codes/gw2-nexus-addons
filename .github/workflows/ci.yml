@@ -1,0 +1,33 @@
+# Every push and pull request: host tests first, then the DLL builds (the Definition of Done in
+# the addons' AGENTS.md). A failing test stops the build.
+
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Toolchain
+        run: sudo apt-get update && sudo apt-get install -y mingw-w64 cmake g++ make
+
+      - name: Host tests
+        run: |
+          cmake -S . -B build-host -DGW2_HOST_TESTS=ON
+          cmake --build build-host -j 4
+          ctest --test-dir build-host --output-on-failure
+
+      - name: Build DLLs
+        run: |
+          cmake -S . -B build
+          cmake --build build -j 4
+          ls -l build/*.dll
