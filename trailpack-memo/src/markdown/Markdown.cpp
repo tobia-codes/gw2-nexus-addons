@@ -1,5 +1,5 @@
 #include "markdown/Markdown.h"
-#include "chat/ChatLinks.h"
+#include "chatlinks/ChatLinks.h"
 #include "events/Events.h"
 #include <algorithm>
 
@@ -78,35 +78,48 @@ static void TokeniseEmphasis(const std::string& s, std::vector<Span>& out)
 }
 
 // ---------------------------------------------------------------------------
+// Plain text: http(s) URLs (up to the next space) stay literal text, the rest is
+// tokenised for emphasis — a '*' inside a URL must not start italics.
+// ---------------------------------------------------------------------------
+static void TokeniseText(const std::string& s, std::vector<Span>& out)
+{
+    std::size_t pos = 0;
+    while (pos < s.size()) {
+        std::size_t at = std::min(s.find("http://", pos), s.find("https://", pos));
+        TokeniseEmphasis(s.substr(pos, at == std::string::npos ? std::string::npos : at - pos), out);
+        if (at == std::string::npos) return;
+        std::size_t end = at;
+        while (end < s.size() && s[end] != ' ' && s[end] != '\t') ++end;
+        out.push_back({ Inline::Text, s.substr(at, end - at) });
+        pos = end;
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Parse the inline content of one source line (block markers already stripped).
-// Delegates to ChatLinks::SegmentLine for chip detection, then tokenises each
-// Plain segment for emphasis.
+// Chat links become chips (ChatLinks::Split); the plain runs between them are
+// scanned for event tokens and tokenised for emphasis.
 // ---------------------------------------------------------------------------
 static std::vector<Span> ParseInline(const std::string& content)
 {
-    using namespace PieUI::ChatLinks;
     std::vector<Span> result;
 
-    auto segments = SegmentLine(content);
-    for (const auto& seg : segments) {
-        if (seg.kind == SegmentKind::Link) {
+    for (const auto& seg : ChatLinks::Split(content)) {
+        if (seg.isLink) {
             // Chat link chip — raw "[&...]" code
             result.push_back({ Inline::Chip, seg.raw });
-        } else if (seg.kind == SegmentKind::Plain) {
-            // Event tokens become Event spans; the text around them is tokenised for emphasis.
-            size_t pos = 0, len = 0;
-            std::string id;
-            for (;;) {
-                const size_t at = Events::FindToken(seg.raw, pos, len, id);
-                TokeniseEmphasis(seg.raw.substr(pos, at == std::string::npos ? std::string::npos
-                                                                             : at - pos), result);
-                if (at == std::string::npos) break;
-                result.push_back({ Inline::Event, id });
-                pos = at + len;
-            }
-        } else {
-            // URL or AE2 — treat as plain text using the raw source slice
-            result.push_back({ Inline::Text, seg.raw });
+            continue;
+        }
+        // Event tokens become Event spans; the text around them is tokenised.
+        size_t pos = 0, len = 0;
+        std::string id;
+        for (;;) {
+            const size_t at = Events::FindToken(seg.raw, pos, len, id);
+            TokeniseText(seg.raw.substr(pos, at == std::string::npos ? std::string::npos
+                                                                     : at - pos), result);
+            if (at == std::string::npos) break;
+            result.push_back({ Inline::Event, id });
+            pos = at + len;
         }
     }
     return result;

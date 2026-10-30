@@ -14,11 +14,10 @@
 #include "imgui_stdlib.h"
 #include "ui/Theme.h"
 #include "notes/NotesWindow.h"
-#include "integrations/DecoderClient.h"
-#include "integrations/PieUiClient.h"
+#include "integrations/CoreClient.h"
 #include "core/I18n.h"
 #include "ui/FontScale.h"
-#include "core/SafeFile.h"
+#include "tpfiles/SafeFile.h"
 #include "core/Settings.h"
 #include "core/Backup.h"
 #include "ui/FileDialog.h"
@@ -388,13 +387,13 @@ extern "C" __declspec(dllexport) AddonDefinition_t* GetAddonDef() {
     AddonDef.Version.Build    = V_BUILD;
     AddonDef.Version.Revision = V_REVISION;
     AddonDef.Author           = "tobia-codes";
-    AddonDef.Description      = "Notepad with markdown, checklists, event timers and rich chips. Recommended: Decoder Ring.";
+    AddonDef.Description      = "Notepad with markdown, checklists and chat-link chips. Event timers and chip details with Trailpack Core.";
     AddonDef.Load             = AddonLoad;
     AddonDef.Unload           = AddonUnload;
     AddonDef.Flags            = AF_None;
     // No auto-update source yet (see PLAN backlog B2).
-    AddonDef.Provider         = UP_None;
-    AddonDef.UpdateLink       = nullptr;
+    AddonDef.Provider         = UP_GitHub;                                    // releases: see .github/workflows/release.yml
+    AddonDef.UpdateLink       = "https://github.com/tobia-codes/trailpack-memo";
 
     return &AddonDef;
 }
@@ -445,14 +444,11 @@ void AddonLoad(AddonAPI_t* aApi) {
     // Icon cache (async chip-icon download/upload via Nexus textures).
     Trailpack::Icons::Init(APIDefs);
 
-    // Decoder Ring consumer client (optional provider; lifetime-contract safe).
-    Trailpack::Decoder::Init(APIDefs);
-
-    // Pie UI consumer client (optional provider; latched presence, no-op when absent).
-    Trailpack::PieUi::Init(APIDefs);
+    // Trailpack Core consumer (chip details, event data; lifetime-contract safe).
+    Trailpack::CoreClient::Init(APIDefs);
 
     // Load persisted settings (e.g. the quick-access toggle), then register the
-    // quick-access icon from the embedded icon.png (same method as Alter Ego).
+    // quick-access icon from the embedded icon.png.
     LoadSettings();
     ApplyLanguage();
     APIDefs->Textures_LoadFromMemory(TEX_ICON, (void*)TRAILPACK_ICON, TRAILPACK_ICON_size, nullptr);
@@ -466,11 +462,8 @@ void AddonUnload() {
     // A backup dialog still open on its worker thread must finish before the DLL goes away.
     if (s_BackupDialog.valid()) s_BackupDialog.wait();
 
-    // Drop Decoder Ring subscriptions + cache before APIDefs goes away.
-    Trailpack::Decoder::Shutdown();
-
-    // Unsubscribe Pie UI's READY handler before APIDefs goes away.
-    Trailpack::PieUi::Shutdown();
+    // Drop the Trailpack Core subscriptions + cache before APIDefs goes away.
+    Trailpack::CoreClient::Shutdown();
 
     // Mark the icon cache dead so a late texture-load callback can't touch torn-down state.
     Trailpack::Icons::Shutdown();
@@ -494,6 +487,7 @@ void AddonUnload() {
 void AddonRender() {
     if (!g_WindowVisible && !g_HelpVisible && !g_SettingsVisible) return;
     ApplyLanguage();   // Auto follows a Nexus language switch without a restart
+    Trailpack::CoreClient::Frame();                  // event list: Core (dis)appeared, language
     Theme::SetRounding(g_Settings.cornerRounding);   // note, settings and guide windows
     // ImGui's text cursor shows up as a gear in GW2: our text fields keep the normal game
     // cursor. Only a TextInput cursor set by our windows is replaced (not another addon's).
@@ -558,7 +552,7 @@ void AddonOptions() {
 static void RenderOptions() {
     ApplyLanguage();
 
-    // ── General (open by default): quick-access icon, language, Decoder Ring status ──
+    // ── General (open by default): quick-access icon, language, Trailpack Core status ──
     // The real settings come first; file actions (backup, settings export) sit in their own
     // section at the very bottom, below a separator. Nexus draws the surrounding "Options"
     // header; addons cannot add sibling headers.
@@ -579,22 +573,31 @@ static void RenderOptions() {
             SaveSettings();
         }
 
-        // Live Decoder Ring presence — re-evaluated every frame, never latched. It is an
-        // optional addon (full names + icons for chat-link chips), so its absence is a plain
-        // grey info line, not a warning; "(?)" explains it.
-        if (Trailpack::Decoder::Present()) {
-            ImGui::TextColored(ImVec4(0.50f, 0.85f, 0.50f, 1.0f), "%s", Tr("Decoder Ring: connected"));
-        } else {
-            ImGui::TextDisabled("%s", Tr("Chat-link chips: basic labels (optional: Decoder Ring addon)"));
+        // Live Trailpack Core presence — re-evaluated every frame, never latched. Memo needs
+        // it for chip details and event timers; without it those are greyed out and this line
+        // says what they would add (Core PLAN D17).
+        switch (Trailpack::CoreClient::Status()) {
+            case Trailpack::CoreClient::State::Ready:
+                ImGui::TextColored(Theme::STATUS_OK, "%s", Tr("Trailpack Core: connected"));
+                break;
+            case Trailpack::CoreClient::State::TooOld:
+                ImGui::TextColored(Theme::STATUS_WARN, Tr("Trailpack Core is too old (version %u needed)."),
+                                   Trailpack::CoreClient::kMinApiVersion);
+                break;
+            default:
+                ImGui::TextColored(Theme::STATUS_WARN, "%s", Tr("More features with the Trailpack Core addon"));
+                break;
         }
-        ImGui::SameLine();
-        ImGui::TextDisabled("(?)");
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", Tr("Decoder Ring is an optional addon. With it, chat-link chips "
-                                       "([&...]) show the real name, icon and a detailed tooltip; "
-                                       "without it they show basic labels like [Item].\n"
-                                       "Everything else works either way: copy code, open in wiki "
-                                       "and event chips."));
+        if (Trailpack::CoreClient::Status() != Trailpack::CoreClient::State::Ready) {
+            ImGui::SameLine();
+            ImGui::TextDisabled("(?)");
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("%s", Tr("Trailpack Core unlocks event timers (chips, the Event button, \"/e \" "
+                                           "suggestions) and names, icons and tooltips for chat-link chips. "
+                                           "Install it from the Trailpack addons repository; it is picked up "
+                                           "without a restart."));
+            ImGui::TextDisabled("%s", "github.com/tobia-codes/gw2-nexus-addons");
+        }
     }
 
     // ── Font options ──────────────────────────────────────────────────────
@@ -885,6 +888,9 @@ static void RenderOptions() {
     // ── Events ────────────────────────────────────────────────────────────
     // Event chips in checked tasks are grey names by default; these bring back parts of them.
     if (ImGui::CollapsingHeader(Tr("Events"))) {
+        const bool haveCore = Trailpack::CoreClient::Present();
+        if (!haveCore) ImGui::TextDisabled("%s", Tr("Event timers are unlocked with the Trailpack Core addon."));
+        Theme::LockedScope locked(!haveCore);
         if (ImGui::Checkbox(Tr("Show the time in checked tasks"), &g_Settings.doneShowTime)) SaveSettings();
         if (ImGui::IsItemHovered())
             ImGui::SetTooltip("%s", Tr("Event chips in checked tasks keep their countdown, "

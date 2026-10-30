@@ -1,11 +1,12 @@
 // EventPicker.cpp — see EventPicker.h.
 #include "events/EventPicker.h"
 
+#include <algorithm>
 #include <vector>
 #include "imgui.h"
 #include "imgui_stdlib.h"
-#include "events/Events.h"
 #include "core/I18n.h"
+#include "integrations/CoreClient.h"
 
 namespace Trailpack { namespace EventPicker {
 
@@ -25,7 +26,7 @@ std::string Render(std::string& query, bool& focusSearch)
     const bool enter = ImGui::InputTextWithHint("##event_search", Tr("Search events..."), &query,
                                                 ImGuiInputTextFlags_EnterReturnsTrue);
     const bool searching = !query.empty();
-    const std::vector<const Events::EventDef*> hits = Events::Search(query);
+    const std::vector<const CoreClient::Event*> hits = CoreClient::SearchEvents(query);
     if (enter && !hits.empty()) picked = hits.front()->id;
 
     // Events by category (wiki order). The list has a fixed height and scrolls.
@@ -33,27 +34,30 @@ std::string Render(std::string& query, bool& focusSearch)
     ImGui::BeginChild("##event_list", ImVec2(fs * 22.0f, fs * 18.0f), false);
     ImGui::PopStyleColor();
     if (hits.empty()) ImGui::TextDisabled("%s", Tr("No events found."));
-    const I18n::Lang lang = I18n::Current();
-    for (uint8_t cat = 0; cat < Events::kCategoryCount; ++cat) {
+    // Categories in data (wiki) order: the order they first appear in.
+    std::vector<std::string> categories;
+    for (const CoreClient::Event& e : CoreClient::Events())
+        if (std::find(categories.begin(), categories.end(), e.category) == categories.end())
+            categories.push_back(e.category);
+    for (const std::string& cat : categories) {
         bool any = false;
-        for (const Events::EventDef* e : hits) any = any || e->category == cat;
+        for (const CoreClient::Event* e : hits) any = any || e->category == cat;
         if (!any) continue;
 
-        ImGui::PushID(cat);
+        ImGui::PushID(cat.c_str());
         if (searching) ImGui::SetNextItemOpen(true, ImGuiCond_Always);   // hits always visible
-        if (ImGui::CollapsingHeader(Events::CategoryName(cat, lang))) {
-            for (const Events::EventDef* e : hits) {
+        if (ImGui::CollapsingHeader(cat.c_str())) {
+            for (const CoreClient::Event* e : hits) {
                 if (e->category != cat) continue;
                 // A full-width selectable row with the name and (grey) map drawn over it.
-                ImGui::PushID(e->id);
+                ImGui::PushID(e->id.c_str());
                 const float x = ImGui::GetCursorPosX();
                 if (ImGui::Selectable("##row")) picked = e->id;
                 ImGui::SameLine(x);
-                ImGui::TextUnformatted(Events::Name(*e, lang));
-                const std::string maps = Events::Maps(*e, lang);   // all places of a rotating event
-                if (!maps.empty()) {
+                ImGui::TextUnformatted(e->name.c_str());
+                if (!e->maps.empty()) {                                // all places of a rotating event
                     ImGui::SameLine();
-                    ImGui::TextDisabled("%s", maps.c_str());
+                    ImGui::TextDisabled("%s", e->maps.c_str());
                 }
                 ImGui::PopID();
             }
@@ -64,19 +68,18 @@ std::string Render(std::string& query, bool& focusSearch)
     return picked;
 }
 
-std::string RenderSuggestions(const std::vector<const Events::EventDef*>& hits, int selected)
+std::string RenderSuggestions(const std::vector<const CoreClient::Event*>& hits, int selected)
 {
     std::string picked;
-    const I18n::Lang lang = I18n::Current();
     for (int i = 0; i < (int)hits.size(); ++i) {
-        const Events::EventDef* e = hits[i];
-        ImGui::PushID(e->id);
+        const CoreClient::Event* e = hits[i];
+        ImGui::PushID(e->id.c_str());
         const float x = ImGui::GetCursorPosX();
         if (ImGui::Selectable("##row", i == selected)) picked = e->id;
         ImGui::SameLine(x);
-        ImGui::TextUnformatted(Events::Name(*e, lang));
+        ImGui::TextUnformatted(e->name.c_str());
         ImGui::SameLine();
-        ImGui::TextDisabled("%s", Events::CategoryShort(e->category, lang));
+        ImGui::TextDisabled("%s", e->categoryShort.c_str());
         ImGui::PopID();
     }
     return picked;

@@ -10,6 +10,7 @@
 #include <string>
 #include "events/Events.h"
 #include "core/I18n.h"
+#include "integrations/CoreClient.h"
 #include "ui/Theme.h"
 
 namespace Trailpack {
@@ -23,15 +24,26 @@ constexpr double kCopiedSeconds = 1.5;
 double s_CopiedUntil = 0.0;
 int    s_CopiedUid   = -1;   // the chip that was clicked (stable per note while it is shown)
 
-ImU32 StateColor(const Events::EventDef* e, int64_t now)
+using CoreClient::Event;
+
+// The running occurrence, else the next one (zeroed if Core can't say).
+CoreClient::Occurrence StateOf(const Event& e, int64_t now)
 {
-    if (e == nullptr) return ImGui::GetColorU32(ImGuiCol_TextDisabled);
-    return ImGui::GetColorU32(Events::State(*e, now).active ? Theme::EVENT_ACTIVE
-                                                            : Theme::EVENT_UPCOMING);
+    CoreClient::Occurrence st;
+    CoreClient::EventState(e.id, now, st);
+    return st;
 }
 
+ImU32 StateColor(const Event* e, int64_t now)
+{
+    if (e == nullptr) return ImGui::GetColorU32(ImGuiCol_TextDisabled);
+    return ImGui::GetColorU32(StateOf(*e, now).active ? Theme::EVENT_ACTIVE : Theme::EVENT_UPCOMING);
+}
+
+// Unknown id: "Unknown event (<id>)"; without Trailpack Core the name is read off the id.
 std::string UnknownLabel(const std::string& id)
 {
+    if (!CoreClient::Present()) return Events::PrettyId(id);
     char buf[128];
     snprintf(buf, sizeof buf, Tr("Unknown event (%s)"), id.c_str());
     return buf;
@@ -39,14 +51,14 @@ std::string UnknownLabel(const std::string& id)
 
 // "<name> - in 23 Min" / "<name> - seit 4 Min"; unknown ids: "Unknown event (<id>)".
 // A checked task without the time option shows the name only.
-std::string ViewLabel(const Events::EventDef* e, const std::string& id, int64_t now,
+std::string ViewLabel(const Event* e, const std::string& id, int64_t now,
                       const ChipDoneStyle* done = nullptr)
 {
     if (e == nullptr) return UnknownLabel(id);
-    if (done != nullptr && !done->showTime) return Events::Name(*e, I18n::Current());
-    const Events::Status st = Events::State(*e, now);
+    if (done != nullptr && !done->showTime) return e->name;
+    const CoreClient::Occurrence st = StateOf(*e, now);
     const int64_t secs = st.active ? now - st.start : st.start - now;
-    return std::string(Events::Name(*e, I18n::Current())) + " - " + Events::FormatTime(secs, st.active);
+    return e->name + " - " + Events::FormatTime(secs, st.active);
 }
 
 // Local clock time "HH:MM" of a UTC instant. Converted per instant, so each start gets the
@@ -80,7 +92,7 @@ std::string UrlEncode(const std::string& s)
     return out;
 }
 
-void OpenWiki(const Events::EventDef& e)
+void OpenWiki(const Event& e)
 {
     const std::string url = "https://wiki.guildwars2.com/wiki/" + UrlEncode(e.wikiPage);
     ShellExecuteA(nullptr, "open", url.c_str(), nullptr, nullptr, SW_SHOWNORMAL);
@@ -88,49 +100,48 @@ void OpenWiki(const Events::EventDef& e)
 
 // The place that counts now: the running occurrence's, else the next one's (a rotating event
 // moves on only after its current run has ended).
-const Events::PlaceDef& CurrentPlace(const Events::EventDef& e, int64_t now)
+const CoreClient::EventPlace& CurrentPlace(const Event& e, int64_t now)
 {
-    return e.places[Events::State(e, now).place];
+    const uint8_t p = StateOf(e, now).place;
+    return e.places[p < e.places.size() ? p : 0];
 }
 
-void CopyWaypoint(const Events::EventDef& e, int64_t now, int uid)
+void CopyWaypoint(const Event& e, int64_t now, int uid)
 {
-    const char* wp = CurrentPlace(e, now).waypoint;
-    if (wp == nullptr) return;
-    ImGui::SetClipboardText(wp);
+    const std::string& wp = CurrentPlace(e, now).waypoint;
+    if (wp.empty()) return;
+    ImGui::SetClipboardText(wp.c_str());
     s_CopiedUntil = ImGui::GetTime() + kCopiedSeconds;
     s_CopiedUid   = uid;
 }
 
-void Tooltip(const Events::EventDef& e, int64_t now, bool clickCopy)
+void Tooltip(const Event& e, int64_t now, bool clickCopy)
 {
-    const I18n::Lang lang = I18n::Current();
-    ImGui::TextUnformatted(Events::Name(e, lang));
-    ImGui::TextDisabled("%s", Events::CategoryName(e.category, lang));
+    ImGui::TextUnformatted(e.name.c_str());
+    ImGui::TextDisabled("%s", e.category.c_str());
     ImGui::Separator();
 
-    const Events::Status st = Events::State(e, now);
+    const CoreClient::Occurrence st = StateOf(e, now);
     if (st.active) {
         ImGui::Text(Tr("Running since %s, ends at %s"), LocalClock(st.start).c_str(),
                     LocalClock(st.end).c_str());
     }
     // Rotating events name the map of every start: "03:20 (Iron Marches)".
     std::string starts;
-    for (const Events::Occurrence& o : Events::NextOccurrences(e, now, 3)) {
+    for (const CoreClient::Occurrence& o : CoreClient::EventNext(e.id, now, 3)) {
         if (!starts.empty()) starts += ", ";
         starts += LocalClock(o.start);
-        if (e.placeCount > 1) starts += std::string(" (") + Events::MapName(e.places[o.place], lang) + ")";
+        if (e.places.size() > 1 && o.place < e.places.size()) starts += " (" + e.places[o.place].map + ")";
     }
     ImGui::Text(Tr("Next starts: %s"), starts.c_str());
     ImGui::Text(Tr("Duration: %s"), Events::FormatDuration(st.end - st.start).c_str());
 
     // Map and waypoint of the running occurrence, else of the next one.
-    const Events::PlaceDef& place = e.places[st.place];
-    const char* map = Events::MapName(place, lang);
-    if (map[0] != '\0') ImGui::Text(Tr("Map: %s"), map);
-    if (place.waypoint != nullptr) {
-        const char* wp = Events::WaypointName(place, lang);
-        ImGui::Text(Tr("Waypoint: %s"), wp[0] != '\0' ? wp : place.waypoint);
+    const CoreClient::EventPlace& place = e.places[st.place < e.places.size() ? st.place : 0];
+    if (!place.map.empty()) ImGui::Text(Tr("Map: %s"), place.map.c_str());
+    if (!place.waypoint.empty()) {
+        const std::string& wp = place.waypointName.empty() ? place.waypoint : place.waypointName;
+        ImGui::Text(Tr("Waypoint: %s"), wp.c_str());
         if (clickCopy) {
             ImGui::Separator();
             ImGui::TextDisabled("%s", Tr("Left-click: copy waypoint. Right-click: more."));
@@ -146,22 +157,22 @@ std::string EventChipLabel(const std::string& token)
 {
     std::string id;
     Events::IsToken(token, &id);
-    const Events::EventDef* e = Events::Find(id);
-    return e != nullptr ? Events::Name(*e, I18n::Current()) : UnknownLabel(id);
+    const Event* e = CoreClient::FindEvent(id);
+    return e != nullptr ? e->name : UnknownLabel(id);
 }
 
 ImU32 EventChipColor(const std::string& token)
 {
     std::string id;
     Events::IsToken(token, &id);
-    return Events::Find(id) != nullptr ? ImGui::GetColorU32(Theme::EVENT_UPCOMING)
-                                       : ImGui::GetColorU32(ImGuiCol_TextDisabled);
+    return CoreClient::FindEvent(id) != nullptr ? ImGui::GetColorU32(Theme::EVENT_UPCOMING)
+                                                : ImGui::GetColorU32(ImGuiCol_TextDisabled);
 }
 
 float MeasureEventChip(ImFont* font, float fontSize, const std::string& id,
                        const ChipDoneStyle* done)
 {
-    const std::string label = ViewLabel(Events::Find(id), id, (int64_t)std::time(nullptr), done);
+    const std::string label = ViewLabel(CoreClient::FindEvent(id), id, (int64_t)std::time(nullptr), done);
     return font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, label.c_str()).x;
 }
 
@@ -169,7 +180,7 @@ float DrawEventChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& 
                     const std::string& id, int uid, const ChipDoneStyle* done)
 {
     const int64_t now = (int64_t)std::time(nullptr);
-    const Events::EventDef* e = Events::Find(id);
+    const Event* e = CoreClient::FindEvent(id);
     const std::string label = ViewLabel(e, id, now, done);
     const float width = font->CalcTextSizeA(fontSize, FLT_MAX, 0.0f, label.c_str()).x;
     ImU32 col = StateColor(e, now);
@@ -195,7 +206,7 @@ float DrawEventChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& 
         Theme::PopupTextScope popupText;
         const bool copiedHint = uid == s_CopiedUid && ImGui::GetTime() < s_CopiedUntil;
         if (hovering) {
-            if (clickCopy && CurrentPlace(*e, now).waypoint != nullptr) ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+            if (clickCopy && !CurrentPlace(*e, now).waypoint.empty()) ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
             if (clickCopy && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) CopyWaypoint(*e, now, uid);
             if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) ImGui::OpenPopup(pid);
             if (!copiedHint && !ImGui::IsPopupOpen(pid)) {
@@ -207,7 +218,7 @@ float DrawEventChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& 
         // The hint follows the mouse for its full time, also after leaving the chip.
         if (copiedHint) ImGui::SetTooltip("%s", Tr("Waypoint copied"));
         if (ImGui::BeginPopup(pid)) {
-            if (ImGui::MenuItem(Tr("Copy waypoint"), nullptr, false, CurrentPlace(*e, now).waypoint != nullptr))
+            if (ImGui::MenuItem(Tr("Copy waypoint"), nullptr, false, !CurrentPlace(*e, now).waypoint.empty()))
                 CopyWaypoint(*e, now, uid);
             if (ImGui::MenuItem(Tr("Open in wiki"))) OpenWiki(*e);
             ImGui::EndPopup();

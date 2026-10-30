@@ -10,11 +10,9 @@ if(NOT GW2_HOST_TESTS)
         src/notes/NotesStore.cpp
         src/core/I18n.cpp
         src/core/Reset.cpp
-        src/core/SafeFile.cpp
         src/core/Settings.cpp
         src/core/Backup.cpp
         src/ui/FileDialog.cpp
-        src/generated/EventData.cpp
         src/events/Events.cpp
         src/notes/NotesWindow.cpp
         src/notes/NotesList.cpp
@@ -26,7 +24,6 @@ if(NOT GW2_HOST_TESTS)
         src/markdown/Markdown.cpp
         src/markdown/MarkdownRender.cpp
         src/markdown/MarkdownEdit.cpp
-        src/vendor/chat/ChatLinks.cpp
         src/chips/ChipResolver.cpp
         src/chips/ChipColor.cpp
         src/chips/ChipCodec.cpp
@@ -34,8 +31,7 @@ if(NOT GW2_HOST_TESTS)
         src/chips/ChipRich.cpp
         src/chips/EventChip.cpp
         src/events/EventPicker.cpp
-        src/integrations/DecoderClient.cpp
-        src/integrations/PieUiClient.cpp
+        src/integrations/CoreClient.cpp
         src/chips/IconUrl.cpp
         src/chips/IconCache.cpp
         TrailpackMemo.def
@@ -44,10 +40,9 @@ if(NOT GW2_HOST_TESTS)
 
     target_include_directories(TrailpackMemo PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/vendor   # vendored units keep their own include paths (chat/...)
-        ${CMAKE_CURRENT_SOURCE_DIR}/public
+        ${CMAKE_CURRENT_SOURCE_DIR}/../trailpack-core/public   # Trailpack Core ABI header
     )
-    target_link_libraries(TrailpackMemo PRIVATE gw2_imgui gw2_headers gdi32 shell32 comdlg32)
+    target_link_libraries(TrailpackMemo PRIVATE trailpack_chatlinks trailpack_files trailpack_ui gw2_imgui gw2_headers gdi32 shell32 comdlg32)
     target_link_options(TrailpackMemo PRIVATE
         -Wl,--out-implib,TrailpackMemo.lib
         -Wl,--strip-all
@@ -68,14 +63,11 @@ else()
         src/notes/NotesStore.cpp
         src/core/I18n.cpp
         src/core/Reset.cpp
-        src/core/SafeFile.cpp
         src/core/Settings.cpp
         src/core/Backup.cpp
-        src/generated/EventData.cpp
         src/events/Events.cpp
         src/markdown/Markdown.cpp
         src/markdown/MarkdownEdit.cpp
-        src/vendor/chat/ChatLinks.cpp
         src/chips/ChipResolver.cpp
         src/chips/ChipColor.cpp
         src/chips/ChipCodec.cpp
@@ -83,10 +75,9 @@ else()
     )
     target_include_directories(trailpack_host_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
-        ${CMAKE_CURRENT_SOURCE_DIR}/src/vendor   # vendored units keep their own include paths (chat/...)
-        ${CMAKE_CURRENT_SOURCE_DIR}/public
+        ${CMAKE_CURRENT_SOURCE_DIR}/../trailpack-core/public   # Trailpack Core ABI header
     )
-    target_link_libraries(trailpack_host_tests PRIVATE gw2_headers)
+    target_link_libraries(trailpack_host_tests PRIVATE trailpack_chatlinks trailpack_files gw2_headers)
     set_target_properties(trailpack_host_tests PROPERTIES
         RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}
     )

@@ -5,7 +5,8 @@
 // next starts in local time, left click copies the waypoint chat code ("Waypoint copied" at
 // the mouse), right click offers Copy waypoint / Open in wiki. The editor shows the name only.
 // Rotating events (several places) use the place of the running occurrence, else the next.
-// Unknown ids render as a grey "Unknown event (<id>)" chip. Schedule maths: Events.h.
+// Unknown ids render as a grey "Unknown event (<id>)" chip. Data and schedule come from
+// Trailpack Core (CoreClient); without Core the chip is a grey name read off the id.
 
 #include "imgui.h"
 #include <string>

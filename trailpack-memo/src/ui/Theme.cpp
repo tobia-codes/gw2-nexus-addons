@@ -12,11 +12,8 @@ static ImVec4     s_WindowText   = { 1.0f, 1.0f, 1.0f, 1.0f };
 static ImVec4     s_NexusText    = { 1.0f, 1.0f, 1.0f, 1.0f };   // before our pushes
 static ImVec4     s_PopupBg      = { 0.0f, 0.0f, 0.0f, 1.0f };   // in use, set by PushWindowStyle
 static ImVec4     s_PopupText    = { 1.0f, 1.0f, 1.0f, 1.0f };
-static float      s_Rounding     = 0.0f;
 
 UserColors& Colors() { return s_Colors; }
-void        SetRounding(float px) { s_Rounding = px; }
-float       Rounding() { return s_Rounding; }
 ImVec4      WindowText() { return s_WindowText; }
 ImVec4      PopupText()  { return s_PopupText; }
 
@@ -79,31 +76,6 @@ void PushWindowStyle() {
     }
     ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, s_Colors.showBorder ? BORDER_SIZE : 0.0f);
     PushRounding();
-}
-
-static constexpr ImGuiStyleVar kRoundingVars[] = {
-    ImGuiStyleVar_WindowRounding, ImGuiStyleVar_ChildRounding, ImGuiStyleVar_FrameRounding,
-    ImGuiStyleVar_PopupRounding, ImGuiStyleVar_GrabRounding, ImGuiStyleVar_ScrollbarRounding,
-    ImGuiStyleVar_TabRounding,
-};
-
-float TitleBarPadY() {
-    return ImGui::GetStyle().FramePadding.y + 4.0f;
-}
-
-bool BeginWindow(const char* name, bool* open) {
-    ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(ImGui::GetStyle().FramePadding.x, TitleBarPadY()));
-    const bool shown = ImGui::Begin(name, open);
-    ImGui::PopStyleVar();
-    return shown;
-}
-
-void PushRounding() {
-    for (ImGuiStyleVar v : kRoundingVars) ImGui::PushStyleVar(v, s_Rounding);
-}
-
-void PopRounding() {
-    ImGui::PopStyleVar((int)(sizeof kRoundingVars / sizeof kRoundingVars[0]));
 }
 
 void PushPaneBorder(bool show, bool hasColor, const ImVec4& color) {

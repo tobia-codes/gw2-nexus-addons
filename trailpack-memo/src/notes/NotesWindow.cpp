@@ -8,7 +8,7 @@
 #include "imgui.h"
 #include "ui/Theme.h"
 #include "core/I18n.h"
-#include "core/SafeFile.h"
+#include "tpfiles/SafeFile.h"
 
 using Trailpack::I18n::Tr;
 

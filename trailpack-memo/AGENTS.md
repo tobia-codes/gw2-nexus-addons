@@ -20,7 +20,9 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 
 - Toolchain: `x86_64-w64-mingw32-g++`, `cmake`, `g++` (WSL). If one is missing, the agent has no
   sudo — ask the user to run `sudo apt install mingw-w64 cmake g++ make`.
-- **Definition of Done:** DLL builds clean **and** host tests green. In-game behaviour can only be
+- **Definition of Done:** host tests (incl. new ones for the change) green, **then** the DLL
+  builds clean; `README.md` (and `release/README.md` if the player-facing text changes) and the
+  `## Unreleased` section of `CHANGELOG.md` updated for player-visible changes. In-game behaviour can only be
   verified by the user — say what to test, never claim it works in game.
 
 ## Identity
@@ -35,21 +37,21 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 | Texture ids | prefix `TPM_ICON_` | `src/chips/IconCache.cpp` |
 | Author | `tobia-codes` | `src/dllmain.cpp` |
 | Localization keys | `TPM_LANG_PROBE` (active-language probe), `KB_TRAILPACK_MEMO_TOGGLE` (keybind name) | `src/dllmain.cpp` |
-| Updates | `UP_None`, `UpdateLink = nullptr` (see PLAN backlog B2) | `src/dllmain.cpp` |
+| Updates | `UP_GitHub`, release repo `tobia-codes/trailpack-memo` (tag `memo-v<version>` here, see `.github/workflows/release.yml`) | `src/dllmain.cpp` |
 
 ## Code rules
 
 - C++ namespace: **`Trailpack`**.
 - **Source layout:** own code in feature folders under `src/` (`core/`, `notes/`, `markdown/`,
   `chips/`, `events/`, `integrations/`, `ui/`; `dllmain.cpp` at the root). Include own headers
-  relative to `src/` (`#include "core/Settings.h"`). `src/generated/` is written by `tools/*.py`,
-  `src/vendor/` is copied from upstream -- never edit either by hand. `src/vendor` is an extra
-  include root so vendored files keep their upstream include paths (`chat/ChatLinks.h`).
-- **Vendored codec is byte-identical:** `src/vendor/chat/ChatLinks.{h,cpp}`, `src/vendor/chat/SpecData.h` come
-  from Pie UI. Never edit them; a codec bug is fixed upstream and re-vendored.
+  relative to `src/` (`#include "core/Settings.h"`). `src/generated/` is written by `tools/*.py` --
+  never edit it by hand.
+- **Chat-link codec:** `libs/trailpack-chatlinks` (`#include "chatlinks/ChatLinks.h"`,
+  `Trailpack::ChatLinks`), shared with the other Trailpack addons and tested there. Codec changes
+  go into the library with a test in its own suite.
 - **Pure units stay pure** (no ImGui/Nexus/Win32 includes) so the host-test target builds:
-  `NotesStore`, `Settings`, `Backup`, `Events` (+ generated `generated/EventData`), `Markdown`,
-  `MarkdownEdit`, `ChipCodec`, `ChipResolver`, `ChipColor`, `IconUrl`, `vendor/chat/ChatLinks`. Put new
+  `NotesStore`, `Settings`, `Backup`, `Events`, `Markdown`,
+  `MarkdownEdit`, `ChipCodec`, `ChipResolver`, `ChipColor`, `IconUrl`. Put new
   logic into a pure unit + host test (`tests/host_tests_main.cpp`) where possible.
 - **UI text is translated (English + German):** wrap every user-visible literal in
   `Trailpack::I18n::Tr("English text")` and add the German line to the table in `src/core/I18n.cpp`
@@ -73,17 +75,21 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 - Match the surrounding style, naming and comment density. Keep `README.md` (addon + root table)
   in sync with user-visible changes.
 
-## Optional dependencies (never crash when absent)
+## Trailpack Core (extended features; never crash when absent)
 
-Decoder Ring and Pie UI may be missing, or load/unload mid-session.
+Core may be missing, too old, or load/unload mid-session. Everything goes through
+`src/integrations/CoreClient.cpp` (header: `../trailpack-core/public/TrailpackCoreApi.h`):
 
-- **Decoder Ring** (`public/DecoderRingApi.h`, `src/integrations/DecoderClient.cpp`): never cache
-  `DecoderRingApi*`; call `GetDecoder()` (DataLink `DECODER_RING_API` + `apiVersion == 1`) before
-  every use; presence is live, not latched; on `EV_DECODER_RING_UNLOADING` drop the record cache and
-  pending keys; the `EV_DECODER_RING_RESOLVED` payload is only valid during the handler — copy it
-  out; check `DecoderRecord.schemaVersion`. Build links (`0x0D`) need the full chat-code string.
-- **Pie UI** (`src/integrations/PieUiClient.cpp`): presence latched on `EV_PIE_UI_READY`; `OpenChatLink` raises
-  `EV_PIEUI_OPEN_CHATLINK` with the `[&...]` string — fire-and-forget, a no-op when Pie UI is absent.
+- Never keep the `TpcApi*`; re-resolve it (DataLink `TRAILPACK_CORE_API`, `apiVersion >=
+  CoreClient::kMinApiVersion`) before every use. Presence is live (`CoreClient::Status()`).
+- On `EV_TRAILPACK_CORE_UNLOADING` / `_READY` cached answers are dropped; the `_RESOLVED` payload
+  is only valid during the handler — copy it. Set `structSize` before every call.
+- The event list is rebuilt only in `CoreClient::Frame()` (render thread, start of `AddonRender`).
+- Without Core, Core features are **greyed out, not hidden** (Core PLAN D17): the toolbar Event
+  button (`Theme::LockedScope` + a tooltip that works when disabled), the "Events" settings, `/e`
+  suggestions; chips show structural labels. Hints only in Settings > General and the guide.
+- No references to other creators' addons or repositories (Core PLAN D21); the MIT line in
+  `LICENSE` stays.
 
 ## Workflow
 

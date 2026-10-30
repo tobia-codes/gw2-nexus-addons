@@ -140,10 +140,6 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Import %d notes",                   "%d Notizen importieren" },
 
     // ── Chips (ChipRich) ──────────────────────────────────────────────────
-    { "Open map in Pie UI",                "Karte in Pie UI öffnen" },
-    { "Open wardrobe template in Pie UI",  "Garderobenvorlage in Pie UI öffnen" },
-    { "Open build in Pie UI",              "Build in Pie UI öffnen" },
-    { "Preview in Pie UI",                 "Vorschau in Pie UI" },
     { "Account Bound on Acquire",          "Accountgebunden beim Erwerb" },
     { "Soulbound on Acquire",              "Seelengebunden beim Erwerb" },
     { "Account Bound on Use",              "Accountgebunden bei Benutzung" },
@@ -155,10 +151,8 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Cannot be sold to a vendor",        "Kann nicht an Händler verkauft werden" },
     { "Upgrades:",                         "Aufwertungen:" },
     { "Map: ",                             "Karte: " },
-    { "Decoder Ring not loaded.",          "Decoder Ring nicht geladen." },
     { "Right-click to copy the code or open the wiki.",
       "Rechtsklick: Code kopieren oder Wiki öffnen." },
-    { "Left-click: %s",                    "Linksklick: %s" },
     { "Copy chat code",                    "Chatcode kopieren" },
     { "Open in wiki",                      "Im Wiki öffnen" },
 
@@ -225,13 +219,13 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "(ihre Notizen bleiben erhalten)." },
     { "Chat links",                        "Chat-Links" },
     { "Paste GW2 chat links ([&...]) into a note - they become chips.\n"
-      "- With the Decoder Ring addon: icon, name and a detailed tooltip.\n"
+      "- With the Trailpack Core addon: icon, name and a detailed tooltip.\n"
       "- Right-click a chip: copy the chat code or open the wiki.\n"
-      "- With Pie UI: left-click a waypoint chip to open the map there.",
+      "- Left-click a waypoint chip copies its code (paste it in the game chat).",
       "Füge GW2-Chat-Links ([&...]) in eine Notiz ein - sie werden zu Chips.\n"
-      "- Mit dem Addon Decoder Ring: Icon, Name und ausführlicher Tooltip.\n"
+      "- Mit dem Addon Trailpack Core: Icon, Name und ausführlicher Tooltip.\n"
       "- Rechtsklick auf einen Chip: Chatcode kopieren oder Wiki öffnen.\n"
-      "- Mit Pie UI: Linksklick auf einen Wegpunkt-Chip öffnet dort die Karte." },
+      "- Linksklick auf einen Wegpunkt-Chip kopiert seinen Code (im Spiel-Chat einfügen)." },
     { "Event timers",                      "Event-Timer" },
     { "While editing, 'Event' in the toolbar picks an event: search by name or map, or browse "
       "the categories. It becomes an event chip; {{event:<id>}} typed by hand works too.\n"
@@ -240,7 +234,8 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "- It shows the time until the next start, or since when the event is running.\n"
       "- Hover it for the next starts in your local time, the duration, map and waypoint.\n"
       "- Left-click copies the waypoint; right-click: copy waypoint or open the wiki.\n"
-      "- While editing, the chip shows the event name only.",
+      "- While editing, the chip shows the event name only.\n"
+      "- Event timers come with the Trailpack Core addon; without it the Event button is greyed out.",
       "Beim Bearbeiten wählt 'Event' in der Werkzeugleiste ein Event: Suche nach Name oder Karte, "
       "oder in den Kategorien stöbern. Es wird zum Event-Chip; von Hand geschriebenes "
       "{{event:<id>}} geht auch.\n"
@@ -249,7 +244,8 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "- Er zeigt die Zeit bis zum nächsten Start oder seit wann das Event läuft.\n"
       "- Beim Darüberfahren: nächste Starts in deiner Ortszeit, Dauer, Karte und Wegpunkt.\n"
       "- Linksklick kopiert den Wegpunkt; Rechtsklick: Wegpunkt kopieren oder Wiki öffnen.\n"
-      "- Beim Bearbeiten zeigt der Chip nur den Namen des Events." },
+      "- Beim Bearbeiten zeigt der Chip nur den Namen des Events.\n"
+      "- Event-Timer gibt es mit dem Addon Trailpack Core; ohne es ist der Event-Knopf ausgegraut." },
     { "Import, export and deleting",       "Import, Export und Löschen" },
     { "All in the menu button and the right-click menus.\n"
       "- 'Export all...' saves every note and group to one file; right-click a note or group "
@@ -267,7 +263,7 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "löscht eine." },
     { "Settings",                          "Einstellungen" },
     { "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
-      "- 'General': quick access icon, language (Auto follows Nexus), Decoder Ring status.\n"
+      "- 'General': quick access icon, language (Auto follows Nexus), Trailpack Core status.\n"
       "- 'Font options': UI and note text size.\n"
       "- 'Layout options': corner rounding of the addon's windows, buttons, fields, popups and list rows (0 = square); 'Groups above single notes' puts the groups at the top of the list (default: below the single notes); 'List row spacing' sets the space between the rows of the note list.\n"
       "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names), note (border on/off and colour, background, text), note editor (border on/off and colour), popups (background, text) and the daily / weekly badges.\n"
@@ -280,7 +276,7 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "and keeps the notes. Both ask before replacing anything.\n"
       "- Drag the divider between list and note to change the list width.",
       "Nexus-Addon-Optionen > Trailpack Memo, oder Menü-Knopf > 'Einstellungen...':\n"
-      "- 'Allgemein': Schnellzugriff-Icon, Sprache (Automatisch folgt Nexus), Decoder-Ring-Status.\n"
+      "- 'Allgemein': Schnellzugriff-Icon, Sprache (Automatisch folgt Nexus), Trailpack-Core-Status.\n"
       "- 'Schriftoptionen': UI- und Notiz-Textgröße.\n"
       "- 'Layout-Optionen': Eckenrundung der Addon-Fenster, Buttons, Felder, Popups und Listenzeilen (0 = eckig); 'Gruppen über einzelnen Notizen' stellt die Gruppen an den Anfang der Liste (Standard: unter den einzelnen Notizen); 'Zeilenabstand der Liste' legt den Abstand zwischen den Zeilen der Notizliste fest.\n"
       "- 'Farboptionen': Fenster (Rahmen an/aus und Farbe, Hintergrund, Text, Menü-Knopf und -Symbol), Notizliste (Rahmen an/aus und Farbe, Hintergrund, Text, Gruppennamen), Notiz (Rahmen an/aus und Farbe, Hintergrund, Text), Notiz-Editor (Rahmen an/aus und Farbe), Popups (Hintergrund, Text) und die Täglich-/Wöchentlich-Badges.\n"
@@ -303,18 +299,23 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
 
     // ── Options (dllmain) ─────────────────────────────────────────────────
     { "Toggle Trailpack Memo",             "Trailpack Memo ein-/ausblenden" },
-    { "Decoder Ring: connected",           "Decoder Ring: verbunden" },
-    { "Chat-link chips: basic labels (optional: Decoder Ring addon)",
-      "Chatlink-Chips: einfache Bezeichnungen (optional: Addon Decoder Ring)" },
-    { "Decoder Ring is an optional addon. With it, chat-link chips "
-      "([&...]) show the real name, icon and a detailed tooltip; "
-      "without it they show basic labels like [Item].\n"
-      "Everything else works either way: copy code, open in wiki "
-      "and event chips.",
-      "Decoder Ring ist ein optionales Addon. Damit zeigen Chatlink-Chips ([&...]) den echten "
-      "Namen, ein Icon und einen ausführlichen Tooltip; ohne zeigen sie einfache Bezeichnungen "
-      "wie [Item].\nAlles andere funktioniert so oder so: Chatcode kopieren, im Wiki öffnen "
-      "und Event-Chips." },
+    { "Trailpack Core: connected",         "Trailpack Core: verbunden" },
+    { "Trailpack Core is too old (version %u needed).",
+      "Trailpack Core ist zu alt (Version %u nötig)." },
+    { "More features with the Trailpack Core addon",
+      "Mehr Funktionen mit dem Addon Trailpack Core" },
+    { "Trailpack Core unlocks event timers (chips, the Event button, \"/e \" suggestions) and names, "
+      "icons and tooltips for chat-link chips. Install it from the Trailpack addons repository; it "
+      "is picked up without a restart.",
+      "Trailpack Core schaltet Event-Timer (Chips, den Event-Knopf, \"/e \"-Vorschläge) sowie Namen, "
+      "Icons und Tooltips für Chatlink-Chips frei. Installiere es aus dem Repository der "
+      "Trailpack-Addons; es wird ohne Neustart erkannt." },
+    { "Event timers are unlocked with the Trailpack Core addon.",
+      "Event-Timer werden mit dem Addon Trailpack Core freigeschaltet." },
+    { "Loading details...",                "Details werden geladen..." },
+    { "Names, icons and tooltips come with the Trailpack Core addon.",
+      "Namen, Icons und Tooltips gibt es mit dem Addon Trailpack Core." },
+    { "Left-click: copy the waypoint code.", "Linksklick: Wegpunkt-Code kopieren." },
     { "Language",                          "Sprache" },
     { "Auto (Nexus language)",             "Automatisch (Nexus-Sprache)" },
     { "Show quick access icon",            "Schnellzugriff-Icon anzeigen" },

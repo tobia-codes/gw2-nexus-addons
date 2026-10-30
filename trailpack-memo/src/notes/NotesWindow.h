@@ -15,7 +15,7 @@
 #include <vector>
 #include "nexus/Nexus.h"
 #include "notes/NotesStore.h"
-#include "core/SafeFile.h"
+#include "tpfiles/SafeFile.h"
 #include "chips/ChipTextEdit.h"
 #include "markdown/Markdown.h"
 

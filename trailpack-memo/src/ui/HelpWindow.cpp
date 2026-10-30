@@ -86,9 +86,9 @@ const Section kSections[] = {
       "- Right-click a group: new note in it, rename, colour, export, delete (its notes are kept)." },
     { "Chat links",
       "Paste GW2 chat links ([&...]) into a note - they become chips.\n"
-      "- With the Decoder Ring addon: icon, name and a detailed tooltip.\n"
+      "- With the Trailpack Core addon: icon, name and a detailed tooltip.\n"
       "- Right-click a chip: copy the chat code or open the wiki.\n"
-      "- With Pie UI: left-click a waypoint chip to open the map there." },
+      "- Left-click a waypoint chip copies its code (paste it in the game chat)." },
     { "Event timers",
       "While editing, 'Event' in the toolbar picks an event: search by name or map, or browse "
       "the categories. It becomes an event chip; {{event:<id>}} typed by hand works too.\n"
@@ -97,7 +97,8 @@ const Section kSections[] = {
       "- It shows the time until the next start, or since when the event is running.\n"
       "- Hover it for the next starts in your local time, the duration, map and waypoint.\n"
       "- Left-click copies the waypoint; right-click: copy waypoint or open the wiki.\n"
-      "- While editing, the chip shows the event name only." },
+      "- While editing, the chip shows the event name only.\n"
+      "- Event timers come with the Trailpack Core addon; without it the Event button is greyed out." },
     { "Import, export and deleting",
       "All in the menu button and the right-click menus.\n"
       "- 'Export all...' saves every note and group to one file; right-click a note or group "
@@ -108,7 +109,7 @@ const Section kSections[] = {
       "deletes one." },
     { "Settings",
       "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
-      "- 'General': quick access icon, language (Auto follows Nexus), Decoder Ring status.\n"
+      "- 'General': quick access icon, language (Auto follows Nexus), Trailpack Core status.\n"
       "- 'Font options': UI and note text size.\n"
       "- 'Layout options': corner rounding of the addon's windows, buttons, fields, popups and list rows (0 = square); 'Groups above single notes' puts the groups at the top of the list (default: below the single notes); 'List row spacing' sets the space between the rows of the note list.\n"
       "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names), note (border on/off and colour, background, text), note editor (border on/off and colour), popups (background, text) and the daily / weekly badges.\n"

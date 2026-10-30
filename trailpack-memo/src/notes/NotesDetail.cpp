@@ -12,6 +12,7 @@
 #include "markdown/MarkdownRender.h"
 #include "notes/NotesUi.h"
 #include "events/EventPicker.h"
+#include "integrations/CoreClient.h"
 #include "events/Events.h"
 
 using Trailpack::I18n::Tr;
@@ -222,12 +223,19 @@ void NotesWindow::renderEditToolbar_()
         r = ToggleLinePrefix(bodyEditor_.Codepoints(), selA, selB, LinePrefix::Task);
     bodyEditor_.ApplyEdit(r);
 
-    // Event picker (D8): a popup in this child's id scope, begun every frame below.
-    if (toolButton(Tr("Event"), Tr("Insert an event timer"))) {
-        eventQuery_.clear();
-        eventPickerFocus_ = true;
-        ImGui::OpenPopup("##event_picker");
+    // Event picker (D8): a popup in this child's id scope, begun every frame below. Event data
+    // comes from Trailpack Core: without it the button is greyed out (Core PLAN D17).
+    const bool haveCore = Trailpack::CoreClient::Present();
+    {
+        Theme::LockedScope locked(!haveCore);
+        if (toolButton(Tr("Event"), Tr("Insert an event timer")) && haveCore) {
+            eventQuery_.clear();
+            eventPickerFocus_ = true;
+            ImGui::OpenPopup("##event_picker");
+        }
     }
+    if (!haveCore && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled))
+        Theme::Tooltip("%s", Tr("Event timers are unlocked with the Trailpack Core addon."));
 
     // Preview toggle, right-aligned on the last button row if it fits there, else below.
     const char* previewLabel = Tr("Preview");
@@ -269,9 +277,10 @@ void NotesWindow::renderEventSuggest_()
     using namespace Trailpack;
     ChipTextEdit::Suggest& sg = bodyEditor_.suggest;
 
-    std::vector<const Events::EventDef*> hits;
+    // Without Trailpack Core there are no events: no list, and the editor keeps its keys.
+    std::vector<const CoreClient::Event*> hits;
     if (sg.active) {
-        hits = Events::Search(sg.query);
+        hits = CoreClient::SearchEvents(sg.query);
         if ((int)hits.size() > EventPicker::kMaxSuggestions) hits.resize(EventPicker::kMaxSuggestions);
     }
     if (!sg.active || sg.query != eventSuggestQuery_) {

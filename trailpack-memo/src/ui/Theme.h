@@ -1,35 +1,15 @@
 #pragma once
-// Theme.h — Trailpack Memo accent palette + RAII push/pop helpers.
+// Theme.h — Trailpack Memo colours (user themes, panes, popups) + RAII push/pop helpers.
 // Inherits Nexus's default ImGui style; applies the accent colours per-widget (no global
-// ApplyTheme call needed).
+// ApplyTheme call needed). The look shared by all Trailpack addons (palette, buttons, corner
+// rounding, plain settings windows) is libs/trailpack-ui, reachable here as Theme::X.
 
-#include <initializer_list>
 #include "imgui.h"
+#include "tpui/Style.h"
 
 namespace Theme {
 
-// ── Gold / amber window border ────────────────────────────────────────────
-// ImVec4 lacks a constexpr constructor in this ImGui version; use inline const.
-inline const ImVec4 BORDER_GOLD        = { 0.90f, 0.75f, 0.25f, 0.90f };
-constexpr float     BORDER_SIZE        = 2.0f;
-
-// ── Green action-button set ───────────────────────────────────────────────
-// Buttons are opaque: nothing behind them (e.g. a long title) may show through.
-inline const ImVec4 BTN_GREEN          = { 0.18f, 0.45f, 0.18f, 1.00f };
-inline const ImVec4 BTN_GREEN_HOVERED  = { 0.25f, 0.60f, 0.25f, 1.00f };
-inline const ImVec4 BTN_GREEN_ACTIVE   = { 0.30f, 0.70f, 0.30f, 1.00f };
-
-// ── Amber secondary-button set ────────────────────────────────────────────
-inline const ImVec4 BTN_AMBER          = { 0.22f, 0.20f, 0.12f, 1.00f };
-inline const ImVec4 BTN_AMBER_HOVERED  = { 0.35f, 0.30f, 0.14f, 1.00f };
-inline const ImVec4 BTN_AMBER_ACTIVE   = { 0.45f, 0.38f, 0.16f, 1.00f };
-
-// ── Dark frame background ─────────────────────────────────────────────────
-inline const ImVec4 FRAME_BG_DARK      = { 0.10f, 0.10f, 0.13f, 1.00f };
-
-// ── Edit-mode frame background (warmer, slightly blue-shifted) ────────────
-// Visually distinct from FRAME_BG_DARK so the user knows they are editing.
-inline const ImVec4 EDIT_BG            = { 0.08f, 0.11f, 0.20f, 1.00f };
+using namespace Trailpack::Ui;
 
 // ── Daily / weekly note badge defaults ────────────────────────────────────
 inline const ImVec4 BADGE_DAILY        = { 0.90f, 0.62f, 0.20f, 1.00f };   // amber
@@ -150,70 +130,5 @@ struct PopupTextScope {
 // ImGui::End().
 void PushWindowStyle();
 void PopWindowStyle();
-
-// Corner rounding in px for the addon's windows (windows, panes, buttons, fields, popups, list
-// row highlight); set by dllmain from settings.json (`corner_rounding`, default 0 = square).
-void  SetRounding(float px);
-float Rounding();
-// Push / pop Rounding() for every rounded ImGui element (PushWindowStyle does this too).
-void  PushRounding();
-void  PopRounding();
-
-// ImGui::Begin with a taller title bar (more room around the close button): the title bar
-// reads FramePadding.y inside Begin, so it is raised only for that call. Always pair with
-// ImGui::End, like Begin.
-bool  BeginWindow(const char* name, bool* open);
-// FramePadding.y of that title bar (for items drawn into it, e.g. the "?" button).
-float TitleBarPadY();
-
-// The plain-styled settings and guide windows: Nexus's colours, but opaque window and popup
-// backgrounds (same colour, alpha 1) and the corner rounding option. Create before
-// ImGui::Begin, let it end after ImGui::End.
-struct PlainWindowScope {
-    PlainWindowScope() {
-        for (ImGuiCol idx : { ImGuiCol_WindowBg, ImGuiCol_PopupBg }) {
-            ImVec4 c = ImGui::GetStyle().Colors[idx];
-            c.w      = 1.0f;
-            ImGui::PushStyleColor(idx, c);
-        }
-        PushRounding();
-    }
-    ~PlainWindowScope() {
-        PopRounding();
-        ImGui::PopStyleColor(2);
-    }
-    PlainWindowScope(const PlainWindowScope&) = delete;
-    PlainWindowScope& operator=(const PlainWindowScope&) = delete;
-};
-
-// Push green action-button colours. Call PopButton() after the button widget.
-inline void PushGreenButton() {
-    ImGui::PushStyleColor(ImGuiCol_Button,        BTN_GREEN);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, BTN_GREEN_HOVERED);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,  BTN_GREEN_ACTIVE);
-}
-inline void PopButton() {
-    ImGui::PopStyleColor(3);
-}
-
-// Push amber secondary-button colours. Call PopButton() after the button widget.
-inline void PushAmberButton() {
-    ImGui::PushStyleColor(ImGuiCol_Button,        BTN_AMBER);
-    ImGui::PushStyleColor(ImGuiCol_ButtonHovered, BTN_AMBER_HOVERED);
-    ImGui::PushStyleColor(ImGuiCol_ButtonActive,  BTN_AMBER_ACTIVE);
-}
-
-// Push dark frame background (e.g. for text input fields).
-// Call PopFrameBg() after the widget.
-inline void PushDarkFrameBg() {
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, FRAME_BG_DARK);
-}
-// Push edit-mode frame background (blue-tinted dark). Call PopFrameBg() after.
-inline void PushEditBg() {
-    ImGui::PushStyleColor(ImGuiCol_FrameBg, EDIT_BG);
-}
-inline void PopFrameBg() {
-    ImGui::PopStyleColor(1);
-}
 
 } // namespace Theme

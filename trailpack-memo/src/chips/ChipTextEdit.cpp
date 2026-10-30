@@ -1,8 +1,8 @@
 #include "chips/ChipTextEdit.h"
-#include "chips/ChipResolver.h"      // Trailpack::ResolveChip (replaces Pie UI's RichLineResolveChip)
+#include "chips/ChipResolver.h"      // Trailpack::ResolveChip (structural label)
 #include "chips/EventChip.h"         // event tokens: name-only label + colour (D10)
 #include "events/Events.h"
-#include "chips/ChipRich.h"          // Trailpack::ChipLabel (resolved name when Decoder Ring is warm)
+#include "chips/ChipRich.h"          // Trailpack::ChipLabel (resolved name when Trailpack Core has it)
 #include "chips/ChipCodec.h"         // pure text<->cell model + UTF-8 helpers
 #include <algorithm>
 #include <atomic>
@@ -155,7 +155,7 @@ static void Measure(std::vector<ChipCell>& cells) {
     for (auto& c : cells) {
         if (c.isChip) {
             // Event token: its name only (no countdown, so the width stays put). Chat code:
-            // resolved name from Decoder Ring when warm, structural label otherwise
+            // resolved name from Trailpack Core when warm, structural label otherwise
             // (ChipLabel never returns empty); colour matches the view-mode chips:
             // native GW2 type colour, items by rarity (Basic until resolved).
             if (Events::IsToken(c.code)) {
