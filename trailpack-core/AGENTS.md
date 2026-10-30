@@ -1,6 +1,6 @@
-# Trailpack Codex — Agent Instructions
+# Trailpack Core — Agent Instructions
 
-Rules for AI coding agents working in `trailpack-codex/`. Decisions, stages and open tasks live in
+Rules for AI coding agents working in `trailpack-core/`. Decisions, stages and open tasks live in
 [`plans/PLAN.md`](plans/PLAN.md) — read it before starting a task and update it when one lands.
 
 ## What this is
@@ -13,7 +13,7 @@ nlohmann/json, `nexus/Nexus.h`) is in `../shared/`, own shared libraries in `../
 ## Build & test (run from the repo root)
 
 ```
-cmake -S . -B build && cmake --build build --target TrailpackCodex          # -> build/TrailpackCodex.dll
+cmake -S . -B build && cmake --build build --target TrailpackCore          # -> build/TrailpackCore.dll
 cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
   && ctest --test-dir build-host --output-on-failure                       # pure-logic host tests
 ```
@@ -25,20 +25,20 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 
 | Thing | Value |
 |---|---|
-| Name | `Trailpack Codex` |
-| Signature | `0x54504378` ("TPCx") |
-| DLL | `TrailpackCodex.dll`, export via `TrailpackCodex.def` |
-| Data dir | `addons/TrailpackCodex/` (`settings.json`, `cache/<lang>/`) |
-| DataLink / events | `TRAILPACK_CODEX_API`, `EV_TRAILPACK_CODEX_{READY,UNLOADING,PING,RESOLVED}` |
+| Name | `Trailpack Core` |
+| Signature | `0x5450436F` ("TPCo") |
+| DLL | `TrailpackCore.dll`, export via `TrailpackCore.def` |
+| Data dir | `addons/TrailpackCore/` (`settings.json`, `cache/<lang>/`) |
+| DataLink / events | `TRAILPACK_CORE_API`, `EV_TRAILPACK_CORE_{READY,UNLOADING,PING,RESOLVED}` |
 | Author | `tobia-codes` |
 
 ## Code rules
 
-- C++ namespace: **`Trailpack::Codex`**. Source layout like Memo: feature folders under `src/`,
+- C++ namespace: **`Trailpack::Core`**. Source layout like Memo: feature folders under `src/`,
   includes relative to `src/`, `src/generated/` is written by `tools/*.py` — never edit by hand.
-- **ABI (`public/TrailpackCodexApi.h`):** pure (`<cstdint>` only), fixed-size PODs with
+- **ABI (`public/TrailpackCoreApi.h`):** pure (`<cstdint>` only), fixed-size PODs with
   `structSize` first, fields only appended, never reused for another meaning. No pointers into
-  Codex memory in any answer — copy into caller buffers. Any change gets a layout test.
+  Core memory in any answer — copy into caller buffers. Any change gets a layout test.
 - **Pure units stay pure** (no ImGui/Nexus/Win32): parsers, cache model, batch planner, token
   bucket, event schedule / search, generated data. New logic goes into a pure unit + host test.
 - **API etiquette is mandatory** (PLAN D10): every request goes through the token bucket
