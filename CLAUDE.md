@@ -11,5 +11,5 @@ Layout, build commands and "Adding an addon" are in [README.md](README.md).
 ## Addons
 
 - `trailpack-memo/` — Trailpack Memo (notepad with markdown, checklists, chat-link chips)
-- `trailpack-codex/` — Trailpack Codex (planned: headless data service required by all Trailpack
+- `trailpack-core/` — Trailpack Core (planned: headless data service required by all Trailpack
   addons; chat-link resolution + built-in events / waypoints)

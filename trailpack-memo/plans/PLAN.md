@@ -216,11 +216,11 @@ with a live countdown and copy the waypoint on click.
 - [ ] Work the stages in [`EVENTS.md`](EVENTS.md) (decisions D1-D15 are agreed — ask before
       changing them). One feature branch + PR per stage.
 
-### B6 — Switch to Trailpack Codex
-**Why:** Decoder Ring is replaced by our own required data service Trailpack Codex; event data
-moves there too. Planned in [`../trailpack-codex/plans/PLAN.md`](../trailpack-codex/plans/PLAN.md)
-(decisions D15-D18 concern Memo; work happens in Codex stages 1, 2 and 5).
-- [ ] Follow the Codex stages; do not extend `DecoderClient` or `generated/EventData` meanwhile.
+### B6 — Switch to Trailpack Core
+**Why:** Decoder Ring is replaced by our own required data service Trailpack Core; event data
+moves there too. Planned in [`../trailpack-core/plans/PLAN.md`](../trailpack-core/plans/PLAN.md)
+(decisions D15-D18 concern Memo; work happens in Core stages 1, 2 and 5).
+- [ ] Follow the Core stages; do not extend `DecoderClient` or `generated/EventData` meanwhile.
 
 ### Ideas (not scheduled — only on user request)
 - Search/filter in the note list.
@@ -228,7 +228,7 @@ moves there too. Planned in [`../trailpack-codex/plans/PLAN.md`](../trailpack-co
 - Pinning or a "daily routine" auto-uncheck at reset time.
 - **Event table as a separate addon** (discussed 2026-10-30): an in-game overview of all events
   that highlights events from open (unchecked) tasks in notes. Event data and schedule maths
-  come from Trailpack Codex (see `../trailpack-codex/plans/PLAN.md`, D13 / D14), not from a
+  come from Trailpack Core (see `../trailpack-core/plans/PLAN.md`, D13 / D14), not from a
   static library. The memo publishes the open event ids via Nexus
   events (broadcast on change + answer to a ping, like Decoder Ring / Pie UI); the payload is a
   plain C struct with a version field in a `public/` header, copied by the receiver. Optional
@@ -237,8 +237,8 @@ moves there too. Planned in [`../trailpack-codex/plans/PLAN.md`](../trailpack-co
 ---
 
 ## Changelog of this plan
-- 2026-10-30 — B6 added: switch from Decoder Ring to Trailpack Codex (plan in `trailpack-codex/`);
-  the event-library idea is replaced by Codex.
+- 2026-10-30 — B6 added: switch from Decoder Ring to Trailpack Core (plan in `trailpack-core/`);
+  the event-library idea is replaced by Core.
 - 2026-10-30 — Notes and groups reorderable by drag and drop (was under Ideas).
 - 2026-10-30 — B5 stages 1-5 done (user tests passed; stage 5: inline `/e ` suggestions); open point on D13 before stage 6; event
   table addon noted under Ideas. `src/` grouped into feature folders (`generated/`, `vendor/`).
