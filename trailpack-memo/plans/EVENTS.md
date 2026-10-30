@@ -121,7 +121,7 @@ python3 trailpack-memo/tools/gen_events.py \
   --de-script "http://web.archive.org/web/20250909200816id_/https://wiki-de.guildwars2.com/wiki/Widget:Event-Timer/script.js"
 ```
 
-Then check the summary, run the host tests, and review the diff of `src/events/`.
+Then check the summary, run the host tests, and review the diff of `src/generated/`.
 
 ### Stage 2 — Schedule maths (pure, host-tested)
 - [x] `src/events/Events.{h,cpp}`: `Find`, `State` (active + start/end, or next start), `NextStarts`,
@@ -149,7 +149,7 @@ Then check the summary, run the host tests, and review the diff of `src/events/`
       (Windows applies DST per date), never a fixed UTC offset -- so a start after the next
       daylight-saving switch shows the right hour. Countdowns stay UTC-only.
 - [x] Guide + README lines; German texts.
-- [ ] User test: write `{{event:tequatl-the-sunless}}` by hand, check view, preview, editor,
+- [x] User test: write `{{event:tequatl-the-sunless}}` by hand, check view, preview, editor,
       click, menu.
 
 ### Stage 4 — Picker in the edit toolbar
@@ -163,7 +163,7 @@ Then check the summary, run the host tests, and review the diff of `src/events/`
 - [x] Rotating events (D15, from the user test): generator `"merge": true` per meta in the
       overrides -> one event with `places` + `placeOf`; `Events::State` / `NextOccurrences`
       carry the place; `Maps` lists all maps (picker), `Search` matches any map. 93 events now.
-- [ ] User test: search "teq", collapse / expand, insert into an empty and a long note.
+- [x] User test: search "teq", collapse / expand, insert into an empty and a long note.
 
 ### Stage 5 — `/e ` suggestions in the editor
 - [x] Detect `/e ` / `/event ` before the caret in `ChipTextEdit`; expose query + caret screen pos.
@@ -182,6 +182,8 @@ Then check the summary, run the host tests, and review the diff of `src/events/`
 - Alert shortly before an event in a note starts (e.g. Nexus alert X minutes before).
 - Next event countdown in the note list row (like the D / W badge).
 - User-defined category order in the picker.
+- Separate event table addon that highlights events from open tasks in notes (see `PLAN.md`
+  Ideas).
 
 ## Open points / findings
 - (Stage 1, 2026-10-29) **Source structure.** The page "Event timers" renders a JS widget; all
@@ -213,6 +215,14 @@ Then check the summary, run the host tests, and review the diff of `src/events/`
   merged (D15): 93 events; ids `ley-line-anomaly`, `fractal-incursion`,
   `dragon-bash-hologram-stampede` replace the per-place ids from stage 1 (an old per-place token
   shows as "unknown event").
+- (Stage 3, 2026-10-29) **Chips in checked tasks** (not in D1-D15, added on request): grey name
+  only by default; options `done_show_time` (keep the countdown, lighter event colour) and
+  `done_show_popups` (keep tooltip + right-click menu) in Options > "Events"
+  (`chips/ChipDone.h`, `SetCheckedTaskChips`).
+- (2026-10-30) **Before stage 6: D13 vs. the existing "Events" options section.** D13 plans an
+  "Events" section in Colour options, but Options already has an "Events" section (checked-task
+  chips, `dllmain.cpp`). Ask the user where the two event colours go before starting stage 6.
+- (2026-10-30) User tests of stages 3 and 4 passed in game.
 - (Stage 5, 2026-10-30) **Inline suggestions.** Trigger detection is pure
   (`Events::FindTrigger`: "/e " or "/event ", any case, at line start or after a space; query up
   to the caret, same line, no chip, max 40 codepoints; host test `test_event_trigger`). The
