@@ -189,8 +189,16 @@ in game.
     (<https://account.arena.net/applications>). After entering a key, show per permission whether
     it is granted; features whose permission is missing are greyed out with a hover text naming
     the missing permission. Never ask for more permissions than the enabled features need;
-  - key storage: settings page field, stored encrypted with Windows DPAPI (`CryptProtectData`),
-    never exposed through the ABI or written to logs;
+  - **key handling (required, and stated to the user next to the key field and in the README):**
+    - the key is stored **only locally** on the user's PC, in `addons/TrailpackCodex/`, encrypted
+      with Windows DPAPI (`CryptProtectData`, bound to the Windows user) so it survives restarts;
+      "Remove key" deletes it;
+    - it is sent **only to the official API** `https://api.guildwars2.com` over HTTPS, as an
+      `Authorization: Bearer` header (not as `?access_token=` in the URL, so it never shows up in
+      URLs or logs) — never to a private server, the wiki or any other host;
+    - it is used **only** to read account data from the official API — nothing else;
+    - it is never passed to other addons through the ABI, never written to logs, cache files or
+      exports, and never shown in full in the UI (masked input, last characters only);
   - privacy: every loaded addon can query Codex, so account data would be readable by any of
     them — e.g. a switch "Share account data with other addons" (default off) or a per-addon list;
   - freshness: account data changes constantly and the API caches it ~5 min: memory only, refresh
@@ -207,3 +215,5 @@ in game.
 - 2026-10-30 — Plan set up with the user (decisions D1-D20, stages 1-6).
 - 2026-10-30 — `ResolveMany` added to D8; backlog: account data with optional API key, item
   search / filter index. Key field must list the required permissions.
+- 2026-10-30 — Account data: key handling rules (local DPAPI storage, official API only via
+  header, never shared) and the matching user-facing statement.

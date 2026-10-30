@@ -45,6 +45,9 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
   (<= 2/s, burst 20), batch with `?ids=`, back off on 429 / 5xx, honest User-Agent. Account
   endpoints only with a user-entered API key (backlog, not built yet). Never add a request path
   that bypasses the queue.
+- **API key:** stored only locally (DPAPI-encrypted), sent only to `api.guildwars2.com` as an
+  `Authorization` header, used only for account data. Never in URLs, logs, cache files, exports,
+  the ABI or any other host.
 - **Never touch the game:** no memory reading, no hooks, no input.
 - Languages: German and English only; UI text through the same `Tr` pattern as Memo.
 - **No `<fstream>`/`<sstream>`/`<iostream>`/`<filesystem>`** — files go through `SafeFile`.
