@@ -67,9 +67,20 @@ static bool RowSelectable(const char* id, bool selected, float indent, float rou
     return clicked;
 }
 
-static void RowGap()
+// Drop targets that reorder: our own insert line instead of ImGui's rect, and the payload
+// every frame (IsPreview -> draw the line, IsDelivery -> drop).
+static const ImGuiDragDropFlags kReorderDrop =
+    ImGuiDragDropFlags_AcceptBeforeDelivery | ImGuiDragDropFlags_AcceptNoDrawDefaultRect;
+
+static std::string PayloadId(const ImGuiPayload* p)
 {
-    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + std::floor(ImGui::GetFontSize() * 0.2f));
+    return std::string(static_cast<const char*>(p->Data), (size_t)p->DataSize);
+}
+
+// Space below each list row: Layout options > "List row spacing" (px).
+static void RowGap(float px)
+{
+    ImGui::SetCursorPosY(ImGui::GetCursorPosY() + std::floor(px));
 }
 
 // Extra space above a group header (not the first) and above the ungrouped notes.
@@ -107,41 +118,89 @@ float NotesWindow::renderListColumn_()
     if (uc.hasListBg) ImGui::PopStyleColor();
     Theme::PopFrameBg();
 
-    // Groups first (each followed by its notes unless collapsed), then ungrouped notes.
+    // Groups (each followed by its notes unless collapsed) and the ungrouped notes.
     // Ids are snapshotted: a header's context menu may change the store this frame.
     const float groupIndent = ImGui::GetFontSize() * 0.75f;   // notes line up with the group name
     std::vector<std::string> groupIds;
     for (const auto& g : store_.Groups()) groupIds.push_back(g.id);
-    bool firstGroup = true;
-    for (const auto& gid : groupIds) {
-        Trailpack::Group* group = store_.GetGroup(gid);
-        if (group == nullptr) continue;
-        if (!firstGroup) GroupGap();
-        firstGroup = false;
-        if (!renderGroupHeader_(*group)) continue;
+    dropLineY_ = -1.0f;
+    dropAfterGroupId_.clear();
+    auto renderGroups = [&]() {
+        bool firstGroup = true;
+        for (const auto& gid : groupIds) {
+            Trailpack::Group* group = store_.GetGroup(gid);
+            if (group == nullptr) continue;
+            if (!firstGroup) GroupGap();
+            firstGroup = false;
+            if (renderGroupHeader_(*group)) {
+                for (const auto& note : notes)
+                    if (note.groupId == gid) renderNoteRow_(note, groupIndent);
+            }
+            // A group dropped "after" this one goes below its last note: line there.
+            if (dropAfterGroupId_ == gid) {
+                dropLineY_  = ImGui::GetItemRectMax().y;
+                dropLineX0_ = ImGui::GetWindowPos().x + ImGui::GetStyle().WindowPadding.x;
+                dropLineX1_ = ImGui::GetItemRectMax().x;
+            }
+        }
+    };
+    auto renderUngrouped = [&]() {
         for (const auto& note : notes)
-            if (note.groupId == gid) renderNoteRow_(note, groupIndent);
-    }
+            if (note.groupId.empty()) renderNoteRow_(note, 0.0f);
+    };
 
-    // Ungrouped notes follow the groups without a heading.
+    // Ungrouped notes (no heading) above the groups, or below them (Layout options).
     const bool anyUngrouped = std::any_of(notes.begin(), notes.end(),
         [](const Trailpack::Note& n) { return n.groupId.empty(); });
-    if (!groupIds.empty() && anyUngrouped) GroupGap();
-    for (const auto& note : notes)
-        if (note.groupId.empty()) renderNoteRow_(note, 0.0f);
+    const bool gap = !groupIds.empty() && anyUngrouped;
+    if (groupsFirst_) {
+        renderGroups();
+        if (gap) GroupGap();
+        renderUngrouped();
+    } else {
+        renderUngrouped();
+        if (gap) GroupGap();
+        renderGroups();
+    }
+    const float listEndY = ImGui::GetCursorScreenPos().y;
 
-    // Dropping a note anywhere in the list but on a group header takes it out of its group
-    // (ImGui prefers the smaller target, so the headers win where they are).
+    // Dropping a note anywhere in the list but on a row takes it out of its group (as the last
+    // ungrouped note); a group dropped below all rows becomes the last group. ImGui prefers
+    // the smaller target, so the rows win where they are.
     {
         ImGuiWindow* w = ImGui::GetCurrentWindow();
         if (ImGui::BeginDragDropTargetCustom(w->InnerRect, ImGui::GetID("##ungroup_drop"))) {
             if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("TPM_NOTE")) {
-                const std::string id(static_cast<const char*>(p->Data), (size_t)p->DataSize);
-                if (store_.MoveToGroup(id, std::string())) Save();
+                // Below all rows with the ungrouped notes at the bottom: after the last of them
+                // (also for an ungrouped one).
+                const std::string id = PayloadId(p);
+                std::string last;
+                for (const auto& n : notes)
+                    if (n.groupId.empty() && n.id != id) last = n.id;
+                if (groupsFirst_ && ImGui::GetIO().MousePos.y > listEndY && !last.empty())
+                    listDrop_ = { ListDrop::NoteNextTo, id, last, true };
+                else
+                    listDrop_ = { ListDrop::NoteToGroup, id, std::string(), false };
+            }
+            if (!groupIds.empty() && ImGui::GetIO().MousePos.y > listEndY) {
+                if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("TPM_GROUP", kReorderDrop)) {
+                    if (p->IsPreview()) {
+                        dropLineY_  = listEndY;
+                        dropLineX0_ = w->InnerRect.Min.x + ImGui::GetStyle().WindowPadding.x;
+                        dropLineX1_ = w->InnerRect.Max.x - ImGui::GetStyle().WindowPadding.x;
+                    }
+                    if (p->IsDelivery())
+                        listDrop_ = { ListDrop::GroupNextTo, PayloadId(p), groupIds.back(), true };
+                }
             }
             ImGui::EndDragDropTarget();
         }
     }
+
+    // Insert line of the hovered reorder target (drawn last, over the rows).
+    if (dropLineY_ >= 0.0f)
+        ImGui::GetWindowDrawList()->AddLine(ImVec2(dropLineX0_, dropLineY_), ImVec2(dropLineX1_, dropLineY_),
+                                            ImGui::GetColorU32(Theme::Colors().border), 2.0f);
 
     // Right-click on empty space in the list (rows have their own menus).
     if (ImGui::BeginPopupContextWindow("##list_ctx",
@@ -156,6 +215,7 @@ float NotesWindow::renderListColumn_()
     }
 
     ImGui::EndChild();
+    applyListDrop_();
 
     // Bottom row: "Create New Note" + a square menu button.
     const float menuW   = ImGui::GetFrameHeight();
@@ -216,6 +276,26 @@ void NotesWindow::requestBulkDelete_()
 }
 
 // Thin draggable divider between list and detail pane; double-click resets the width.
+void NotesWindow::applyListDrop_()
+{
+    const ListDrop d = listDrop_;
+    listDrop_ = ListDrop();
+    bool changed = false;
+    switch (d.kind) {
+    case ListDrop::NoteNextTo:  changed = store_.MoveNoteNextTo(d.id, d.target, d.after); break;
+    case ListDrop::GroupNextTo: changed = store_.MoveGroupNextTo(d.id, d.target, d.after); break;
+    case ListDrop::NoteToGroup: {
+        const Trailpack::Note* n = store_.Get(d.id);
+        changed = n != nullptr && n->groupId != d.target && store_.MoveToGroup(d.id, d.target);
+        if (Trailpack::Group* g = changed ? store_.GetGroup(d.target) : nullptr)
+            g->collapsed = false;   // show where the note went
+        break;
+    }
+    case ListDrop::None: break;
+    }
+    if (changed) Save();
+}
+
 void NotesWindow::renderSplitter_(float listWidth)
 {
     const float splitW = 6.0f;
@@ -257,11 +337,25 @@ void NotesWindow::renderNoteRow_(const Trailpack::Note& note, float indent)
     const float rowRight = ImGui::GetItemRectMax().x;
     const float textY    = rowPos.y + RowPadY();
 
-    // Drag a note onto a group header to move it (elsewhere in the list: out of its group).
+    // Drag a note onto a group header to move it into that group, onto another note to put it
+    // before / after that one (upper / lower half; takes that note's group), elsewhere in the
+    // list: out of its group.
     if (ImGui::BeginDragDropSource()) {
         ImGui::SetDragDropPayload("TPM_NOTE", note.id.data(), note.id.size());
         ImGui::TextUnformatted(note.title.c_str());
         ImGui::EndDragDropSource();
+    }
+    if (ImGui::BeginDragDropTarget()) {
+        const bool after = ImGui::GetIO().MousePos.y > rowPos.y + rowH * 0.5f;
+        if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("TPM_NOTE", kReorderDrop)) {
+            if (p->IsPreview()) {
+                dropLineY_  = after ? rowPos.y + rowH : rowPos.y;
+                dropLineX0_ = rowPos.x;
+                dropLineX1_ = rowRight;
+            }
+            if (p->IsDelivery()) listDrop_ = { ListDrop::NoteNextTo, PayloadId(p), note.id, after };
+        }
+        ImGui::EndDragDropTarget();
     }
 
     if (ImGui::BeginPopupContextItem("##row_ctx")) {
@@ -329,7 +423,7 @@ void NotesWindow::renderNoteRow_(const Trailpack::Note& note, float indent)
         else if (!reset.empty())
             Theme::Tooltip("%s", reset.c_str());
     }
-    RowGap();
+    RowGap(rowSpacing_);
 }
 
 ImVec4 NotesWindow::groupColor_(const Trailpack::Group& group) const
@@ -352,13 +446,30 @@ bool NotesWindow::renderGroupHeader_(Trailpack::Group& group)
     const float rowRight = ImGui::GetItemRectMax().x - RowPadX();
     const float textY    = rowPos.y + RowPadY();
 
+    // Drag a group onto another header to put it before / after that group (upper / lower
+    // half); a note dropped on a header goes into that group.
+    if (ImGui::BeginDragDropSource()) {
+        ImGui::SetDragDropPayload("TPM_GROUP", group.id.data(), group.id.size());
+        ImGui::TextUnformatted(group.name.empty() ? Tr("(untitled)") : group.name.c_str());
+        ImGui::EndDragDropSource();
+    }
     if (ImGui::BeginDragDropTarget()) {
-        if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("TPM_NOTE")) {
-            const std::string id(static_cast<const char*>(p->Data), (size_t)p->DataSize);
-            if (store_.MoveToGroup(id, group.id)) {
-                group.collapsed = false;   // show where the note went
-                Save();
+        if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("TPM_NOTE"))
+            listDrop_ = { ListDrop::NoteToGroup, PayloadId(p), group.id, false };
+        const bool after = ImGui::GetIO().MousePos.y > rowPos.y + rowH * 0.5f;
+        if (const ImGuiPayload* p = ImGui::AcceptDragDropPayload("TPM_GROUP", kReorderDrop)) {
+            if (p->IsPreview()) {
+                const bool hasNotes = std::any_of(store_.Notes().begin(), store_.Notes().end(),
+                    [&](const Trailpack::Note& n) { return n.groupId == group.id; });
+                if (after && !group.collapsed && hasNotes) {
+                    dropAfterGroupId_ = group.id;   // line below its last note (list loop)
+                } else {
+                    dropLineY_  = after ? rowPos.y + rowH : rowPos.y;
+                    dropLineX0_ = rowPos.x;
+                    dropLineX1_ = ImGui::GetItemRectMax().x;
+                }
             }
+            if (p->IsDelivery()) listDrop_ = { ListDrop::GroupNextTo, PayloadId(p), group.id, after };
         }
         ImGui::EndDragDropTarget();
     }
@@ -420,7 +531,7 @@ bool NotesWindow::renderGroupHeader_(Trailpack::Group& group)
     if (ImGui::IsItemHovered() && shown != groupName)
         Theme::Tooltip("%s", groupName.c_str());
 
-    RowGap();
+    RowGap(rowSpacing_);
     return !group.collapsed;
 }
 

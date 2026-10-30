@@ -55,8 +55,11 @@ Default toggle hotkey: `CTRL+SHIFT+T`. Data lives in `addons/TrailpackMemo/`.
 - **Groups**: collapsible groups to structure notes (menu button -> *New group...*, or right-click an empty spot in the list, which
   also offers *Create New Note* and *Delete notes...*). Right-click a
   group to rename, recolour (*Group colour...*), export or delete it (its notes are kept) or add a note to it; move notes via
-  right-click -> *Move to group* or by dragging them onto a group; ungrouped notes simply follow
-  the groups (drag a note to an empty spot or use *Remove from group* to ungroup it). Groups have unique ids too.
+  right-click -> *Move to group* or by dragging them onto a group; ungrouped notes come first, the groups
+  below them (*Layout options* > *Groups above single notes* swaps that); drag a note to an empty spot or use
+  *Remove from group* to ungroup it. Groups have unique ids too.
+- **Reorder by drag and drop**: drag a note onto another note to put it above or below it (it joins that
+  note's group), or a group header onto another one; the order is saved in `notes.json`.
 - **Export / import** (menu button next to *Create New Note*): *Export all...* saves every note to one `.json` file, right-click a note ->
   *Export note...* saves just that one; *Import...* shows the notes in such a file (or in a
   plain `notes.json`) and you tick which ones to add; groups come along and are
@@ -69,19 +72,25 @@ Default toggle hotkey: `CTRL+SHIFT+T`. Data lives in `addons/TrailpackMemo/`.
   options (Auto / English / Deutsch).
 - **Custom colours** under "Colour options", grouped as window (border on/off and colour, background, text, menu button and icon), note
   list (border on/off and colour, background, text, group names), note
-  (border on/off and colour, background, text) and daily / weekly badges (background and letter, each
+  (border on/off and colour, background, text), note editor (border on/off and colour; off by default)
+  and daily / weekly badges (background and letter, each
   separately, with a live preview). Each row is a swatch that opens a picker with alpha, plus a
   Reset; "Reset all colours" restores every default. Borders are off by default. Popups (menus, tooltips, the event picker, dialogs) are opaque and
   follow the note list's colours by default, so they match the theme; both are settable under "Popups".
 - **Themes**: pick *Default (Nexus)*, *Light* or *Dark* under "Colour options" > Theme, or save the
   current colours as your own theme (*Save as theme*; same name overwrites, *Delete theme* removes it).
-- **Backup**: "Backup" in the settings: *Create backup...* saves all notes, groups and settings
+- **Backup**: settings > "Data: backup and transfer" (at the bottom, apart from the settings): *Create backup...* saves all notes, groups and settings
   (incl. themes) in one `.json` file (default folder `addons/TrailpackMemo/backups/`);
   *Restore backup...* replaces everything with a backup's content after a confirmation.
+- **Export / import settings** in the same section: *Export settings...* saves all settings (incl. themes,
+  without notes) in one `.json` file, e.g. to share a look or move it to another PC; *Import settings...*
+  replaces the settings after a confirmation (a backup file works too, only its settings are used).
 - **Settings window**: menu button -> *Settings...* opens the same options as the Nexus addon
   options in a window of its own.
 - **Two text sizes** (70-200 %) in the Nexus addon options under "Font options": one for the window's UI, one for the
   note content (view, editor, preview); headings, checkboxes and chips scale along.
+- **List row spacing** under "Layout options": space between the rows of the note list, 0-20 px
+  (slider plus number field; default 3 px).
 - **Corner rounding** under "Layout options": rounding of the note window, its panes, buttons,
   fields, popups and highlighted list rows, 0-12 px (slider plus number field for fine values);
   default 0 = square. Also applies to the settings and guide windows (which otherwise keep

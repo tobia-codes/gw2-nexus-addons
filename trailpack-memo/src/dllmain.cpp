@@ -126,6 +126,9 @@ static void ApplyColors(const Trailpack::ColorSet& s) {
     c.showNoteBorder  = s.showNoteBorder;
     c.hasNoteBorder   = s.noteBorder.set;
     c.noteBorder      = ToImVec4(s.noteBorder.color);
+    c.showEditorBorder = s.showEditorBorder;
+    c.hasEditorBorder = s.editorBorder.set;
+    c.editorBorder    = ToImVec4(s.editorBorder.color);
     c.hasMenuButton   = s.menuButton.set;
     c.menuButton      = ToImVec4(s.menuButton.color);
     c.hasMenuIcon     = s.menuIcon.set;
@@ -156,6 +159,8 @@ static Trailpack::ColorSet CollectColors() {
     s.listBorder      = { c.hasListBorder, ToRgba(c.listBorder) };
     s.showNoteBorder  = c.showNoteBorder;
     s.noteBorder      = { c.hasNoteBorder, ToRgba(c.noteBorder) };
+    s.showEditorBorder = c.showEditorBorder;
+    s.editorBorder    = { c.hasEditorBorder, ToRgba(c.editorBorder) };
     s.menuButton      = { c.hasMenuButton, ToRgba(c.menuButton) };
     s.menuIcon        = { c.hasMenuIcon,   ToRgba(c.menuIcon) };
     s.popupBackground = { c.hasPopupBg,    ToRgba(c.popupBg) };
@@ -171,6 +176,8 @@ static void ApplySettings() {
     ApplyColors(g_Settings.colors);
     g_Notes.SetPreviewEnabled(g_Settings.editPreview);
     g_Notes.SetListWidth(g_Settings.listWidth);
+    g_Notes.SetGroupsFirst(g_Settings.groupsFirst);
+    g_Notes.SetRowSpacing(g_Settings.rowSpacing);
 }
 
 static void CollectSettings() {
@@ -207,37 +214,52 @@ static void RemoveQAIcon() {
     g_QAIconAdded = false;
 }
 
-// ── Backup (Settings > Backup) ────────────────────────────────────────────
-// One file with all notes and all settings (Backup.h). The Windows file dialog runs on a
-// worker thread and is polled by RenderOptions; a restore is confirmed inline first.
+// ── Backup and settings export (Settings > Backup / Export / import settings) ──
+// A backup is one file with all notes and all settings; a settings export has the settings
+// only (Backup.h). The Windows file dialog runs on a worker thread and is polled by
+// RenderOptions (one dialog at a time); restoring / importing is confirmed inline first.
+enum class FileJob { CreateBackup, RestoreBackup, ExportSettings, ImportSettings };
 static std::future<std::wstring> s_BackupDialog;   // valid while a dialog is open
-static bool        s_BackupSaving = false;          // true: create, false: restore
-static std::string s_BackupMessage;                 // result line under the buttons
+static FileJob     s_FileJob = FileJob::CreateBackup;
+static std::string s_BackupMessage;                 // result line under the backup buttons
 static std::string s_RestoreFile;                   // pending restore (confirm first)
 static std::string s_RestoreNotes, s_RestoreSettings;
 static int         s_RestoreNoteCount = 0;
+static std::string s_SettingsMessage;               // result line under the settings buttons
+static std::string s_ImportSettingsFile;            // pending settings import (confirm first)
+static std::string s_ImportSettings;
 
 static std::string BackupDir() {
     const std::string data = g_Notes.DataDir();
     return data.empty() ? data : Trailpack::SafeFile::Join(data, "backups");
 }
 
-static void StartBackupDialog(bool save) {
+static void StartFileDialog(FileJob job) {
     if (s_BackupDialog.valid()) return;   // one dialog at a time
     const std::string dir = BackupDir();
     if (!dir.empty()) Trailpack::SafeFile::CreateDirectories(dir);
 
+    const bool backup = job == FileJob::CreateBackup || job == FileJob::RestoreBackup;
+    const bool save   = job == FileJob::CreateBackup || job == FileJob::ExportSettings;
     char name[64] = "";
     const std::time_t now = std::time(nullptr);
-    std::strftime(name, sizeof name, "trailpack-backup-%Y-%m-%d.json", std::localtime(&now));
+    std::strftime(name, sizeof name, backup ? "trailpack-memo-backup-%Y-%m-%d.json"
+                                            : "trailpack-memo-settings-%Y-%m-%d.json", std::localtime(&now));
+    const char* title = job == FileJob::CreateBackup   ? Tr("Create backup")
+                      : job == FileJob::RestoreBackup  ? Tr("Restore backup")
+                      : job == FileJob::ExportSettings ? Tr("Export settings")
+                                                       : Tr("Import settings");
 
-    s_BackupSaving = save;
+    s_FileJob = job;
     s_BackupMessage.clear();
     s_RestoreFile.clear();
+    s_SettingsMessage.clear();
+    s_ImportSettingsFile.clear();
     s_BackupDialog = std::async(std::launch::async, FileDialog::Run, save, FileDialog::Widen(dir),
                                 save ? FileDialog::Widen(name) : std::wstring(),
-                                FileDialog::Widen(save ? Tr("Create backup") : Tr("Restore backup")),
-                                FileDialog::JsonFilter(Tr("Trailpack Memo backup (*.json)")));
+                                FileDialog::Widen(title),
+                                FileDialog::JsonFilter(backup ? Tr("Trailpack Memo backup (*.json)")
+                                                              : Tr("Trailpack Memo settings (*.json)")));
 }
 
 static void PollBackupDialog() {
@@ -249,7 +271,31 @@ static void PollBackupDialog() {
 
     const std::string fileName = Trailpack::SafeFile::FileName(path);
     char msg[512];
-    if (s_BackupSaving) {
+    if (s_FileJob == FileJob::ExportSettings) {
+        CollectSettings();
+        const std::string text = Trailpack::Backup::MakeSettings(g_Settings.ToJson(), (int64_t)std::time(nullptr));
+        const bool ok = !text.empty() && Trailpack::SafeFile::WriteAtomic(path, text);
+        snprintf(msg, sizeof msg, ok ? Tr("Settings saved as %s.") : Tr("Could not write %s."),
+                 fileName.c_str());
+        s_SettingsMessage = msg;
+        return;
+    }
+    if (s_FileJob == FileJob::ImportSettings) {
+        // Validate now, replace only after the user confirmed. A full backup works too.
+        std::string text, settings;
+        Trailpack::Settings check;
+        if (!Trailpack::SafeFile::Read(path, text) || !Trailpack::Backup::ParseSettings(text, settings) ||
+            !check.FromJson(settings)) {
+            snprintf(msg, sizeof msg, Tr("%s contains no Trailpack Memo settings. Nothing was changed."),
+                     fileName.c_str());
+            s_SettingsMessage = msg;
+            return;
+        }
+        s_ImportSettingsFile = fileName;
+        s_ImportSettings     = std::move(settings);
+        return;
+    }
+    if (s_FileJob == FileJob::CreateBackup) {
         CollectSettings();
         const std::string text = Trailpack::Backup::Make(g_Notes.NotesJson(), g_Settings.ToJson(),
                                                       (int64_t)std::time(nullptr));
@@ -277,19 +323,34 @@ static void PollBackupDialog() {
     s_RestoreNoteCount = (int)checkNotes.Notes().size();
 }
 
+// Replace all settings with `json` (from defaults: a backup / settings export is complete),
+// apply them live and save.
+static void ReplaceSettings(const std::string& json) {
+    Trailpack::Settings restored;
+    restored.FromJson(json);
+    g_Settings = restored;
+    ApplySettings();
+    ApplyLanguage();
+    if (g_Settings.showQaIcon) AddQAIcon();
+    else                       RemoveQAIcon();
+    SaveSettings();
+}
+
+static void ImportSettings() {
+    char msg[512];
+    ReplaceSettings(s_ImportSettings);
+    snprintf(msg, sizeof msg, Tr("Settings imported from %s."), s_ImportSettingsFile.c_str());
+    s_SettingsMessage = msg;
+    s_ImportSettingsFile.clear();
+    s_ImportSettings.clear();
+}
+
 static void RestoreBackup() {
     char msg[256];
     if (!g_Notes.RestoreNotes(s_RestoreNotes)) {
         s_BackupMessage = Tr("The backup could not be restored. Nothing was changed.");
     } else {
-        Trailpack::Settings restored;              // start from defaults: the backup is complete
-        restored.FromJson(s_RestoreSettings);
-        g_Settings = restored;
-        ApplySettings();
-        ApplyLanguage();
-        if (g_Settings.showQaIcon) AddQAIcon();
-        else                       RemoveQAIcon();
-        SaveSettings();
+        ReplaceSettings(s_RestoreSettings);
         snprintf(msg, sizeof msg, Trailpack::I18n::TrN(s_RestoreNoteCount, "Backup restored: %d note.",
                  "Backup restored: %d notes."), s_RestoreNoteCount);
         s_BackupMessage = msg;
@@ -497,8 +558,19 @@ void AddonOptions() {
 static void RenderOptions() {
     ApplyLanguage();
 
-    // Language: Auto (= Nexus's language) or a fixed one. Language names stay native.
-    {
+    // ── General (open by default): quick-access icon, language, Decoder Ring status ──
+    // The real settings come first; file actions (backup, settings export) sit in their own
+    // section at the very bottom, below a separator. Nexus draws the surrounding "Options"
+    // header; addons cannot add sibling headers.
+    if (ImGui::CollapsingHeader(Tr("General"), ImGuiTreeNodeFlags_DefaultOpen)) {
+        // Quick-access icon toggle (persisted; default on).
+        if (ImGui::Checkbox(Tr("Show quick access icon"), &g_Settings.showQaIcon)) {
+            if (g_Settings.showQaIcon) AddQAIcon();
+            else              RemoveQAIcon();
+            SaveSettings();
+        }
+
+        // Language: Auto (= Nexus's language) or a fixed one. Language names stay native.
         const char* items[] = { Tr("Auto (Nexus language)"), "English", "Deutsch" };
         int mode = (int)g_Settings.language;
         if (ImGui::Combo(Tr("Language"), &mode, items, IM_ARRAYSIZE(items))) {
@@ -506,32 +578,24 @@ static void RenderOptions() {
             ApplyLanguage();
             SaveSettings();
         }
+
+        // Live Decoder Ring presence — re-evaluated every frame, never latched. It is an
+        // optional addon (full names + icons for chat-link chips), so its absence is a plain
+        // grey info line, not a warning; "(?)" explains it.
+        if (Trailpack::Decoder::Present()) {
+            ImGui::TextColored(ImVec4(0.50f, 0.85f, 0.50f, 1.0f), "%s", Tr("Decoder Ring: connected"));
+        } else {
+            ImGui::TextDisabled("%s", Tr("Chat-link chips: basic labels (optional: Decoder Ring addon)"));
+        }
+        ImGui::SameLine();
+        ImGui::TextDisabled("(?)");
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", Tr("Decoder Ring is an optional addon. With it, chat-link chips "
+                                       "([&...]) show the real name, icon and a detailed tooltip; "
+                                       "without it they show basic labels like [Item].\n"
+                                       "Everything else works either way: copy code, open in wiki "
+                                       "and event chips."));
     }
-    ImGui::Separator();
-
-    // Live Decoder Ring presence — re-evaluated every frame, never latched.
-    // Drives the chip experience: full names + icons + tooltips when present,
-    // basic labels (still fully usable) when absent.
-    if (Trailpack::Decoder::Present()) {
-        ImGui::TextColored(ImVec4(0.50f, 0.85f, 0.50f, 1.0f),
-            "%s", Tr("Decoder Ring: connected -- chips show full names and icons."));
-    } else {
-        ImGui::TextColored(ImVec4(0.85f, 0.78f, 0.45f, 1.0f),
-            "%s", Tr("Decoder Ring not loaded -- chips show basic labels."));
-        ImGui::TextDisabled("%s", Tr("Copy code and Open in wiki still work."));
-    }
-
-    ImGui::Separator();
-
-    // Quick-access icon toggle (persisted; default on).
-    if (ImGui::Checkbox(Tr("Show quick access icon"), &g_Settings.showQaIcon)) {
-        if (g_Settings.showQaIcon) AddQAIcon();
-        else              RemoveQAIcon();
-        SaveSettings();
-    }
-
-    // Fonts and colours sit in their own collapsible sections below the general options
-    // (Nexus draws the surrounding "Options" header; addons cannot add sibling headers).
 
     // ── Font options ──────────────────────────────────────────────────────
     // Text sizes (live; saved when a slider is released): the window's UI elements,
@@ -552,48 +616,50 @@ static void RenderOptions() {
         sizeSlider("note_size", Tr("Note text size"), g_Settings.noteTextScale);
     }
 
-    // ── Events ────────────────────────────────────────────────────────────
-    // Event chips in checked tasks are grey names by default; these bring back parts of them.
-    if (ImGui::CollapsingHeader(Tr("Events"))) {
-        if (ImGui::Checkbox(Tr("Show the time in checked tasks"), &g_Settings.doneShowTime)) SaveSettings();
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", Tr("Event chips in checked tasks keep their countdown, "
-                                       "in a much lighter colour."));
-        if (ImGui::Checkbox(Tr("Show tooltip and menu in checked tasks"), &g_Settings.doneShowPopups)) SaveSettings();
-        if (ImGui::IsItemHovered())
-            ImGui::SetTooltip("%s", Tr("Event chips in checked tasks keep their tooltip and right-click "
-                                       "menu (wiki, copy waypoint). Left-click does nothing."));
-    }
-
     // ── Layout options ────────────────────────────────────────────────────
-    // Corner rounding of the note window: slider plus a number field next to it, since even small values
-    // (e.g. 0.5 px) are visible. Saved when either is released.
+    // Pixel values (corner rounding, list row spacing): slider plus a number field next to it,
+    // since even small values (e.g. 0.5 px) are visible. Saved when either is released.
     if (ImGui::CollapsingHeader(Tr("Layout options"))) {
-        ImGui::PushID("corner_rounding");
-        float& r = g_Settings.cornerRounding;
         const float numW   = ImGui::CalcTextSize("00.00").x + ImGui::GetStyle().FramePadding.x * 2.0f;
         const float resetW = NotesUi::ButtonWidth(Tr("Reset"), 0.0f);
-        const float labelW = ImGui::CalcTextSize(Tr("Corner rounding")).x;
+        const float labelW = std::max(ImGui::CalcTextSize(Tr("Corner rounding")).x,
+                                      ImGui::CalcTextSize(Tr("List row spacing")).x);
         const float sp     = ImGui::GetStyle().ItemSpacing.x;
         float sliderW = ImGui::GetContentRegionAvail().x - numW - resetW - labelW - 3.0f * sp;
         if (sliderW < 80.0f) sliderW = 80.0f;
-        ImGui::SetNextItemWidth(sliderW);
-        ImGui::SliderFloat("##slider", &r, 0.0f, Trailpack::Settings::kRoundingMax, "%.1f px");
-        bool save = ImGui::IsItemDeactivatedAfterEdit();
-        ImGui::SameLine();
-        ImGui::SetNextItemWidth(numW);
-        ImGui::InputFloat("##value", &r, 0.0f, 0.0f, "%.2f");
-        save = save || ImGui::IsItemDeactivatedAfterEdit();
-        r = r < 0.0f ? 0.0f : r > Trailpack::Settings::kRoundingMax ? Trailpack::Settings::kRoundingMax : r;
-        ImGui::SameLine();
-        if (ImGui::Button(Tr("Reset")) && r != 0.0f) {
-            r    = 0.0f;
-            save = true;
-        }
-        ImGui::SameLine();
-        ImGui::TextUnformatted(Tr("Corner rounding"));
+        auto pxRow = [&](const char* id, const char* text, float& v, float maxV, float def) {
+            ImGui::PushID(id);
+            ImGui::SetNextItemWidth(sliderW);
+            ImGui::SliderFloat("##slider", &v, 0.0f, maxV, "%.1f px");
+            bool save = ImGui::IsItemDeactivatedAfterEdit();
+            ImGui::SameLine();
+            ImGui::SetNextItemWidth(numW);
+            ImGui::InputFloat("##value", &v, 0.0f, 0.0f, "%.2f");
+            save = save || ImGui::IsItemDeactivatedAfterEdit();
+            v = v < 0.0f ? 0.0f : v > maxV ? maxV : v;
+            ImGui::SameLine();
+            if (ImGui::Button(Tr("Reset")) && v != def) {
+                v    = def;
+                save = true;
+            }
+            ImGui::SameLine();
+            ImGui::TextUnformatted(text);
+            ImGui::PopID();
+            return save;
+        };
+        bool save = pxRow("corner_rounding", Tr("Corner rounding"), g_Settings.cornerRounding,
+                          Trailpack::Settings::kRoundingMax, 0.0f);
+        // Space below each row of the note list (applied live while dragging).
+        save = pxRow("row_spacing", Tr("List row spacing"), g_Settings.rowSpacing,
+                     Trailpack::Settings::kRowSpacingMax, Trailpack::Settings::kRowSpacingDefault) || save;
+        g_Notes.SetRowSpacing(g_Settings.rowSpacing);
         if (save) SaveSettings();
-        ImGui::PopID();
+
+        // Note list order: ungrouped notes above the groups (default) or below them.
+        if (ImGui::Checkbox(Tr("Groups above single notes"), &g_Settings.groupsFirst)) {
+            g_Notes.SetGroupsFirst(g_Settings.groupsFirst);
+            SaveSettings();
+        }
     }
 
     // ── Colour options ────────────────────────────────────────────────────
@@ -715,7 +781,7 @@ static void RenderOptions() {
             ImGui::Unindent();
         }
 
-        // Same label in three sections: the id is scoped per section.
+        // Same label in four sections: the id is scoped per section.
         auto borderToggle = [&](const char* id, bool& show) {
             ImGui::PushID(id);
             if (ImGui::Checkbox(Tr("Show border"), &show)) s_ColorsDirty = true;
@@ -766,6 +832,13 @@ static void RenderOptions() {
             ImGui::TreePop();
         }
 
+        // The editor field in edit mode (its background / text follow the note).
+        if (section(Tr("Note editor"), "sec_editor")) {
+            borderToggle("editor_border_on", c.showEditorBorder);
+            optionalRow("editor_border", Tr("Border"), c.hasEditorBorder, c.editorBorder, c.border);
+            ImGui::TreePop();
+        }
+
         // Popups of the note window (menus, tooltips, the event picker, dialogs): until picked
         // they follow the note list (its colour, opaque, and its text) so they match the look.
         if (section(Tr("Popups"), "sec_popups")) {
@@ -809,14 +882,35 @@ static void RenderOptions() {
         s_ColorsDirty = false;
     }
 
-    // ── Backup ────────────────────────────────────────────────────────────
-    // All notes, groups and settings (incl. themes) in one file; restoring replaces them.
+    // ── Events ────────────────────────────────────────────────────────────
+    // Event chips in checked tasks are grey names by default; these bring back parts of them.
+    if (ImGui::CollapsingHeader(Tr("Events"))) {
+        if (ImGui::Checkbox(Tr("Show the time in checked tasks"), &g_Settings.doneShowTime)) SaveSettings();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", Tr("Event chips in checked tasks keep their countdown, "
+                                       "in a much lighter colour."));
+        if (ImGui::Checkbox(Tr("Show tooltip and menu in checked tasks"), &g_Settings.doneShowPopups)) SaveSettings();
+        if (ImGui::IsItemHovered())
+            ImGui::SetTooltip("%s", Tr("Event chips in checked tasks keep their tooltip and right-click "
+                                       "menu (wiki, copy waypoint). Left-click does nothing."));
+    }
+
+    // ── Data: backup and transfer ─────────────────────────────────────────
+    // File actions, kept apart from the settings above: a backup (all notes, groups and
+    // settings incl. themes; restoring replaces them) and the settings-only export / import
+    // (e.g. to share a look or move it to another PC; notes stay). Both confirm before
+    // replacing anything.
     PollBackupDialog();
-    if (ImGui::CollapsingHeader(Tr("Backup"))) {
+    ImGui::Spacing();
+    ImGui::Separator();
+    ImGui::Spacing();
+    if (ImGui::CollapsingHeader(Tr("Data: backup and transfer"))) {
+        ImGui::TextUnformatted(Tr("Backup"));
+        ImGui::Separator();
         ImGui::TextWrapped("%s", Tr("A backup saves all notes, groups and settings (including themes) in one file."));
-        if (ImGui::Button(Tr("Create backup..."))) StartBackupDialog(true);
+        if (ImGui::Button(Tr("Create backup..."))) StartFileDialog(FileJob::CreateBackup);
         ImGui::SameLine();
-        if (ImGui::Button(Tr("Restore backup..."))) StartBackupDialog(false);
+        if (ImGui::Button(Tr("Restore backup..."))) StartFileDialog(FileJob::RestoreBackup);
 
         if (!s_RestoreFile.empty()) {
             char line[512];
@@ -835,6 +929,33 @@ static void RenderOptions() {
             if (ImGui::Button(Tr("Cancel"))) s_RestoreFile.clear();
         }
         if (!s_BackupMessage.empty()) ImGui::TextWrapped("%s", s_BackupMessage.c_str());
+
+        ImGui::Spacing();
+        ImGui::TextUnformatted(Tr("Settings"));
+        ImGui::Separator();
+        ImGui::TextWrapped("%s", Tr("Saves all settings (including themes) without notes. "
+                                    "Importing replaces all settings; the notes stay as they are. "
+                                    "A backup file can be imported too (only its settings)."));
+        if (ImGui::Button(Tr("Export settings..."))) StartFileDialog(FileJob::ExportSettings);
+        ImGui::SameLine();
+        if (ImGui::Button(Tr("Import settings..."))) StartFileDialog(FileJob::ImportSettings);
+
+        if (!s_ImportSettingsFile.empty()) {
+            char line[512];
+            snprintf(line, sizeof line, Tr("Import settings from %s? This replaces all settings."),
+                     s_ImportSettingsFile.c_str());
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.95f, 0.75f, 0.35f, 1.0f));
+            ImGui::TextWrapped("%s", line);
+            ImGui::PopStyleColor();
+            ImGui::PushID("import_settings");
+            Theme::PushGreenButton();
+            if (ImGui::Button(Tr("Import"))) ImportSettings();
+            Theme::PopButton();
+            ImGui::SameLine();
+            if (ImGui::Button(Tr("Cancel"))) s_ImportSettingsFile.clear();
+            ImGui::PopID();
+        }
+        if (!s_SettingsMessage.empty()) ImGui::TextWrapped("%s", s_SettingsMessage.c_str());
     }
 }
 

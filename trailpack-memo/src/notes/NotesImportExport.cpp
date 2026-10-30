@@ -50,11 +50,11 @@ void NotesWindow::startExport_(const std::string& id)
         char date[16] = "";
         const std::time_t now = std::time(nullptr);
         std::strftime(date, sizeof date, "%Y-%m-%d", std::localtime(&now));
-        name = std::string("trailpack-notes-") + date + ".json";
+        name = std::string("trailpack-memo-notes-") + date + ".json";
     } else {
         const Trailpack::Note* note = store_.Get(id);
         if (note == nullptr) return;
-        name = FileNameFor(note->title) + ".json";
+        name = "trailpack-memo-note-" + FileNameFor(note->title) + ".json";
     }
 
     if (!exportDir_.empty()) Trailpack::SafeFile::CreateDirectories(exportDir_);
@@ -79,7 +79,7 @@ void NotesWindow::startExportGroup_(const std::string& groupId)
     ioExportId_.clear();
     ioExportGroupId_ = groupId;
     ioDialog_ = std::async(std::launch::async, FileDialog::Run, true,
-                           Widen(exportDir_), Widen(FileNameFor(group->name) + ".json"),
+                           Widen(exportDir_), Widen("trailpack-memo-group-" + FileNameFor(group->name) + ".json"),
                            Widen(Tr("Export notes")), DialogFilter());
 }
 

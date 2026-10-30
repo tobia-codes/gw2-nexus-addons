@@ -81,6 +81,8 @@ const Section kSections[] = {
       "- Click a group to fold / unfold it. Drag notes onto it, or right-click a note > "
       "'Move to group'. To take a note out of its group, drag it to an empty spot in the "
       "list or use 'Move to group' > 'Remove from group'.\n"
+      "- Order: drag a note onto another note (it goes above or below it, into that note's "
+      "group), or a group onto another group.\n"
       "- Right-click a group: new note in it, rename, colour, export, delete (its notes are kept)." },
     { "Chat links",
       "Paste GW2 chat links ([&...]) into a note - they become chips.\n"
@@ -106,15 +108,17 @@ const Section kSections[] = {
       "deletes one." },
     { "Settings",
       "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
-      "- Language (Auto follows Nexus), quick access icon.\n"
+      "- 'General': quick access icon, language (Auto follows Nexus), Decoder Ring status.\n"
       "- 'Font options': UI and note text size.\n"
-      "- 'Events': event chips in checked tasks keep their time / tooltip and menu (both off by default).\n"
-      "- 'Layout options': corner rounding of the addon's windows, buttons, fields, popups and list rows (0 = square).\n"
-      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names), note (border on/off and colour, background, text), popups (background, text) and the daily / weekly badges.\n"
+      "- 'Layout options': corner rounding of the addon's windows, buttons, fields, popups and list rows (0 = square); 'Groups above single notes' puts the groups at the top of the list (default: below the single notes); 'List row spacing' sets the space between the rows of the note list.\n"
+      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names), note (border on/off and colour, background, text), note editor (border on/off and colour), popups (background, text) and the daily / weekly badges.\n"
       "- 'Colour options' > Theme: Default, Light, Dark or one of your own; 'Save as theme' "
       "stores the current colours under a name. Borders are off by default.\n"
-      "- 'Backup': 'Create backup...' saves all notes, groups and settings in one file; "
-      "'Restore backup...' replaces them with a backup's after you confirm.\n"
+      "- 'Events': event chips in checked tasks keep their time / tooltip and menu (both off by default).\n"
+      "- 'Data: backup and transfer' (at the bottom): 'Create backup...' saves all notes, groups and "
+      "settings in one file, 'Restore backup...' replaces them with a backup's; 'Export settings...' "
+      "saves the settings (incl. themes) without notes, 'Import settings...' replaces the settings "
+      "and keeps the notes. Both ask before replacing anything.\n"
       "- Drag the divider between list and note to change the list width." },
     { "Your data",
       "Notes are saved in addons/TrailpackMemo/notes.json; the previous version is kept as "

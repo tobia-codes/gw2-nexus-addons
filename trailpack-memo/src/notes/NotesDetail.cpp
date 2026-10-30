@@ -100,7 +100,10 @@ void NotesWindow::renderEditMode_(Trailpack::Note& note)
     renderEditToolbar_();
 
     // Editable body: chat codes are atomic chip cells, markdown stays raw (edit = source).
-    const ImU32 border = ImGui::GetColorU32(Theme::Colors().border);
+    // Editor frame: off by default (0 = no frame), colour follows the window border until picked.
+    const Theme::UserColors& ec = Theme::Colors();
+    const ImU32 border = !ec.showEditorBorder ? 0u
+                       : ImGui::GetColorU32(ec.hasEditorBorder ? ec.editorBorder : ec.border);
     if (!showPreview_) {
         Trailpack::FontScaleScope noteFont(noteTextScale_);
         Theme::TextColorScope noteText(uc.hasNoteText, uc.noteText);

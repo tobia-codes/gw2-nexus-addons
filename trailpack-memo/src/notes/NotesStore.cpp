@@ -210,7 +210,45 @@ bool NotesStore::MoveToGroup(const std::string& noteId, const std::string& group
     Note* n = Get(noteId);
     if (n == nullptr) return false;
     if (!groupId.empty() && GetGroup(groupId) == nullptr) return false;
+    if (n->groupId == groupId) return true;
     n->groupId = groupId;
+    // Last in its new group: the list shows a group's notes in store order.
+    auto it = std::find_if(notes_.begin(), notes_.end(),
+                           [&](const Note& x) { return x.id == noteId; });
+    std::rotate(it, it + 1, notes_.end());
+    return true;
+}
+
+// Move element `from` of `v` so it ends up right before / after element `to` (from != to).
+template <typename T>
+static void moveNextTo(std::vector<T>& v, size_t from, size_t to, bool after)
+{
+    T item = std::move(v[from]);
+    v.erase(v.begin() + from);
+    if (from < to) --to;   // `to` shifted down by the erase
+    v.insert(v.begin() + to + (after ? 1 : 0), std::move(item));
+}
+
+bool NotesStore::MoveNoteNextTo(const std::string& noteId, const std::string& targetId, bool after)
+{
+    auto byId = [&](const std::string& id) {
+        return std::find_if(notes_.begin(), notes_.end(), [&](const Note& n) { return n.id == id; });
+    };
+    auto from = byId(noteId), to = byId(targetId);
+    if (from == notes_.end() || to == notes_.end() || from == to) return false;
+    from->groupId = to->groupId;
+    moveNextTo(notes_, (size_t)(from - notes_.begin()), (size_t)(to - notes_.begin()), after);
+    return true;
+}
+
+bool NotesStore::MoveGroupNextTo(const std::string& groupId, const std::string& targetId, bool after)
+{
+    auto byId = [&](const std::string& id) {
+        return std::find_if(groups_.begin(), groups_.end(), [&](const Group& g) { return g.id == id; });
+    };
+    auto from = byId(groupId), to = byId(targetId);
+    if (from == groups_.end() || to == groups_.end() || from == to) return false;
+    moveNextTo(groups_, (size_t)(from - groups_.begin()), (size_t)(to - groups_.begin()), after);
     return true;
 }
 
@@ -372,7 +410,7 @@ bool NotesStore::PrepareImport(const std::string& json, std::vector<ImportItem>&
 
     // Export file / notes.json -> their "notes" (+ "groups"); a bare array is a v1 notes.json.
     const nlohmann::json* arr = &parsed;
-    struct FileGroup { std::string name; bool hasColor = false; float color[4] = {1, 1, 1, 1}; };
+    struct FileGroup { std::string name; int order = 0; bool hasColor = false; float color[4] = {1, 1, 1, 1}; };
     std::map<std::string, FileGroup> fileGroups;   // valid group id -> name + colour
     if (parsed.is_object()) {
         if (!parsed.contains("format") ||
@@ -388,6 +426,7 @@ bool NotesStore::PrepareImport(const std::string& json, std::vector<ImportItem>&
                 if (!IsNoteId(id)) continue;
                 FileGroup fg;
                 fg.name     = g["name"].get<std::string>();
+                fg.order    = (int)fileGroups.size();
                 fg.hasColor = colorFromJson(g, fg.color);
                 fileGroups.emplace(id, fg);
             }
@@ -412,6 +451,7 @@ bool NotesStore::PrepareImport(const std::string& json, std::vector<ImportItem>&
             if (g != fileGroups.end()) {
                 it.groupId       = g->first;
                 it.groupName     = g->second.name;
+                it.groupOrder    = g->second.order;
                 it.groupHasColor = g->second.hasColor;
                 std::copy(g->second.color, g->second.color + 4, it.groupColor);
             }
@@ -437,24 +477,34 @@ bool NotesStore::PrepareImport(const std::string& json, std::vector<ImportItem>&
 
 int NotesStore::AddImported(const std::vector<ImportItem>& items)
 {
+    // Groups missing here are recreated with the file's id + name, after the existing groups
+    // and in the file's group order (not in the order their first note shows up). An id
+    // already taken by a note can't become a group -> its notes are imported ungrouped.
+    std::vector<const ImportItem*> newGroups;
+    for (const auto& item : items) {
+        if (!IsNoteId(item.groupId) || hasDuplicateOf_(item)) continue;
+        if (GetGroup(item.groupId) != nullptr || Get(item.groupId) != nullptr) continue;
+        if (std::none_of(newGroups.begin(), newGroups.end(),
+                         [&](const ImportItem* g) { return g->groupId == item.groupId; }))
+            newGroups.push_back(&item);
+    }
+    std::stable_sort(newGroups.begin(), newGroups.end(), [](const ImportItem* a, const ImportItem* b) {
+        return a->groupOrder < b->groupOrder;
+    });
+    for (const ImportItem* item : newGroups) {
+        Group g;
+        g.id       = item->groupId;
+        g.name     = item->groupName;
+        g.hasColor = item->groupHasColor;
+        std::copy(item->groupColor, item->groupColor + 4, g.color);
+        groups_.push_back(std::move(g));
+    }
+
+    // Notes are appended in file order: each ends up last in its group.
     int added = 0;
     for (const auto& item : items) {
         if (hasDuplicateOf_(item)) continue;
-
-        // Reuse the group by id, or recreate it with the file's id + name. An id already
-        // taken by a note can't become a group -> the note is imported ungrouped.
-        std::string groupId;
-        if (IsNoteId(item.groupId)) {
-            if (GetGroup(item.groupId) == nullptr && Get(item.groupId) == nullptr) {
-                Group g;
-                g.id       = item.groupId;
-                g.name     = item.groupName;
-                g.hasColor = item.groupHasColor;
-                std::copy(item.groupColor, item.groupColor + 4, g.color);
-                groups_.push_back(std::move(g));
-            }
-            if (GetGroup(item.groupId) != nullptr) groupId = item.groupId;
-        }
+        const std::string groupId = GetGroup(item.groupId) != nullptr ? item.groupId : std::string();
 
         Note& n = Create(item.title, groupId);
         if (IsNoteId(item.id) && GetGroup(item.id) == nullptr) n.id = item.id;

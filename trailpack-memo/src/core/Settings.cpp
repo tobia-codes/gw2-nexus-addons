@@ -42,6 +42,7 @@ bool ColorSet::operator==(const ColorSet& o) const
            noteBackground == o.noteBackground && noteText == o.noteText &&
            showListBorder == o.showListBorder && showNoteBorder == o.showNoteBorder &&
            listBorder == o.listBorder && noteBorder == o.noteBorder &&
+           showEditorBorder == o.showEditorBorder && editorBorder == o.editorBorder &&
            menuButton == o.menuButton && menuIcon == o.menuIcon &&
            popupBackground == o.popupBackground && popupText == o.popupText &&
            dailyBadge == o.dailyBadge && dailyBadgeText == o.dailyBadgeText &&
@@ -94,6 +95,8 @@ static void colorsToJson(const ColorSet& c, nlohmann::json& j)
     j["show_note_border"]        = c.showNoteBorder;
     j["color_list_border"]       = optional(c.listBorder);
     j["color_note_border"]       = optional(c.noteBorder);
+    j["show_editor_border"]      = c.showEditorBorder;
+    j["color_editor_border"]     = optional(c.editorBorder);
     j["color_menu_button"]       = optional(c.menuButton);
     j["color_menu_icon"]         = optional(c.menuIcon);
     j["color_popup_bg"]          = optional(c.popupBackground);
@@ -129,6 +132,8 @@ static void colorsFromJson(const nlohmann::json& j, ColorSet& c)
     boolean("show_note_border", c.showNoteBorder);
     optional("color_list_border", c.listBorder);
     optional("color_note_border", c.noteBorder);
+    boolean("show_editor_border", c.showEditorBorder);
+    optional("color_editor_border", c.editorBorder);
     optional("color_menu_button", c.menuButton);
     optional("color_menu_icon", c.menuIcon);
     // "color_popup_bg" replaces the short-lived "color_popup_background" (always opaque black,
@@ -180,6 +185,8 @@ std::string Settings::ToJson() const
     j["text_scale"]       = uiTextScale;
     j["note_text_scale"]  = noteTextScale;
     j["list_width"]       = listWidth;
+    j["groups_first"]     = groupsFirst;
+    j["list_row_spacing"] = rowSpacing;
     j["corner_rounding"]     = cornerRounding;
     j["language"]         = languageKey(language);
     colorsToJson(colors, j);
@@ -215,6 +222,7 @@ bool Settings::FromJson(const std::string& json)
 
     boolean("show_qa_icon", showQaIcon);
     boolean("edit_preview", editPreview);
+    boolean("groups_first", groupsFirst);
     boolean("done_show_time", doneShowTime);
     boolean("done_show_popups", doneShowPopups);
     scale("text_scale", uiTextScale);
@@ -222,6 +230,10 @@ bool Settings::FromJson(const std::string& json)
     if (j.contains("list_width") && j["list_width"].is_number()) {
         const float w = j["list_width"].get<float>();
         if (w > 0.0f) listWidth = w;
+    }
+    if (j.contains("list_row_spacing") && j["list_row_spacing"].is_number()) {
+        const float v = j["list_row_spacing"].get<float>();
+        rowSpacing = v < 0.0f ? 0.0f : v > kRowSpacingMax ? kRowSpacingMax : v;
     }
     if (j.contains("corner_rounding") && j["corner_rounding"].is_number()) {
         const float r = j["corner_rounding"].get<float>();

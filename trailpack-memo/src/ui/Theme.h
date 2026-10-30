@@ -75,6 +75,10 @@ struct UserColors {
     bool   showNoteBorder = false;
     bool   hasNoteBorder  = false;
     ImVec4 noteBorder     = { 0.0f, 0.0f, 0.0f, 0.0f };
+    // Frame of the note editor field: off by default; colour follows `border` until picked.
+    bool   showEditorBorder = false;
+    bool   hasEditorBorder  = false;
+    ImVec4 editorBorder     = { 0.0f, 0.0f, 0.0f, 0.0f };
     // Menu button next to "Create New Note": background (unset: Nexus button) and icon
     // (unset: window text).
     bool   hasMenuButton  = false;
