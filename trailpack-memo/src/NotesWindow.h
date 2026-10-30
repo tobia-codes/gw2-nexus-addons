@@ -10,12 +10,12 @@
 // Small shared UI helpers live in NotesUi.h.
 
 #include <string>
-#include <filesystem>
 #include <future>
 #include <unordered_map>
 #include <vector>
 #include "nexus/Nexus.h"
 #include "NotesStore.h"
+#include "SafeFile.h"
 #include "ChipTextEdit.h"
 #include "Markdown.h"
 
@@ -50,7 +50,7 @@ public:
     std::string NotesJson() const   { return store_.ToJson(); }
     bool        RestoreNotes(const std::string& json);
     // The addon data folder (notes.json's), for the backup dialog; empty if unknown.
-    std::filesystem::path DataDir() const { return notesFile_.parent_path(); }
+    std::string DataDir() const { return Trailpack::SafeFile::ParentPath(notesFile_); }
 
 private:
     enum class Mode { View, Edit };
@@ -73,8 +73,8 @@ private:
     AddonAPI_t*           api_ = nullptr;  // Nexus API (for FontBig via DataLink)
     Trailpack::NotesStore    store_;
     std::string           selectedId_;
-    std::filesystem::path notesFile_;
-    std::filesystem::path exportDir_;   // default folder for export/import dialogs
+    std::string           notesFile_;   // UTF-8 path
+    std::string           exportDir_;   // default folder for export/import dialogs
 
     // ── Edit-mode working copies ──────────────────────────────────────────
     Mode                   mode_        = Mode::View;
