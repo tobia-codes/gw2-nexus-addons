@@ -194,17 +194,27 @@ release of one repo, but the monorepo will hold several addon DLLs.
 ### B5 — Event timers in notes (next big feature)
 **Why:** world bosses and map metas follow fixed UTC schedules; notes should show them as chips
 with a live countdown and copy the waypoint on click.
-- [ ] Work the stages in [`EVENTS.md`](EVENTS.md) (decisions D1-D14 are agreed — ask before
+- [ ] Work the stages in [`EVENTS.md`](EVENTS.md) (decisions D1-D15 are agreed — ask before
       changing them). One feature branch + PR per stage.
 
 ### Ideas (not scheduled — only on user request)
 - Search/filter in the note list; note reordering (drag or up/down).
 - Export/import a single note as plain `.md` (JSON export/import exists).
 - Pinning or a "daily routine" auto-uncheck at reset time.
+- **Event table as a separate addon** (discussed 2026-10-30): an in-game overview of all events
+  that highlights events from open (unchecked) tasks in notes. Proposed shape: move the pure
+  event code (`generated/EventData`, `events/Events`, `core/Reset`, `core/I18n`, generator +
+  overrides) into an own static library (e.g. `libs/trailpack-events/`; `shared/` is for
+  third-party code only), used by both DLLs. The memo publishes the open event ids via Nexus
+  events (broadcast on change + answer to a ping, like Decoder Ring / Pie UI); the payload is a
+  plain C struct with a version field in a `public/` header, copied by the receiver. Optional
+  back channel: click in the table opens the note. Not reading `notes.json` directly.
 
 ---
 
 ## Changelog of this plan
+- 2026-10-30 — B5 stages 1-5 done (user tests passed; stage 5: inline `/e ` suggestions); open point on D13 before stage 6; event
+  table addon noted under Ideas. `src/` grouped into feature folders (`generated/`, `vendor/`).
 - 2026-10-30 — DLL size 1.87 MB -> 0.95 MB: streams and `std::filesystem` replaced by `SafeFile`,
   own `__gnu_cxx::__verbose_terminate_handler` (drops the demangler). `--gc-sections` made it
   bigger, `-flto` crashes MinGW GCC 13 (ICE) -- both not used.
