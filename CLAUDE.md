@@ -7,7 +7,8 @@ Layout, build commands and "Adding an addon" are in [README.md](README.md); the 
 - The user writes German — reply in German. Code, comments, commit messages and docs stay English.
 - One folder per addon; each has its own `AGENTS.md` (rules) and `plans/PLAN.md` (state + backlog),
   loaded via that folder's `CLAUDE.md`. Shared third-party code lives in `shared/` — don't modify it.
-- Commit/push only when asked, on a feature branch (not `main`).
+- Commit/push only when asked, on a feature branch. `main` is protected on GitHub (ruleset
+  "Protect main"): changes only via PR, CI `test-and-build` must pass before the merge.
 - **Tests always:** new or changed logic gets a host test; run the host tests before building
   (`ctest` in `build-host`, see README). CI (`.github/workflows/ci.yml`) runs them before the
   DLL build on every push — keep it green.

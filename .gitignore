@@ -26,3 +26,7 @@ trailpack-memo/tools/.cache/
 
 # Core generator download cache
 trailpack-core/tools/.cache/
+
+# Python bytecode
+__pycache__/
+*.pyc

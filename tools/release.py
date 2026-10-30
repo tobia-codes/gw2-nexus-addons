@@ -1,20 +1,22 @@
 #!/usr/bin/env python3
-"""Prepare a release of one addon (plans/RELEASE.md).
+"""Release one addon (plans/RELEASE.md). `main` is protected: the release goes through a PR.
 
     python3 tools/release.py core 1.0.0          # normal release
     python3 tools/release.py memo 0.9.0          # < 1.0.0: published as a pre-release
     python3 tools/release.py core 2.0.0 --pre    # explicit pre-release (tag core-pre-v2.0.0)
 
-Steps (nothing is pushed without asking):
-  1. the working tree is clean and on a branch that is pushed later;
+Steps (nothing leaves this machine without asking):
+  1. on an up-to-date, clean `main`;
   2. `## Unreleased` in <addon>/CHANGELOG.md has entries;
-  3. `## Unreleased` becomes `## <version> - <date>`, a new empty `## Unreleased` goes above it;
-  4. V_MAJOR / V_MINOR / V_BUILD / V_REVISION in <addon>/src/dllmain.cpp are set;
-  5. commit "<Addon> <version>" and tag `<addon>-v<version>` (or `<addon>-pre-v<version>`);
-  6. shows both and asks before `git push` of the commit and the tag. The tag starts
+  3. branch `release/<addon>-<version>`: `## Unreleased` becomes `## <version> - <date>` (a new
+     empty `## Unreleased` above it), V_* in <addon>/src/dllmain.cpp set, commit "<Addon> <version>";
+  4. asks once, then: push the branch, open the PR, wait for CI (`test-and-build`), rebase-merge
+     it, delete the branch, update local `main`, tag the merged commit `<addon>-v<version>`
+     (or `<addon>-pre-v<version>`) and push the tag. The tag starts
      .github/workflows/release.yml, which publishes the DLL in the addon's release repository.
+Answering "no" leaves the release commit on the local branch (how to undo is printed).
 
-Stdlib only.
+Needs git and an authenticated `gh`. Stdlib only.
 """
 
 import argparse
@@ -22,6 +24,7 @@ import datetime
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -31,10 +34,18 @@ ADDONS = {
 }
 
 
-def git(*args: str, capture: bool = True) -> str:
-    out = subprocess.run(["git", *args], cwd=ROOT, check=True, text=True,
+def run(tool: str, *args: str, capture: bool = True) -> str:
+    out = subprocess.run([tool, *args], cwd=ROOT, check=True, text=True,
                          capture_output=capture)
     return out.stdout.strip() if capture else ""
+
+
+def git(*args: str, capture: bool = True) -> str:
+    return run("git", *args, capture=capture)
+
+
+def gh(*args: str, capture: bool = True) -> str:
+    return run("gh", *args, capture=capture)
 
 
 def fail(msg: str) -> None:
@@ -67,7 +78,7 @@ def set_version(path: Path, version: str) -> None:
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Prepare and tag a release of one addon.")
+    ap = argparse.ArgumentParser(description="Release one addon through a PR into main and tag it.")
     ap.add_argument("addon", choices=sorted(ADDONS))
     ap.add_argument("version", help="MAJOR.MINOR.PATCH, e.g. 1.0.0")
     ap.add_argument("--pre", action="store_true", help="publish as a pre-release (tag <addon>-pre-v...)")
@@ -80,28 +91,57 @@ def main() -> None:
 
     if git("status", "--porcelain"):
         fail("working tree is not clean - commit or stash first")
-    branch = git("rev-parse", "--abbrev-ref", "HEAD")
+    if git("rev-parse", "--abbrev-ref", "HEAD") != "main":
+        fail("start on main (the release goes through a PR into main)")
+    git("fetch", "-q", "origin", "main", "--tags")
+    if git("rev-parse", "HEAD") != git("rev-parse", "origin/main"):
+        fail("local main is not origin/main - run: git pull --ff-only")
     if git("tag", "-l", tag):
         fail(f"tag {tag} exists already")
+    branch = f"release/{args.addon}-{args.version}"
+    subject = f"{name} {args.version}"
 
+    git("checkout", "-q", "-b", branch)
     bump_changelog(ROOT / folder / "CHANGELOG.md", args.version)
     set_version(ROOT / folder / "src" / "dllmain.cpp", args.version)
     git("add", f"{folder}/CHANGELOG.md", f"{folder}/src/dllmain.cpp")
-    git("commit", "-q", "-m", f"{name} {args.version}")
-    git("tag", "-a", tag, "-m", f"{name} {args.version}")
+    git("commit", "-q", "-m", subject)
 
     print(git("show", "--stat", "--format=%h %s", "HEAD"))
     kind = "pre-release" if args.pre or args.version.startswith("0.") else "release"
-    print(f"\nTag {tag} ({kind}) on branch {branch}.")
-    answer = input(f"Push branch {branch} and tag {tag} now? [y/N] ").strip().lower()
-    if answer != "y":
-        print(f"Not pushed. Later: git push origin {branch} && git push origin {tag}\n"
-              f"Undo: git tag -d {tag} && git reset --hard HEAD~1")
+    print(f"\nRelease commit on {branch}; after the merge it gets the tag {tag} ({kind}).")
+    answer = input("Push the branch, open the PR, merge it once CI is green and push the tag? [y/N] ")
+    if answer.strip().lower() != "y":
+        print(f"Nothing pushed. To start over: git checkout main && git branch -D {branch}")
         return
-    git("push", "origin", branch, capture=False)
-    git("push", "origin", tag, capture=False)
-    print("Pushed - the Release workflow builds and publishes it.")
 
+    git("push", "-q", "-u", "origin", branch, capture=False)
+    notes = (f"Release {subject}: CHANGELOG section and version defines.\n\n"
+             f"After the merge the tag `{tag}` starts the Release workflow.")
+    gh("pr", "create", "--base", "main", "--head", branch, "--title", subject, "--body", notes, capture=False)
+    print("Waiting for CI ...")
+    for _ in range(30):                    # the checks show up a few seconds after the PR
+        time.sleep(5)
+        if subprocess.run(["gh", "pr", "checks", branch], cwd=ROOT, capture_output=True).returncode != 1:
+            break
+    try:
+        gh("pr", "checks", branch, "--watch", "--fail-fast", capture=False)
+    except subprocess.CalledProcessError:
+        fail(f"CI failed - fix it on {branch} (push again), merge the PR, then tag by hand:\n"
+             f"  git checkout main && git pull --ff-only && git tag -a {tag} -m '{subject}' <commit> "
+             f"&& git push origin {tag}")
+    gh("pr", "merge", branch, "--rebase", "--delete-branch", capture=False)
+
+    git("checkout", "-q", "main")
+    git("pull", "-q", "--ff-only", "origin", "main")
+    git("branch", "-D", branch)
+    # A rebase merge rewrites the commit: find it on main by its subject.
+    commit = git("log", "-1", "--format=%H", "--fixed-strings", f"--grep={subject}", "origin/main")
+    if not commit or git("log", "-1", "--format=%s", commit) != subject:
+        fail(f"merged commit '{subject}' not found on main - tag it by hand: git tag -a {tag} <commit>")
+    git("tag", "-a", tag, "-m", subject, commit)
+    git("push", "-q", "origin", tag, capture=False)
+    print(f"Tag {tag} pushed - the Release workflow builds and publishes it.")
 
 if __name__ == "__main__":
     main()

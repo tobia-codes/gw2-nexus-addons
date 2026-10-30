@@ -44,9 +44,11 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host && ctes
 
 ## Releasing
 
-`python3 tools/release.py <core|memo> <version>` prepares the changelog and version, tags it and
-(after asking) pushes; `.github/workflows/release.yml` then publishes the DLL in the addon's
-release repository. Every player-visible change goes under `## Unreleased` in the addon's
+`main` is protected: every change goes through a branch and a pull request, and CI must pass.
+On an up-to-date `main`, `python3 tools/release.py <core|memo> <version>` puts the changelog and
+version into a release PR, merges it once CI is green, tags the merge and pushes the tag (after
+asking once); `.github/workflows/release.yml` then publishes the DLL in the addon's release
+repository. Every player-visible change goes under `## Unreleased` in the addon's
 `CHANGELOG.md`. Details: `plans/RELEASE.md`.
 
 ## Adding an addon

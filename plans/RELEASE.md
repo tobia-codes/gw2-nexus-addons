@@ -35,9 +35,12 @@
   turns it into `## <version> - <date>`; the workflow uses that section as release notes and
   fails without it.
 - **R12 — Pre-release rule:** see R5.
-- **R13 — Release script:** `python3 tools/release.py <core|memo> <version> [--pre]`: clean tree,
-  changelog section, `V_*` defines, commit, tag, asks before pushing. The tag starts
-  `.github/workflows/release.yml`.
+- **R13 — Release script:** `python3 tools/release.py <core|memo> <version> [--pre]`, started on an
+  up-to-date `main`. `main` is protected (ruleset "Protect main": PR required, CI
+  `test-and-build` must pass, no force push / deletion, no bypass), so the script goes through a
+  PR: branch `release/<addon>-<version>` with the changelog section + `V_*` commit -> asks once
+  -> push, PR, waits for CI, rebase-merge, deletes the branch, pulls `main`, tags the merged
+  commit and pushes the tag. The tag starts `.github/workflows/release.yml`.
 - **R14 — Language:** release READMEs and notes in English; they say the addons speak English
   and German.
 
@@ -107,8 +110,8 @@ PNG, game UI at normal size, no personal data (character / account names) visibl
 - [ ] `/changelog` run, `## Unreleased` of both addons reviewed.
 
 ### Pre-release for testers
-- [ ] `python3 tools/release.py core 0.9.0`, then `python3 tools/release.py memo 0.9.0`
-      (pre-releases automatically, R5). Check the release pages, the README sync and an install
+- [ ] On `main`: `python3 tools/release.py core 0.9.0`, then `python3 tools/release.py memo 0.9.0`
+      (pre-releases automatically, R5; each opens and merges its own release PR). Check the release pages, the README sync and an install
       from the pre-release in game (Nexus: allow pre-releases).
 
 ### 1.0.0 and the library
@@ -120,3 +123,4 @@ PNG, game UI at normal size, no personal data (character / account names) visibl
 ## Changelog of this plan
 - 2026-10-30 — Plan set up with the user (R1-R14); release script, CI, changelog skill, release
   READMEs added.
+- 2026-10-30 — `main` protected (ruleset); release script goes through a release PR (R13).
