@@ -23,3 +23,6 @@ handover.md
 
 # Event generator download cache
 trailpack-memo/tools/.cache/
+
+# Core generator download cache
+trailpack-core/tools/.cache/

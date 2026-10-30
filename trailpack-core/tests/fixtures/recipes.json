@@ -1,0 +1,60 @@
+[
+  {
+    "id": 9508,
+    "type": "Backpack",
+    "output_item_id": 62905,
+    "output_item_count": 1,
+    "time_to_craft_ms": 1000,
+    "disciplines": [
+      "Huntsman"
+    ],
+    "min_rating": 400,
+    "flags": [
+      "AutoLearned"
+    ],
+    "ingredients": [
+      {
+        "item_id": 62948,
+        "count": 1
+      },
+      {
+        "item_id": 62901,
+        "count": 1
+      },
+      {
+        "item_id": 19721,
+        "count": 3
+      }
+    ],
+    "chat_link": "[&CSQlAAA=]",
+    "guild_ingredients": []
+  },
+  {
+    "id": 11777,
+    "type": "GuildDecoration",
+    "output_item_id": 77721,
+    "output_item_count": 1,
+    "time_to_craft_ms": 1000,
+    "disciplines": [
+      "Scribe"
+    ],
+    "min_rating": 350,
+    "flags": [
+      "AutoLearned"
+    ],
+    "ingredients": [
+      {
+        "item_id": 70489,
+        "count": 1
+      }
+    ],
+    "output_upgrade_id": 670,
+    "chat_link": "[&CQEuAAA=]",
+    "guild_ingredients": [
+      {
+        "upgrade_id": 706,
+        "count": 10
+      }
+    ]
+  }
+]

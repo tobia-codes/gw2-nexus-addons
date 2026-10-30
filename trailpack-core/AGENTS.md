@@ -5,7 +5,7 @@ Rules for AI coding agents working in `trailpack-core/`. Decisions, stages and o
 
 ## What this is
 
-A headless Raidcore Nexus addon for Guild Wars 2 and the required data service of every Trailpack
+A headless Raidcore Nexus addon for Guild Wars 2 and the data service of every Trailpack
 addon: it resolves chat links into display records (API data, disk-cached) and serves built-in
 game data (events, waypoints, specialisations). Shared third-party code (ImGui 1.80,
 nlohmann/json, `nexus/Nexus.h`) is in `../shared/`, own shared libraries in `../libs/`.
@@ -18,7 +18,9 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
   && ctest --test-dir build-host --output-on-failure                       # pure-logic host tests
 ```
 
-- **Definition of Done:** DLL builds clean **and** host tests green. In-game behaviour can only be
+- **Definition of Done:** host tests (incl. new ones for the change) green, **then** the DLL
+  builds clean; `README.md` (and `release/README.md` if the player-facing text changes) and the
+  `## Unreleased` section of `CHANGELOG.md` updated for player-visible changes. In-game behaviour can only be
   verified by the user — say what to test, never claim it works in game.
 
 ## Identity
@@ -31,14 +33,23 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 | Data dir | `addons/TrailpackCore/` (`settings.json`, `cache/<lang>/`) |
 | DataLink / events | `TRAILPACK_CORE_API`, `EV_TRAILPACK_CORE_{READY,UNLOADING,PING,RESOLVED}` |
 | Author | `tobia-codes` |
+| Updates | `UP_GitHub`, release repo `tobia-codes/trailpack-core` (tag `core-v<version>` here, see `.github/workflows/release.yml`) |
 
 ## Code rules
 
-- C++ namespace: **`Trailpack::Core`**. Source layout like Memo: feature folders under `src/`,
-  includes relative to `src/`, `src/generated/` is written by `tools/*.py` — never edit by hand.
+- C++ namespace: **`Trailpack::Core`**. Source layout like Memo: feature folders under `src/`
+  (module map in PLAN), includes relative to `src/`; `src/generated/` is written by
+  `tools/gen_events.py` / `tools/gen_gamedata.py` — never edit by hand, re-run the generator.
+- Shared libraries: `libs/trailpack-chatlinks` (codec), `libs/trailpack-files` (`SafeFile`),
+  `libs/trailpack-ui` (settings-page look). Change them there, with a test.
+- `dllmain.cpp` only binds Nexus; behaviour goes into the pure units (`api/Service`,
+  `resolve/*`, `events/*`) and gets a host test in `tests/core_tests.cpp`. API fixtures in
+  `tests/fixtures/` are captured responses — re-capture instead of editing them.
 - **ABI (`public/TrailpackCoreApi.h`):** pure (`<cstdint>` only), fixed-size PODs with
-  `structSize` first, fields only appended, never reused for another meaning. No pointers into
-  Core memory in any answer — copy into caller buffers. Any change gets a layout test.
+  `structSize` first, fields (and table functions) only appended, never reused for another
+  meaning. No pointers into Core memory in any answer — copy into caller buffers. Any change
+  updates the pinned offsets in `test_abi_layout`; bump `TRAILPACK_CORE_API_VERSION` when a
+  consumer can rely on something new.
 - **Pure units stay pure** (no ImGui/Nexus/Win32): parsers, cache model, batch planner, token
   bucket, event schedule / search, generated data. New logic goes into a pure unit + host test.
 - **API etiquette is mandatory** (PLAN D10): every request goes through the token bucket

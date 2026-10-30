@@ -1,0 +1,491 @@
+[
+  {
+    "name": "Zojja's Breastplate",
+    "description": "<c=@flavor>Crafted in the style of the renowned asuran genius, Zojja.</c>",
+    "type": "Armor",
+    "level": 80,
+    "rarity": "Ascended",
+    "vendor_value": 240,
+    "default_skin": 107,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [
+      "HideSuffix",
+      "AccountBound",
+      "AccountBindOnUse"
+    ],
+    "restrictions": [],
+    "id": 48073,
+    "chat_link": "[&AgHJuwAA]",
+    "icon": "https://render.guildwars2.com/file/64725E0CEBDA22C75C16B70B0CDE58E4E6E7400A/699218.png",
+    "details": {
+      "type": "Coat",
+      "weight_class": "Heavy",
+      "defense": 381,
+      "infusion_slots": [
+        {
+          "flags": [
+            "Infusion"
+          ]
+        }
+      ],
+      "attribute_adjustment": 403.326,
+      "infix_upgrade": {
+        "id": 161,
+        "attributes": [
+          {
+            "attribute": "Power",
+            "modifier": 141
+          },
+          {
+            "attribute": "Precision",
+            "modifier": 101
+          },
+          {
+            "attribute": "CritDamage",
+            "modifier": 101
+          }
+        ]
+      },
+      "secondary_suffix_item_id": ""
+    }
+  },
+  {
+    "name": "Judgment Trident",
+    "description": "<c=@flavor>\"Great for environmentally friendly sabotage.\"<br>—Environmental Activist Jenrys</c>",
+    "type": "Weapon",
+    "level": 69,
+    "rarity": "Masterwork",
+    "vendor_value": 174,
+    "default_skin": 3899,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [
+      "HideSuffix",
+      "NoSalvage",
+      "NoSell",
+      "SoulbindOnAcquire",
+      "SoulBindOnUse"
+    ],
+    "restrictions": [],
+    "id": 30680,
+    "chat_link": "[&AgHYdwAA]",
+    "icon": "https://render.guildwars2.com/file/195C62FCE31ECE47100E4020CE6C909AB69FEA9C/562000.png",
+    "details": {
+      "type": "Trident",
+      "damage_type": "Physical",
+      "min_power": 617,
+      "max_power": 681,
+      "defense": 0,
+      "infusion_slots": [],
+      "attribute_adjustment": 451.792,
+      "infix_upgrade": {
+        "id": 162,
+        "attributes": [
+          {
+            "attribute": "Power",
+            "modifier": 158
+          },
+          {
+            "attribute": "Toughness",
+            "modifier": 113
+          },
+          {
+            "attribute": "Vitality",
+            "modifier": 113
+          }
+        ]
+      },
+      "suffix_item_id": 24613,
+      "secondary_suffix_item_id": ""
+    }
+  },
+  {
+    "name": "Superior Rune of the Scholar",
+    "description": "<c=@abilitytype>Element: </c>Brilliance<br>Double-click to apply to a piece of armor.",
+    "type": "UpgradeComponent",
+    "level": 60,
+    "rarity": "Exotic",
+    "vendor_value": 65,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [],
+    "restrictions": [],
+    "id": 24836,
+    "chat_link": "[&AgEEYQAA]",
+    "icon": "https://render.guildwars2.com/file/4378ABC0415950DAC6A05C76920392D72E242EC2/220736.png",
+    "details": {
+      "type": "Rune",
+      "flags": [
+        "HeavyArmor",
+        "LightArmor",
+        "MediumArmor"
+      ],
+      "infusion_upgrade_flags": [],
+      "bonuses": [
+        "+25 Power",
+        "+35 Ferocity",
+        "+50 Power",
+        "+65 Ferocity",
+        "+100 Power",
+        "+125 Ferocity"
+      ],
+      "attribute_adjustment": 0,
+      "infix_upgrade": {
+        "id": 112,
+        "attributes": []
+      },
+      "suffix": "of the Scholar"
+    }
+  },
+  {
+    "name": "Mystic Coin",
+    "description": "Coins are used to create high-level weapons at the Mystic Forge in Lion's Arch. \nPart of Zommoros's favorite trades.",
+    "type": "Trophy",
+    "level": 0,
+    "rarity": "Rare",
+    "vendor_value": 50,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [
+      "NoSalvage",
+      "NoSell"
+    ],
+    "restrictions": [],
+    "id": 19976,
+    "chat_link": "[&AgEITgAA]",
+    "icon": "https://render.guildwars2.com/file/AB0317DF5B0E1BA47436A5420248660765154C08/62864.png"
+  },
+  {
+    "name": "Elegant Huntsman's Backpack",
+    "description": "This equipment can hold an additional upgrade. Unequip this backpack to use it as a crafting ingredient. Using this as a crafting ingredient will destroy any upgrades held within.",
+    "type": "Back",
+    "level": 78,
+    "rarity": "Exotic",
+    "vendor_value": 256,
+    "default_skin": 2311,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [
+      "AccountBound",
+      "NoSalvage",
+      "NoSell",
+      "AccountBindOnUse"
+    ],
+    "restrictions": [],
+    "id": 62905,
+    "chat_link": "[&AgG59QAA]",
+    "icon": "https://render.guildwars2.com/file/2E01DFA01448FB305D9D3903D0965108394C056B/866608.png",
+    "details": {
+      "infusion_slots": [
+        {
+          "flags": [
+            "Infusion"
+          ]
+        }
+      ],
+      "attribute_adjustment": 82.34,
+      "stat_choices": [
+        1052,
+        1042,
+        1044,
+        1043,
+        1046,
+        1048,
+        1047,
+        1041,
+        1050,
+        1051
+      ],
+      "secondary_suffix_item_id": ""
+    }
+  },
+  {
+    "name": "Mithril Ingot",
+    "description": "Refined from Ore.",
+    "type": "CraftingMaterial",
+    "level": 0,
+    "rarity": "Basic",
+    "vendor_value": 8,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [
+      "NoSalvage"
+    ],
+    "restrictions": [],
+    "id": 19684,
+    "chat_link": "[&AgHkTAAA]",
+    "icon": "https://render.guildwars2.com/file/7B0701F4092237431EDC72340BC89AA126EA4EF0/65913.png"
+  },
+  {
+    "name": "Zojja's Blade",
+    "description": "<c=@flavor>Crafted in the style of the renowned asuran genius, Zojja.</c>",
+    "type": "Weapon",
+    "level": 80,
+    "rarity": "Ascended",
+    "vendor_value": 10000,
+    "default_skin": 4252,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [
+      "HideSuffix",
+      "AccountBound",
+      "AccountBindOnUse"
+    ],
+    "restrictions": [],
+    "id": 46774,
+    "chat_link": "[&AgG2tgAA]",
+    "icon": "https://render.guildwars2.com/file/3C4AA1BD79DAB49201C81D934AC7567B286E711B/631658.png",
+    "details": {
+      "type": "Sword",
+      "damage_type": "Physical",
+      "min_power": 950,
+      "max_power": 1050,
+      "defense": 0,
+      "infusion_slots": [
+        {
+          "flags": [
+            "Infusion"
+          ]
+        }
+      ],
+      "attribute_adjustment": 358.512,
+      "infix_upgrade": {
+        "id": 161,
+        "attributes": [
+          {
+            "attribute": "Power",
+            "modifier": 125
+          },
+          {
+            "attribute": "Precision",
+            "modifier": 90
+          },
+          {
+            "attribute": "CritDamage",
+            "modifier": 90
+          }
+        ]
+      },
+      "secondary_suffix_item_id": ""
+    }
+  },
+  {
+    "name": "Superior Sigil of Force",
+    "description": "<c=@abilitytype>Element: </c>Enhancement<br>Double-click to apply to a weapon.",
+    "type": "UpgradeComponent",
+    "level": 60,
+    "rarity": "Exotic",
+    "vendor_value": 216,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [],
+    "restrictions": [],
+    "id": 24615,
+    "chat_link": "[&AgEnYAAA]",
+    "icon": "https://render.guildwars2.com/file/D7420E430D002E07382035EF0D0F77370C4EE6B8/220662.png",
+    "details": {
+      "type": "Sigil",
+      "flags": [
+        "ShortBow",
+        "Dagger",
+        "Focus",
+        "Greatsword",
+        "Hammer",
+        "Harpoon",
+        "Mace",
+        "Pistol",
+        "Rifle",
+        "Scepter",
+        "Shield",
+        "Speargun",
+        "Axe",
+        "Staff",
+        "Sword",
+        "Torch",
+        "Trident",
+        "Warhorn",
+        "LongBow"
+      ],
+      "infusion_upgrade_flags": [],
+      "attribute_adjustment": 0,
+      "infix_upgrade": {
+        "id": 261,
+        "buff": {
+          "skill_id": 9322,
+          "description": "+5% Damage"
+        },
+        "attributes": []
+      },
+      "suffix": "of Force"
+    }
+  },
+  {
+    "name": "Superior Sigil of Accuracy",
+    "description": "<c=@abilitytype>Element: </c>Enhancement<br>Double-click to apply to a weapon.",
+    "type": "UpgradeComponent",
+    "level": 60,
+    "rarity": "Exotic",
+    "vendor_value": 216,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [],
+    "restrictions": [],
+    "id": 24618,
+    "chat_link": "[&AgEqYAAA]",
+    "icon": "https://render.guildwars2.com/file/4B0EFF29FD064E5E93E4F8616BE309A451450AED/220661.png",
+    "details": {
+      "type": "Sigil",
+      "flags": [
+        "ShortBow",
+        "Dagger",
+        "Focus",
+        "Greatsword",
+        "Hammer",
+        "Harpoon",
+        "Mace",
+        "Pistol",
+        "Rifle",
+        "Scepter",
+        "Shield",
+        "Speargun",
+        "Axe",
+        "Staff",
+        "Sword",
+        "Torch",
+        "Trident",
+        "Warhorn",
+        "LongBow"
+      ],
+      "infusion_upgrade_flags": [],
+      "attribute_adjustment": 0,
+      "infix_upgrade": {
+        "id": 264,
+        "buff": {
+          "skill_id": 9325,
+          "description": "+7% Critical Chance"
+        },
+        "attributes": []
+      },
+      "suffix": "of Accuracy"
+    }
+  },
+  {
+    "name": "Perfected Envoy Cowl",
+    "description": "<c=@flavor>This armor attempts to channel the power of the envoys.</c>",
+    "type": "Armor",
+    "level": 80,
+    "rarity": "Legendary",
+    "vendor_value": 240,
+    "default_skin": 7087,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [
+      "HideSuffix",
+      "AccountBound",
+      "NoSalvage",
+      "NoSell",
+      "DeleteWarning",
+      "AccountBindOnUse"
+    ],
+    "restrictions": [],
+    "id": 80248,
+    "chat_link": "[&AgF4OQEA]",
+    "icon": "https://render.guildwars2.com/file/06146C9BD029041178F50B5D9ACD0A76E7051408/1634576.png",
+    "details": {
+      "type": "Helm",
+      "weight_class": "Light",
+      "defense": 77,
+      "infusion_slots": [
+        {
+          "flags": [
+            "Infusion"
+          ]
+        }
+      ],
+      "attribute_adjustment": 179.256,
+      "stat_choices": [
+        161,
+        155,
+        159,
+        157,
+        158,
+        160,
+        153,
+        605,
+        700,
+        616,
+        154,
+        156,
+        162,
+        686,
+        559,
+        754,
+        753,
+        799,
+        1026,
+        1067,
+        628,
+        1032,
+        1111,
+        1109,
+        1123,
+        1140,
+        1085,
+        1153,
+        1118,
+        1131,
+        1222,
+        1344,
+        1363,
+        1364,
+        1559,
+        1556,
+        1681,
+        1686,
+        1826
+      ],
+      "secondary_suffix_item_id": ""
+    }
+  }
+]

@@ -37,6 +37,8 @@ else()
 endif()
 
 add_subdirectory(shared)
+add_subdirectory(libs)
 
 # ── Addons ────────────────────────────────────────────────────────────────
 add_subdirectory(trailpack-memo)
+add_subdirectory(trailpack-core)
