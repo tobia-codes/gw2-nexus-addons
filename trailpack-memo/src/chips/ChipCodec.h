@@ -2,8 +2,8 @@
 //
 // ChipCodec -- PURE text <-> cell-model round-trip for the chip text editor.
 //
-// PURITY: depends ONLY on the C++ standard library and the vendored ChatLinks
-// codec. NO ImGui, Nexus, Win32, or game hooks. This is the host-testable slice
+// PURITY: depends ONLY on the C++ standard library and the chat-link codec
+// (libs/trailpack-chatlinks). NO ImGui, Nexus, Win32, or game hooks. This is the host-testable slice
 // of the ChipTextEdit widget: it owns the parse (chat line -> ordered cells) and
 // serialize (cells -> chat line) so the text<->chip mapping can be verified
 // without a renderer.
@@ -16,7 +16,6 @@
 #include <string>
 #include <vector>
 #include <cstdint>
-#include "chat/ChatLinks.h"
 
 namespace Trailpack {
 
@@ -27,7 +26,7 @@ struct ParsedCell {
     std::string code;            // chip cell: "[&base64]" chat code or "{{event:<id>}}"
 };
 
-// Parse a UTF-8 string into ordered cells: each chat link / AE2 code and each event
+// Parse a UTF-8 string into ordered cells: each chat link and each event
 // token becomes ONE chip cell ({isChip=true, code}); all other text (incl. '\n')
 // becomes one text cell per codepoint ({isChip=false, cp}).
 std::vector<ParsedCell> ParseToCells(const std::string& utf8);

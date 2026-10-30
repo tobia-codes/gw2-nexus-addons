@@ -1,5 +1,10 @@
 # Trailpack Memo — Event timers in notes (backlog B5)
 
+> **Moved (2026-10-30):** the event data, its generator (`tools/gen_events.py`,
+> `tools/event_overrides.json`) and the schedule maths now live in Trailpack Core
+> (`../../trailpack-core/`, `src/generated/EventData`, `src/events/EventSchedule`); Memo reads them
+> through `CoreClient`. Paths below that start with `tools/` or `src/generated/` refer to Core.
+
 > Living plan for one feature, resumable from any session. Rules (build, code rules, i18n,
 > workflow) are in [`../AGENTS.md`](../AGENTS.md); overall state in [`PLAN.md`](PLAN.md).
 > Work the stages top-down, one feature branch + PR per stage, tick boxes (`- [x]`) as tasks
@@ -30,7 +35,7 @@ are static, so start times are computed locally from UTC — like the daily / we
 | D9 | Inline suggestions | Typing `/e ` or `/event ` in the editor opens a compact list at the cursor: flat, filtered by the text typed after it, max ~8 hits, name + grey category abbreviation. Arrow keys / Enter / Escape; Enter or click replaces the typed `/e ...` with the chip. The toolbar button stays. |
 | D10 | Chip text | View + preview: "Tequatl · in 23 Min" before the start, "Tequatl · seit 4 Min" while running (EN: "in 23 min" / "for 4 min"). Format: seconds below 1 min ("in 45 s"), "Min" below 1 h, "1 Std 23 Min" above. **Editor: name only** (no ticking width, no cursor jumps). Unknown id: grey chip "Unknown event (id)", text kept as is. |
 | D11 | Tooltip | Next three starts in local time, duration, map, waypoint name. |
-| D12 | Click | Left click copies the waypoint chat code and shows "Waypoint copied" at the mouse for ~1.5 s. Right click: menu "Copy waypoint" / "Open in wiki". No Pie UI action for events. |
+| D12 | Click | Left click copies the waypoint chat code and shows "Waypoint copied" at the mouse for ~1.5 s. Right click: menu "Copy waypoint" / "Open in wiki". |
 | D13 | Colours | New "Events" section in Colour options: "Upcoming" (default teal) and "Active" (default green). Part of `ColorSet`, so themes and backups include them. |
 | D14 | Delivery | Six stages below, each its own feature branch + PR, each buildable, host-tested and checkable in game on its own. |
 | D15 | Rotating events | An event that moves between places on a fixed rotation (Ley-Line Anomaly, Fractal Incursion, Dragon Bash Hologram Stampede) is ONE event with several places, not one per place. Chip, tooltip and left-click use the place of the running occurrence, and switch to the next place only after that run has ended. The tooltip names the map of each listed start. (User, 2026-10-29.) |
@@ -115,8 +120,8 @@ popup-id scoping inside the view child and the wiki-open helper; `Theme::TextCol
 to refetch):
 
 ```
-python3 trailpack-memo/tools/gen_events.py            # live wiki + API
-python3 trailpack-memo/tools/gen_events.py \
+python3 trailpack-core/tools/gen_events.py            # live wiki + API
+python3 trailpack-core/tools/gen_events.py \
   --en-data   "http://web.archive.org/web/20260920230502id_/https://wiki.guildwars2.com/index.php?title=Widget:Event_timer/data.json&action=raw" \
   --de-script "http://web.archive.org/web/20250909200816id_/https://wiki-de.guildwars2.com/wiki/Widget:Event-Timer/script.js"
 ```

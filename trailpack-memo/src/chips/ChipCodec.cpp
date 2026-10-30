@@ -1,5 +1,6 @@
 #include "chips/ChipCodec.h"
 #include "events/Events.h"
+#include "chatlinks/ChatLinks.h"
 
 namespace Trailpack {
 
@@ -47,16 +48,15 @@ static void AppendTextCells(const std::string& t, std::vector<ParsedCell>& cells
 }
 
 std::vector<ParsedCell> ParseToCells(const std::string& utf8) {
-    using namespace PieUI::ChatLinks;
     std::vector<ParsedCell> cells;
-    for (const auto& seg : SegmentLine(utf8)) {
-        if (seg.kind == SegmentKind::Link || seg.kind == SegmentKind::Ae2) {
+    for (const auto& seg : ChatLinks::Split(utf8)) {
+        if (seg.isLink) {
             ParsedCell c; c.isChip = true; c.code = seg.raw;
             cells.push_back(std::move(c));
         } else {
-            // Plain / Url: emit the source slice (raw), so the round-trip is byte-exact;
-            // each codepoint (including '\n') becomes its own text cell, event tokens a chip.
-            AppendTextCells(seg.raw.empty() ? seg.display : seg.raw, cells);
+            // Plain text: each codepoint (including '\n') becomes its own text cell,
+            // event tokens a chip. `raw` is the exact source slice -> byte-exact round-trip.
+            AppendTextCells(seg.raw, cells);
         }
     }
     return cells;

@@ -20,18 +20,20 @@ Default toggle hotkey: `CTRL+SHIFT+T`. Data lives in `addons/TrailpackMemo/`.
 - **Chat-link chips** — paste any GW2 chat link (waypoint, item, skin, skill, build) into a note and it becomes an inline chip:
   - Shows the item's **icon and name** with a rich hover **tooltip** — item stats, rarity, flavour text and rune/sigil bonuses, skill facts, waypoint map, and full **recipe** breakdowns (ingredients, required rating, and the crafted item).
   - **Right-click** a chip to **Copy chat code** or **Open in wiki**.
-  - **Left-click a waypoint chip to open the world map** at that point (needs [Pie UI](https://github.com/PieOrCake/pie_ui); see below).
-  - Build links show their spec automatically (e.g. `[Mirage Build]`).
+  - **Left-click a waypoint chip** to copy its code (paste it in the game chat).
+  - Build links show their elite specialisation (e.g. `[Mirage Build]`; `[Mesmer Build]` without Trailpack Core).
 - **Event timers** — pick an event with *Event* in the edit toolbar (search by name or map, or browse
   the categories), type `/e` and a name in the editor (e.g. `/e teq`; arrow keys + Enter or click, Escape
   closes the list), or write `{{event:<id>}}` (e.g. `{{event:tequatl-the-sunless}}`); it becomes a live
   chip: "Tequatl the Sunless - in 23 min" or "- for 4 min" while it runs. Hover for the next starts in
   local time, duration, map and waypoint; left-click copies the waypoint, right-click offers
-  *Copy waypoint* / *Open in wiki*. ~90 fixed-schedule events (world bosses, metas, ...), computed
-  locally in UTC -- no internet needed. Rotating events (e.g. the Ley-Line Anomaly) are one chip that
+  *Copy waypoint* / *Open in wiki*. ~90 fixed-schedule events (world bosses, metas, ...), built into
+  Trailpack Core and computed locally in UTC -- no internet needed. Rotating events (e.g. the Ley-Line Anomaly) are one chip that
   shows the current place while it runs, then the next one.
-- **Works with or without [Decoder Ring](https://github.com/PieOrCake/decoder_ring)**: with it loaded, chips show full names and icons; without it, chips fall back to basic labels and the copy / wiki actions still work. Nothing breaks if it loads or unloads mid-session.
-- **Optional [Pie UI](https://github.com/PieOrCake/pie_ui) integration**: when Pie UI is loaded, left-clicking a waypoint chip opens and pans the in-game map to that point (Pie UI then lets you click to travel). Without Pie UI the option simply isn't shown; load it any time and it appears, no restart needed.
+- **Extended features with [Trailpack Core](../trailpack-core/)**: names, icons and tooltips of
+  chat-link chips and the event timers. Without it Memo works as a full notepad: chips show basic
+  labels (copy / wiki still work) and the event features are greyed out with a hint. Core can be loaded or unloaded at
+  any time — nothing breaks, no restart needed.
 - **Checkboxes** with GitHub syntax: `- [ ] todo` / `- [x] done` (indentation allowed).
   - Click a box in view mode to tick it -- saved immediately.
   - Checked items are dimmed and struck through; their chips turn into plain grey names (no

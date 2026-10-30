@@ -1,6 +1,5 @@
 #include "chips/ChipResolver.h"
-#include "chat/ChatLinks.h"
-#include "chat/SpecData.h"
+#include "chatlinks/ChatLinks.h"
 
 // IM_COL32 layout: packed as (a<<24)|(b<<16)|(g<<8)|r
 // All colours are chosen for readability on a dark UI theme.
@@ -22,9 +21,9 @@ static constexpr uint32_t kColorWvW       = 0xFF'E8'88'50; // orange      — Wv
 static constexpr uint32_t kColorDefault   = 0xFF'A0'A0'A0; // grey        — unknown/other
 
 // Select the colour for a given link type.
-static uint32_t ColorForType(PieUI::ChatLinks::ChatLinkType type)
+static uint32_t ColorForType(ChatLinks::LinkType type)
 {
-    using namespace PieUI::ChatLinks;
+    using namespace ChatLinks;
     switch (type) {
         case LINK_ITEM:          return kColorItem;
         case LINK_MAP:           return kColorWaypoint;
@@ -35,43 +34,32 @@ static uint32_t ColorForType(PieUI::ChatLinks::ChatLinkType type)
         case LINK_BUILD:         return kColorBuild;
         case LINK_RECIPE:        return kColorRecipe;
         case LINK_ACHIEVEMENT:   return kColorAchiev;
-        case LINK_WARDROBE_TMPL: return kColorWardrobe;
+        case LINK_WARDROBE: return kColorWardrobe;
         case LINK_WVW_OBJECTIVE: return kColorWvW;
         default:                 return kColorDefault;
     }
 }
 
-// Derive an offline build label from the decoded link.
-// Scans all three spec slots for an elite-spec name; falls back to core profession;
-// falls back to "[Build]" if everything is unknown.
+// Derive an offline build label from the decoded link: the profession
+// ("[Mesmer Build]"), else "[Build]". Elite specialisation names are game data
+// and come from Trailpack Core (via the resolved record), not from here.
 static std::string BuildLabel(const std::string& chatCode)
 {
-    using namespace PieUI::ChatLinks;
-    DecodedBuildLink out;
-    if (!DecodeBuild(chatCode, out))
+    ChatLinks::BuildLink out;
+    if (!ChatLinks::DecodeBuild(chatCode, out))
         return "[Build]";
-
-    // Try each spec slot for a recognised elite-spec name.
-    for (int i = 0; i < 3; ++i) {
-        const char* es = PieUI::SpecData::GetEliteSpecName(out.specs[i].spec_id);
-        if (es && es[0])
-            return std::string("[") + es + " Build]";
-    }
-
-    // Fall back to core profession name.
-    const char* prof = PieUI::SpecData::GetProfessionName(out.profession);
-    if (prof && prof[0])
+    const char* prof = ChatLinks::ProfessionName(out.profession);
+    if (prof[0])
         return std::string("[") + prof + " Build]";
-
     return "[Build]";
 }
 
 ChipView ResolveChip(const std::string& chatCode)
 {
-    using namespace PieUI::ChatLinks;
+    using namespace ChatLinks;
 
     ChipView view;
-    ChatLinkType type = DetectType(chatCode);
+    LinkType type = TypeOf(chatCode);
     view.color = ColorForType(type);
 
     if (type == LINK_NONE) {
@@ -84,7 +72,7 @@ ChipView ResolveChip(const std::string& chatCode)
         return view;
     }
 
-    view.label = LinkTypeLabel(type);
+    view.label = TypeLabel(type);
     return view;
 }
 

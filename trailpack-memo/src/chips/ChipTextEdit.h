@@ -10,11 +10,10 @@
 // same engine ImGui's own InputText uses), with per-element widths so a chip renders as a wide
 // coloured token while caret/mouse/selection all "just work".
 //
-// Adapted from Pie UI's single-line ChipTextEdit and converted to MULTI-LINE for the note
-// editor: a newline is a non-chip cell (cp == '\n'), the layout maps (x,y) clicks to rows, Up/Down
-// move between rows, and Enter INSERTS a newline (it does NOT submit). Decoupled from Pie UI's
-// RichLine/game hooks: chip labels + colours come solely from Trailpack::ResolveChip + the vendored
-// ChatLinks codec. NO texture cache, NO game memory reads.
+// MULTI-LINE for the note editor: a newline is a non-chip cell (cp == '\n'), the layout maps (x,y)
+// clicks to rows, Up/Down move between rows, and Enter INSERTS a newline (it does NOT submit).
+// Chip labels + colours come solely from Trailpack::ResolveChip / ChipLabel + the ChatLinks
+// codec. NO texture cache, NO game memory reads.
 //
 // Each surface owns one instance. It manages its own keyboard focus (claimed on click) and only
 // captures keys while focused, so it coexists with the rest of the UI.

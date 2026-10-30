@@ -108,7 +108,7 @@ void Shutdown()
     // Mark dead so any in-flight Textures_LoadFromURL callback that fires during/after
     // unload early-returns instead of touching freed state. (The callback address itself
     // is freed by FreeLibrary; Nexus is expected to quiesce loads, but this closes the
-    // realistic teardown-race window — parity with DecoderClient's unload discipline.)
+    // realistic teardown-race window — like CoreClient's unload discipline.)
     std::lock_guard<std::mutex> lock(s_mutex);
     s_dead  = true;
     APIDefs = nullptr;

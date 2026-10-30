@@ -9,22 +9,24 @@
 
 ## Current state (as of 2026-10-29)
 
-Base (CRUD + persistence, view/edit + unsaved modal, markdown render, chips with Decoder Ring,
-icon cache, Pie UI waypoint/open-link) and the features below are done. Standalone addon, C++
-namespace `Trailpack`. Host tests: 81 test functions in
+Base (CRUD + persistence, view/edit + unsaved modal, markdown render, chips with details from
+Trailpack Core, icon cache) and the features below are done. Trailpack Core unlocks chip
+details and event timers (B6); without it those are greyed out. Standalone addon, C++
+namespace `Trailpack`. Host tests: 112 test functions in
 `tests/host_tests_main.cpp`, all green.
 
 ### Module map (`src/`)
 
-Feature folders, includes relative to `src/` (e.g. `"core/Settings.h"`). `generated/` and
-`vendor/` hold code that is never edited by hand (see AGENTS.md).
+Feature folders, includes relative to `src/` (e.g. `"core/Settings.h"`). `generated/` holds
+code that is never edited by hand (see AGENTS.md). The chat-link codec is the shared library
+`libs/trailpack-chatlinks`.
 
 | Module | Pure? | Role |
 |---|---|---|
 | `dllmain.cpp` | no | Nexus lifecycle, identity, keybind, quick access, options pane; maps `Settings` <-> live state |
 | `core/Settings.{h,cpp}` | yes | settings.json model with validation/clamping (`g_Settings`); `ColorSet` (all colour options) + built-in Light/Dark, user themes |
 | `core/Backup.{h,cpp}` | yes | Backup file format (`trailpack-memo-backup` v1: notes + settings) and settings export (`trailpack-memo-settings` v1) |
-| `core/SafeFile.{h,cpp}` | yes | Atomic write (+ `.bak`), read, set aside unreadable files; path helpers (UTF-8 strings, Win32 W-API / POSIX) replacing `std::filesystem` |
+| `libs/trailpack-files` (`tpfiles/SafeFile.h`) | yes | Shared with Core: atomic write (+ `.bak`), read, set aside unreadable files; path helpers (UTF-8 strings, Win32 W-API / POSIX) replacing `std::filesystem` |
 | `core/Reset.{h,cpp}` | yes | GW2 daily/weekly reset times (UTC), countdown text |
 | `core/I18n.{h,cpp}` | yes | English -> German UI string table, `Tr` / `TrN`, current language |
 | `notes/NotesWindow.{h,cpp}` | no | Note state, load/save, navigation, frame layout, popup requests (`requestPopup_` / `beginModal_`), caches |
@@ -37,21 +39,18 @@ Feature folders, includes relative to `src/` (e.g. `"core/Settings.h"`). `genera
 | `markdown/Markdown.{h,cpp}` | yes | Line parser (Paragraph/Heading/Bullet/Task; Text/Bold/Italic/Chip spans); task count/toggle/uncheck-all |
 | `markdown/MarkdownEdit.{h,cpp}` | yes | Toolbar commands on a cell model: wrap bold/italic, toggle line prefixes, list continuation on Enter |
 | `markdown/MarkdownRender.{h,cpp}` | no | ImGui view rendering: FontBig headings, faux bold (double draw), faux italic (shear), checkboxes, rich chips |
-| `chips/ChipTextEdit.{h,cpp}` | no | Multi-line stb_textedit editor with atomic chip cells (adapted from Pie UI), `ApplyEdit` for toolbar ops; soft wrap at the field width (`RowLen` -> `WrapRowLength` in `chips/ChipCodec.h`, used by layout, caret, selection and drawing) |
+| `chips/ChipTextEdit.{h,cpp}` | no | Multi-line stb_textedit editor with atomic chip cells `ApplyEdit` for toolbar ops; soft wrap at the field width (`RowLen` -> `WrapRowLength` in `chips/ChipCodec.h`, used by layout, caret, selection and drawing) |
 | `chips/ChipCodec.{h,cpp}` | yes | Text <-> cell round-trip (chat codes -> one chip cell), UTF-8 helpers |
-| `chips/ChipResolver.{h,cpp}` | yes | Offline structural label + colour from the codec (`[Item]`, `[Mirage Build]`) |
+| `chips/ChipResolver.{h,cpp}` | yes | Offline structural label + colour from the codec (`[Item]`, `[Mesmer Build]`) |
 | `chips/ChipColor.{h,cpp}` | yes | GW2 link colours (per type, per item rarity) |
-| `chips/ChipRich.{h,cpp}` | no | Rich chip: resolved name/icon/tooltip, right-click Copy code / Open wiki, Pie UI left-click |
+| `chips/ChipRich.{h,cpp}` | no | Rich chip: resolved name/icon/tooltip from Core, right-click Copy code / Open wiki, left-click copies a waypoint; prefetches rune / sigil records |
 | `chips/IconCache.{h,cpp}` / `chips/IconUrl.{h,cpp}` | no / yes | URL -> texture via Nexus `Textures_*FromURL`, failure set (retryable); FNV-1a key, URL split |
-| `events/Events.{h,cpp}` | yes | Event timers (B5): lookup, UTC schedule maths, search, chip time text |
-| `integrations/DecoderClient.{h,cpp}` | no | Decoder Ring consumer |
-| `integrations/PieUiClient.{h,cpp}` | no | Pie UI consumer (`OpenChatLink`) |
+| `events/Events.{h,cpp}` | yes | Event timers, editor side: `{{event:id}}` tokens, `/e` trigger, chip time texts, `PrettyId` (data and schedules come from Core) |
+| `integrations/CoreClient.{h,cpp}` | no | Trailpack Core consumer: chip records (cache, RESOLVED), event list / state / search; `Frame()` per render |
 | `ui/FileDialog.{h,cpp}` | no | Windows open/save dialog (worker thread), JSON filter; used by export/import and backups |
 | `ui/HelpWindow.{h,cpp}` | no | "?" title-bar button + guide window (sections translated via `Tr`; update it with new features) |
 | `ui/FontScale.{h,cpp}` | no | Scaled text without stretching the small font: `SetFontBase`, `FontScaleScope` |
-| `ui/Theme.{h,cpp}` | no | Accent palette (gold border, green/amber buttons, edit tint) |
-| `generated/EventData.{h,cpp}` | yes | **Generated** event table (`tools/gen_events.py`) — never edit by hand |
-| `vendor/chat/*` | yes | **Vendored** Pie UI codec — do not edit |
+| `ui/Theme.{h,cpp}` | no | Memo colours (user themes, panes, popups, badges); the shared look (palette, buttons, rounding, plain windows, locked items) comes from `libs/trailpack-ui` (`Theme::X` via `using namespace Trailpack::Ui`) |
 
 ### Features
 
@@ -119,8 +118,9 @@ Feature folders, includes relative to `src/` (e.g. `"core/Settings.h"`). `genera
   (`std::async`) and are polled in `Render()`.
 - UI language English/German (`I18n.{h,cpp}`, pure, host-tested table). Auto = Nexus language via
   a `Localization_Set` probe key (the game's own language is not exposed to addons); `language`
-  in `settings.json`. Chip structural labels (`[Item]`, spec names) come from the vendored codec
-  and stay English; Decoder Ring names come in whatever language it delivers.
+  in `settings.json`. Chip structural labels (`[Item]`, profession names) come from the codec library
+  and stay English; Core's names come in Core's language (the Nexus language, DE / EN); event
+  texts in Memo's own UI language (passed to Core).
 - User colours (border / background / text) in `Theme::Colors()`, pushed for the whole window by
   `Theme::PushWindowStyle()`; background/text only override Nexus's style once picked
   (`color_*` in `settings.json`, null = Nexus default). Daily / weekly badge background and letter
@@ -149,7 +149,7 @@ Feature folders, includes relative to `src/` (e.g. `"core/Settings.h"`). `genera
   Backup (Settings > Data, dllmain): `Backup::Make/Parse`; restore validates notes + settings
   first, asks inline, then `NotesWindow::RestoreNotes` + settings from defaults. Default folder
   `addons/TrailpackMemo/backups/`.
-  Settings window order: "General" (open: quick access icon, language, Decoder Ring status),
+  Settings window order: "General" (open: quick access icon, language, Trailpack Core status),
   Font, Layout, Colour, Events; below a separator "Data: backup and transfer" (backup + settings
   export, file actions apart from the settings).
   Settings export / import (Settings > Data, dllmain): `Backup::MakeSettings`
@@ -201,14 +201,14 @@ in game.
 - [ ] Remove the TODO comment. User test: type `wasd h` in a note — character must not move, Hero
       panel must not open; clicking into the world unfocuses the editor.
 
-### B2 — Update channel for a monorepo (needs a user decision first)
-**Why:** `Provider = UP_None` — users never get updates. Nexus' GitHub provider reads the latest
-release of one repo, but the monorepo will hold several addon DLLs.
-- [ ] Ask the user which option they want (do not decide alone): (a) one release per addon with
-      tag prefixes + check how Nexus picks the asset, (b) a separate release-only repo per addon,
-      (c) `UP_Direct` with a raw URL to a versioned DLL.
-- [ ] Implement the chosen option (`Provider`, `UpdateLink`), plus a release step (e.g. GitHub
-      Actions building with MinGW and attaching `TrailpackMemo.dll`). Only bump `V_*` when asked.
+### B2 — Update channel (done 2026-10-30, first release open)
+Decided with the user: one release-only repository per addon (Core PLAN D20). Nexus' GitHub
+provider takes the highest `v<version>` release of a repository and its first `.dll`, so a
+monorepo cannot serve two addons. `Provider = UP_GitHub`, `UpdateLink =
+https://github.com/tobia-codes/trailpack-memo`; tag `memo-v<version>` in this repository ->
+`.github/workflows/release.yml` publishes `v<version>` there. Only bump `V_*` when asked.
+- [ ] First release: see [`../../plans/RELEASE.md`](../../plans/RELEASE.md) (blockers incl. B1,
+      Raidcore contact, versions 0.9.x pre-release -> 1.0.0).
 
 ### B5 — Event timers in notes (next big feature)
 **Why:** world bosses and map metas follow fixed UTC schedules; notes should show them as chips
@@ -216,12 +216,14 @@ with a live countdown and copy the waypoint on click.
 - [ ] Work the stages in [`EVENTS.md`](EVENTS.md) (decisions D1-D15 are agreed — ask before
       changing them). One feature branch + PR per stage.
 
-### B6 — Switch to Trailpack Core
-**Why:** Decoder Ring is replaced by our own required data service Trailpack Core; event data
-moves there too. Planned in [`../trailpack-core/plans/PLAN.md`](../trailpack-core/plans/PLAN.md)
+### B6 — Switch to Trailpack Core (done 2026-10-30, in-game test open)
+**Why:** the former third-party chip provider is replaced by our own data service
+Trailpack Core; event data moved there too. Planned in [`../trailpack-core/plans/PLAN.md`](../trailpack-core/plans/PLAN.md)
 (decisions D15-D18 and D21 concern Memo; work happens in Core stages 1, 2 and 5). D21: afterwards
-Memo references no other creator; the Pie UI integration is dropped, the LICENSE line stays.
-- [ ] Follow the Core stages; do not extend `DecoderClient` or `generated/EventData` meanwhile.
+Memo references no other creator; the map integration is dropped, the LICENSE line stays.
+- [x] Core stages 1, 2 and 5 done: shared codec / style / file libraries, `CoreClient`, events
+      from Core (`events/Events` keeps token, `/e` trigger and time texts), greyed-out features
+      without Core, upgrade prefetch, no third-party references.
 
 ### Ideas (not scheduled — only on user request)
 - Search/filter in the note list.
@@ -231,14 +233,15 @@ Memo references no other creator; the Pie UI integration is dropped, the LICENSE
   that highlights events from open (unchecked) tasks in notes. Event data and schedule maths
   come from Trailpack Core (see `../trailpack-core/plans/PLAN.md`, D13 / D14), not from a
   static library. The memo publishes the open event ids via Nexus
-  events (broadcast on change + answer to a ping, like Decoder Ring / Pie UI); the payload is a
+  events (broadcast on change + answer to a ping, like Trailpack Core's handshake); the payload is a
   plain C struct with a version field in a `public/` header, copied by the receiver. Optional
   back channel: click in the table opens the note. Not reading `notes.json` directly.
 
 ---
 
 ## Changelog of this plan
-- 2026-10-30 — B6 added: switch from Decoder Ring to Trailpack Core (plan in `trailpack-core/`);
+- 2026-10-30 — B6 done: Memo on Trailpack Core (chips, events), third-party integrations removed.
+- 2026-10-30 — B6 added: switch to Trailpack Core (plan in `trailpack-core/`);
   the event-library idea is replaced by Core.
 - 2026-10-30 — Notes and groups reorderable by drag and drop (was under Ideas).
 - 2026-10-30 — B5 stages 1-5 done (user tests passed; stage 5: inline `/e ` suggestions); open point on D13 before stage 6; event
@@ -248,5 +251,5 @@ Memo references no other creator; the Pie UI integration is dropped, the LICENSE
   bigger, `-flto` crashes MinGW GCC 13 (ICE) -- both not used.
 - 2026-10-29 — Plan set up in the monorepo; rules in `AGENTS.md`.
 - 2026-10-29 — B5 (event timers) planned with the user; details in `EVENTS.md`.
-- 2026-10-29 — Standalone: fork references removed, namespace `Magpie` -> `Trailpack`; B3 / B4
+- 2026-10-29 — Standalone: fork references removed, own namespace `Trailpack`; B3 / B4
   (upstream docs / sync) dropped.

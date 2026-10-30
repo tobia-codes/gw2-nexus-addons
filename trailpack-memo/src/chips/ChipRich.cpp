@@ -1,15 +1,14 @@
 // ChipRich.cpp — rich-chip resolution + draw. See ChipRich.h.
 //
 // Degradation contract (must never crash, must always render):
-//   * Decoder Ring absent / Resolve()==false  -> structural label, no icon, no
+//   * Trailpack Core absent / not ready yet   -> structural label, no icon, no
 //     rich tooltip; context menu STILL works (it uses the raw stored code).
 //   * Icon not yet downloaded / failed         -> text-only chip; still works.
 //   * Record warm                              -> resolved name + icon + rich
 //     tooltip (type-specific: item stats/flavour/value/flags + rune-set bonuses,
-//     skill desc+facts, waypoint map).
+//     skill / trait desc+facts, waypoint map, build specialisations, recipe).
 //
-// Presence is read live every call via Decoder::Present()/Resolve() — never
-// latched. All tooltip/rendered text is ASCII.
+// Presence is read live every call via CoreClient — never latched.
 
 #include "chips/ChipRich.h"
 
@@ -23,11 +22,9 @@
 
 #include "chips/ChipResolver.h"            // Trailpack::ResolveChip (structural label)
 #include "chips/ChipColor.h"               // Trailpack::ChipColor (native GW2 chip colours)
-#include "integrations/DecoderClient.h"           // Trailpack::Decoder::Present / Resolve
-#include "integrations/PieUiClient.h"             // Trailpack::PieUi::Present / OpenChatLink
-#include "DecoderRingApi.h"          // DecoderRecord + enums (rarity)
+#include "integrations/CoreClient.h"       // Trailpack::CoreClient::Present / Resolve
 #include "chips/IconCache.h"               // Trailpack::Icons::RequestUrl / Get
-#include "chat/ChatLinks.h"          // SegmentLine -> (linkType, id)
+#include "chatlinks/ChatLinks.h"     // Split -> (linkType, id)
 #include "core/I18n.h"                    // Tr
 #include "ui/Theme.h"                   // PopupTextScope (popups ignore the note text colour)
 
@@ -39,67 +36,59 @@ constexpr float kIconGap  = 3.0f;   // gap between the inline icon and the label
 
 // Pull the (linkType, id) correlation key out of a chat code. A single chat
 // code segments to one Link segment; if anything is off we return false and the
-// caller falls back to a pure-structural chip (label only, no Decoder query).
+// caller falls back to a pure-structural chip (label only, no Core query).
 bool LinkKey(const std::string& code, uint8_t& linkType, uint32_t& id)
 {
-    for (const auto& seg : PieUI::ChatLinks::SegmentLine(code)) {
-        if (seg.kind == PieUI::ChatLinks::SegmentKind::Link) {
-            linkType = (uint8_t)seg.linkType;
-            id = seg.primaryId;
+    for (const auto& seg : ChatLinks::Split(code)) {
+        if (seg.isLink) {
+            linkType = (uint8_t)seg.type;
+            id = seg.id;
             return true;
         }
     }
     return false;
 }
 
-// Map a chip link type to the menu label for handing it to Pie UI's generic
-// "perform native action" event. Returns "" for types Pie UI does not act on,
-// so the caller shows no Pie UI affordance for them.
-const char* PieUiActionLabel(uint8_t linkType)
-{
-    switch (linkType) {
-        case PieUI::ChatLinks::LINK_MAP:           return Trailpack::I18n::Tr("Open map in Pie UI");
-        case PieUI::ChatLinks::LINK_WARDROBE_TMPL: return Trailpack::I18n::Tr("Open wardrobe template in Pie UI");
-        case PieUI::ChatLinks::LINK_BUILD:         return Trailpack::I18n::Tr("Open build in Pie UI");
-        case PieUI::ChatLinks::LINK_ITEM:
-        case PieUI::ChatLinks::LINK_SKIN:
-        case PieUI::ChatLinks::LINK_OUTFIT:        return Trailpack::I18n::Tr("Preview in Pie UI");
-        default:                                   return "";
-    }
-}
-
 // Resolve the chip to its display state for this frame.
-// label: what to draw (bracketed). warm: true if a Decoder record was copied.
+// label: what to draw (bracketed). warm: true if a Core record was copied.
 // iconUrl: from the record when warm (may be empty). color: structural tint.
 struct ChipState {
     std::string   label;
     uint32_t      color = 0xFFA0A0A0;
     bool          warm  = false;
-    DecoderRecord rec{};       // valid only when warm
+    TpcRecord     rec{};       // valid only when warm
 };
 
 ChipState Resolve(const std::string& code)
 {
     ChipState st;
-    // Structural label is the offline fallback (works with no Decoder Ring).
+    // Structural label is the offline fallback (works without Trailpack Core).
     const ChipView structural = Trailpack::ResolveChip(code);
     st.label = structural.label.empty() ? "[link]" : structural.label;
 
     uint8_t linkType = 0; uint32_t id = 0;
     const bool haveKey = LinkKey(code, linkType, id);
 
-    // Item rarity is only known from a warm Decoder record; default Unknown
+    // Item rarity is only known from a warm Core record; default Unknown
     // (-> Basic colour) so cold/absent items still render in a sensible colour.
-    uint8_t rarity = DR_RarityUnknown;
+    uint8_t rarity = TPC_RARITY_UNKNOWN;
 
-    if (haveKey && Trailpack::Decoder::Present()) {
-        DecoderRecord rec{};
-        if (Trailpack::Decoder::Resolve(linkType, id, code.c_str(), rec) && rec.name[0] != '\0') {
+    if (haveKey && Trailpack::CoreClient::Present()) {
+        // Ask for the rune / sigil records right away, so the tooltip has them when it opens.
+        if (linkType == ChatLinks::LINK_ITEM) {
+            ChatLinks::ItemLink di;
+            if (ChatLinks::DecodeItem(code, di)) {
+                Trailpack::CoreClient::Prefetch(di.upgrade1);
+                Trailpack::CoreClient::Prefetch(di.upgrade2);
+            }
+        }
+        TpcRecord rec{};
+        if (Trailpack::CoreClient::Resolve(linkType, id, code.c_str(), rec) && rec.name[0] != '\0') {
             st.warm = true;
             st.rec  = rec;
             std::string name(rec.name);
             st.label = "[" + name + "]";   // bracket to match the structural style
-            if (linkType == PieUI::ChatLinks::LINK_ITEM) rarity = rec.rarity;
+            if (linkType == ChatLinks::LINK_ITEM) rarity = rec.rarity;
         }
     }
 
@@ -154,18 +143,18 @@ void AppendCoin(std::string& out, int32_t copper)
 const char* BoundText(uint8_t bound)
 {
     switch (bound) {
-        case DB_AccountOnAcquire: return Trailpack::I18n::Tr("Account Bound on Acquire");
-        case DB_SoulOnAcquire:    return Trailpack::I18n::Tr("Soulbound on Acquire");
-        case DB_AccountOnUse:     return Trailpack::I18n::Tr("Account Bound on Use");
-        case DB_SoulOnUse:        return Trailpack::I18n::Tr("Soulbound on Use");
+        case TPC_BOUND_ACCOUNT_ON_ACQUIRE: return Trailpack::I18n::Tr("Account Bound on Acquire");
+        case TPC_BOUND_SOUL_ON_ACQUIRE:    return Trailpack::I18n::Tr("Soulbound on Acquire");
+        case TPC_BOUND_ACCOUNT_ON_USE:     return Trailpack::I18n::Tr("Account Bound on Use");
+        case TPC_BOUND_SOUL_ON_USE:        return Trailpack::I18n::Tr("Soulbound on Use");
         default:                  return nullptr;
     }
 }
 
-// Emit up to 16 pre-formatted fact lines (DR clamps factCount, we clamp again).
-void EmitFacts(const DecoderRecord& rec)
+// Emit the pre-formatted fact lines (Core caps factCount, we clamp again).
+void EmitFacts(const TpcRecord& rec)
 {
-    const int n = rec.factCount > 16 ? 16 : rec.factCount;
+    const int n = rec.factCount > TPC_MAX_FACTS ? TPC_MAX_FACTS : rec.factCount;
     for (int i = 0; i < n; ++i) {
         if (rec.facts[i].text[0]) ImGui::TextUnformatted(rec.facts[i].text);
     }
@@ -176,23 +165,21 @@ void EmitFacts(const DecoderRecord& rec)
 // the item's chat code, used ONLY to decode its upgrade (rune/sigil) ids; pass
 // "" when there is no chip code (e.g. a recipe's output item, which has an id
 // but no pasted chat link), and the upgrade section is simply skipped.
-void EmitItemPanel(const DecoderRecord& rec, const std::string& code)
+void EmitItemPanel(const TpcRecord& rec, const std::string& code)
 {
     const char* nm = rec.name[0] ? rec.name : Trailpack::I18n::Tr("(unnamed)");
     // Rarity-coloured header so the panel matches the chip colour.
     ImGui::TextColored(ImGui::ColorConvertU32ToFloat4(ChipColorForItemRarity(rec.rarity)),
                        "%s", nm);
 
-    // v3+: pre-formatted stat / meta lines (Defense, Weapon Strength,
-    // attributes, infusion slots, weight, required level). Empty against
-    // an older DR, so the tooltip is simply unchanged there.
-    const int nFacts = rec.factCount > 16 ? 16 : rec.factCount;
-    if (nFacts > 0) {
+    // Pre-formatted stat / meta lines (Defense, Weapon Strength, attributes,
+    // infusion slots, slot, weight, required level).
+    if (rec.factCount > 0) {
         ImGui::Separator();
         EmitFacts(rec);
     }
-    // Vendor value + bind/trade flags. DR deliberately keeps these OUT of
-    // facts[], so there is no duplication with the stat lines above.
+    // Vendor value + bind/trade flags. Core keeps these OUT of facts[], so
+    // there is no duplication with the stat lines above.
     ImGui::Separator();
     std::string v = Trailpack::I18n::Tr("Vendor: ");
     AppendCoin(v, rec.vendorValue);
@@ -202,18 +189,18 @@ void EmitItemPanel(const DecoderRecord& rec, const std::string& code)
                                          : Trailpack::I18n::Tr("Not tradeable"));
     if (rec.noSell) ImGui::TextUnformatted(Trailpack::I18n::Tr("Cannot be sold to a vendor"));
 
-    // Rune / sigil set bonuses live on the UPGRADE item's own record (DR
+    // Rune / sigil set bonuses live on the UPGRADE item's own record (Core
     // keeps records flat), so decode the chip's upgrade ids and resolve
-    // each as a normal item link. Degrades cleanly: a not-yet-warm upgrade
-    // is skipped and fills on a later frame via the RESOLVED event.
-    PieUI::ChatLinks::DecodedItemLink di;
-    if (!code.empty() && PieUI::ChatLinks::DecodeItem(code, di)) {
-        const uint32_t ups[2] = { di.upgrade1_id, di.upgrade2_id };
+    // each as a normal item link (prefetched when the chip was drawn). A
+    // not-yet-warm upgrade is skipped and fills on a later frame.
+    ChatLinks::ItemLink di;
+    if (!code.empty() && ChatLinks::DecodeItem(code, di)) {
+        const uint32_t ups[2] = { di.upgrade1, di.upgrade2 };
         bool header = false;
         for (uint32_t uid : ups) {
             if (uid == 0) continue;
-            DecoderRecord up{};
-            if (Trailpack::Decoder::Resolve(PieUI::ChatLinks::LINK_ITEM, uid, nullptr, up)) {
+            TpcRecord up{};
+            if (Trailpack::CoreClient::Resolve(ChatLinks::LINK_ITEM, uid, nullptr, up)) {
                 if (!header) {
                     ImGui::Separator();
                     ImGui::TextUnformatted(Trailpack::I18n::Tr("Upgrades:"));
@@ -234,12 +221,27 @@ void EmitItemPanel(const DecoderRecord& rec, const std::string& code)
     }
 }
 
+// Description (wrapped) + facts, the body of skill / trait tooltips.
+void EmitDescriptionAndFacts(const TpcRecord& rec)
+{
+    if (rec.description[0]) {
+        ImGui::Separator();
+        ImGui::PushTextWrapPos(ImGui::GetFontSize() * 24.0f);
+        ImGui::TextUnformatted(rec.description);
+        ImGui::PopTextWrapPos();
+    }
+    if (rec.factCount > 0) {
+        ImGui::Separator();
+        EmitFacts(rec);
+    }
+}
+
 // Build + emit the tooltip body for a warm record (type-specific). `code` is the
 // chip's chat code, used only to fetch upgrade (rune/sigil) records for items.
-void TooltipWarm(const DecoderRecord& rec, const std::string& code)
+void TooltipWarm(const TpcRecord& rec, const std::string& code)
 {
     // Items get the full rarity-coloured equipment panel.
-    if (rec.linkType == PieUI::ChatLinks::LINK_ITEM) {
+    if (rec.linkType == ChatLinks::LINK_ITEM) {
         EmitItemPanel(rec, code);
         return;
     }
@@ -248,52 +250,39 @@ void TooltipWarm(const DecoderRecord& rec, const std::string& code)
     ImGui::TextUnformatted(nm);
 
     switch (rec.linkType) {
-        case 0x06: {  // skill
-            if (rec.description[0]) {
-                ImGui::Separator();
-                ImGui::PushTextWrapPos(ImGui::GetFontSize() * 24.0f);
-                ImGui::TextUnformatted(rec.description);
-                ImGui::PopTextWrapPos();
-            }
-            if (rec.factCount > 0) {
-                ImGui::Separator();
-                EmitFacts(rec);
-            }
+        case ChatLinks::LINK_SKILL:
+        case ChatLinks::LINK_TRAIT:
+            EmitDescriptionAndFacts(rec);
             break;
-        }
-        case 0x04: {  // waypoint / PoI
-            if (rec.mapName[0]) {
+        case ChatLinks::LINK_MAP: {   // waypoint / PoI
+            if (rec.poiMapName[0]) {
                 ImGui::Separator();
                 std::string m = Trailpack::I18n::Tr("Map: ");
-                m += rec.mapName;
+                m += rec.poiMapName;
                 ImGui::TextUnformatted(m.c_str());
             }
+            ImGui::Separator();
+            ImGui::TextDisabled("%s", Trailpack::I18n::Tr("Left-click: copy the waypoint code."));
             break;
         }
-        case PieUI::ChatLinks::LINK_RECIPE: {  // 0x09 recipe (DR schemaVersion >= 4)
-            // name[] above already reads "Recipe: <output> [(Rarity)]". The
-            // recipe-specific data — ingredient/required-rating facts and the
-            // overloaded vendorValue output id — only exists on a v4+ record, so
-            // gate it on the version that introduced recipes (older DRs never
-            // resolve 0x09, but this keeps us defensive).
-            if (rec.schemaVersion < 4u) break;
-
-            // facts[] = one pre-formatted line per ingredient, then guild
-            // ingredients, then "Required Rating: N" (all icon-less).
+        case ChatLinks::LINK_BUILD:   // the specialisation lines
             if (rec.factCount > 0) {
                 ImGui::Separator();
                 EmitFacts(rec);
             }
-
-            // Second panel: vendorValue is OVERLOADED for recipe links to hold
-            // the OUTPUT item's id (NOT a copper value). Resolve it as a normal
-            // item link and render its full equipment tooltip, mirroring the
-            // game's native two-panel recipe view. Degrades cleanly: a not-yet-
-            // warm output fills on a later frame via the RESOLVED event.
-            if (rec.vendorValue > 0) {
-                DecoderRecord out{};
-                if (Trailpack::Decoder::Resolve(PieUI::ChatLinks::LINK_ITEM,
-                                             (uint32_t)rec.vendorValue, nullptr, out)
+            break;
+        case ChatLinks::LINK_RECIPE: {
+            // name[] above reads "Recipe: <output>"; facts[] = one line per ingredient,
+            // then "Required Rating: N".
+            if (rec.factCount > 0) {
+                ImGui::Separator();
+                EmitFacts(rec);
+            }
+            // Second panel: the output item's full equipment tooltip, like the game's
+            // two-panel recipe view. A not-yet-warm output fills on a later frame.
+            if (rec.recipeOutputItemId != 0) {
+                TpcRecord out{};
+                if (Trailpack::CoreClient::Resolve(ChatLinks::LINK_ITEM, rec.recipeOutputItemId, nullptr, out)
                     && out.name[0]) {
                     ImGui::Separator();
                     EmitItemPanel(out, std::string());  // no chip code -> no upgrade decode
@@ -302,7 +291,8 @@ void TooltipWarm(const DecoderRecord& rec, const std::string& code)
             break;
         }
         default:
-            break;  // skin / build / other: name only
+            if (rec.description[0]) EmitDescriptionAndFacts(rec);   // skin and others
+            break;
     }
 }
 
@@ -378,17 +368,9 @@ float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& p
     char pid[32];
     snprintf(pid, sizeof pid, "chip_ctx_%d", uid);
 
-    // Any Pie-UI-supported chip (waypoint, wardrobe/build template, item/skin/
-    // outfit) can ask Pie UI to perform the link's native action. Offered only
-    // when Pie UI is present (so an absent Pie UI never shows a dead affordance)
-    // and only for types Pie UI acts on (PieUiActionLabel returns "" otherwise).
-    // Works in BOTH warm and cold chip states: OpenChatLink hands Pie UI the raw
-    // chat code, which Pie UI decodes itself — no Decoder Ring required.
-    uint8_t pieType = 0; uint32_t pieId = 0;
-    const char* pieLabel =
-        (done == nullptr && LinkKey(code, pieType, pieId) && Trailpack::PieUi::Present())
-            ? PieUiActionLabel(pieType) : "";
-    const bool offerPie = pieLabel[0] != '\0';
+    // A waypoint chip copies its code on left-click (paste it in the game chat to travel).
+    uint8_t linkType = 0; uint32_t linkId = 0;
+    const bool waypoint = LinkKey(code, linkType, linkId) && linkType == ChatLinks::LINK_MAP;
 
     const bool hovering = ImGui::IsMouseHoveringRect(rMin, rMax);
     if (hovering) {
@@ -401,32 +383,27 @@ float DrawRichChip(ImDrawList* dl, ImFont* font, float fontSize, const ImVec2& p
             } else {
                 ImGui::TextUnformatted(st.label.c_str());
                 ImGui::Separator();
-                ImGui::TextUnformatted(Trailpack::I18n::Tr("Decoder Ring not loaded."));
-                ImGui::TextUnformatted(Trailpack::I18n::Tr("Right-click to copy the code or open the wiki."));
-            }
-            // Discoverability for the Pie UI action (supported types, Pie UI present).
-            if (offerPie) {
-                ImGui::Separator();
-                ImGui::Text(Trailpack::I18n::Tr("Left-click: %s"), pieLabel);
+                ImGui::TextUnformatted(Trailpack::CoreClient::Present()
+                                           ? Trailpack::I18n::Tr("Loading details...")
+                                           : Trailpack::I18n::Tr("Names, icons and tooltips come with the Trailpack Core addon."));
+                ImGui::TextUnformatted(waypoint ? Trailpack::I18n::Tr("Left-click: copy the waypoint code.")
+                                                : Trailpack::I18n::Tr("Right-click to copy the code or open the wiki."));
             }
             ImGui::EndTooltip();
         }
-        // Left-click a supported chip -> ask Pie UI to perform its native action.
-        if (offerPie && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) {
-            Trailpack::PieUi::OpenChatLink(code);
-        }
+        if (waypoint) ImGui::SetMouseCursor(ImGuiMouseCursor_Hand);
+        if (waypoint && ImGui::IsMouseClicked(ImGuiMouseButton_Left)) ImGui::SetClipboardText(code.c_str());
         if (ImGui::IsMouseClicked(ImGuiMouseButton_Right)) {
             ImGui::OpenPopup(pid);
         }
     }
 
-    // Context menu — both actions use the raw stored code, so they work with NO
-    // Decoder Ring present. Begun every frame in this window scope.
+    // Context menu — both actions use the raw stored code, so they work without
+    // Trailpack Core. Begun every frame in this window scope.
     Theme::PopupTextScope popupText;
     if (ImGui::BeginPopup(pid)) {
         if (ImGui::MenuItem(Trailpack::I18n::Tr("Copy chat code"))) ImGui::SetClipboardText(code.c_str());
         if (ImGui::MenuItem(Trailpack::I18n::Tr("Open in wiki")))   OpenWiki(code);
-        if (offerPie && ImGui::MenuItem(pieLabel)) Trailpack::PieUi::OpenChatLink(code);
         ImGui::EndPopup();
     }
 
