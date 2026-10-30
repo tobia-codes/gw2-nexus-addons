@@ -122,6 +122,12 @@ Ring's code was only read for orientation (D2).
 - **D18 — Prefetch:** Memo requests rune / sigil upgrades of an item chip when the chip is drawn,
   not only on hover (today `ChipRich.cpp` resolves them inside the tooltip).
 
+- **D21 — No third-party references in Memo:** after the switch Memo names no other creator's
+  repository or addon. The Pie UI integration (open the world map from a waypoint chip) is
+  dropped, not rebuilt — it would need input to the game, which we rule out. The only remaining
+  trace is the MIT copyright line `PieOrCake` in `trailpack-memo/LICENSE`, which must stay as long
+  as Memo contains code derived from Magpie Memo.
+
 ### Process
 - **D19 — Stages** below, one feature branch + PR per stage.
 - **D20 — Update channel:** research how Nexus' GitHub update provider picks a release / asset in
@@ -155,6 +161,77 @@ in game.
       formatting.
 - [ ] Cache model (D11), batch planner, token bucket + backoff (D10) — all host-tested with an
       injected fetch.
+- [ ] Every case of the test checklist below has a host test.
+
+#### Test checklist (from Decoder Ring's host tests)
+Cases Decoder Ring (`PieOrCake/decoder_ring`, `tests/test_main.cpp`) learned the hard way. Our
+tests cover the same cases with **our own** fixtures: capture fresh, untrimmed responses from the
+API / wiki (EN and DE) into `tests/fixtures/`, never copy Decoder Ring's test code (D2). Cases
+marked *(DR feature)* only apply once we build that feature.
+
+**ABI / offline data**
+- [ ] Records and API table are POD / trivially copyable; layout pinned (`structSize`, offsets).
+- [ ] Build link -> spec label ("Mirage Build" for spec 59; core profession -> "Mesmer Build").
+- [ ] Waypoint / PoI ids resolve from the built-in table with name, map and kind
+      (waypoint / point of interest / vista), DE and EN.
+
+**Items (`/v2/items`)**
+- [ ] Armour (e.g. Zojja's Breastplate): defense, attributes incl. `CritDamage` -> "Ferocity",
+      infusion slot, weight, subtype, required level, flavour text, bound on acquire.
+- [ ] Weapon (e.g. Judgment Trident): weapon strength line, **no** defense line; flavour markup
+      (`<c=@flavor>`, `<br>`) stripped cleanly.
+- [ ] Rune (e.g. Superior Rune of the Scholar): `details.bonuses` listed verbatim (the consumer
+      shows them for the upgrade ids of the parent item, D18).
+- [ ] Mystic Coin: `NoSell` must **not** make it untradeable (it is traded on the TP).
+- [ ] Every rarity tier maps; unknown / missing rarity stays "unknown", never a real tier.
+- [ ] Subtype wording: `HelmAquatic` -> "Aquatic Helm", generic `*Aquatic` rule, `Default` is
+      dropped, real slots (`Coat`, `Rifle`, `Trident`, `Speargun`) pass through.
+- [ ] German response: our own labels are translated, names from the API used verbatim; the
+      request URL carries `lang`.
+- [ ] Tooltip lines are capped (fact count and text length) without cutting UTF-8 characters.
+
+**Skills (`/v2/skills` + wiki fallback)**
+- [ ] Normal skill: name, icon, description, facts.
+- [ ] Skill missing from `/v2/skills` (mount / siege turtle / transform): wiki fallback via the
+      SMW `action=ask` API — e.g. 63475 "Slam" with description and facts ("Damage", condition
+      with duration, "Number of Targets", "Defiance Break", "Range"); wiki facts carry no icons.
+- [ ] Name from the canonical name, not the page title (no "(turtle)" / "(effect)" suffix).
+- [ ] Id collision: 63440 is also an item ("Defender's Staff"); the query must be limited to the
+      skill context so it resolves to "Open Access".
+- [ ] Wiki markup cleanup: bold, HTML entities, `[[Category:...]]` must not leak into facts
+      (e.g. "FireCategory:Fire field skills").
+- [ ] Empty wiki result (`[]`) -> failed, plain `[Skill]` label, never an invented name.
+- [ ] Effect / buff links (food, guild / WvW boosts) are 0x06 links but neither in `/v2/skills`
+      nor in the skill wiki space: second fallback under the effect context — e.g. 46587
+      "Malnourished", 35126 "Guild WvW Reward Track Boost".
+- [ ] *(DR feature)* Breakbar enrichment from the wiki: 6154 Overcharged Shot gets
+      "Defiance Break: 232" (the wiki text has a stray "332" from a "sic" note — read 232);
+      5492 Fire Attunement gets none, never "Defiance Break: 0"; no double line, no extra
+      fetch when the fact already exists; label translated, number from the English wiki.
+
+**Traits, recipes, skins**
+- [ ] Trait 214 "Raging Storm": description, icon, facts "Recharge: 8s" (`value`),
+      "Radius: 360" (falls back to `distance`), "Number of Targets: 5", "Fury (4s)" (buff with
+      duration); API facts carry icons.
+- [ ] Recipe 9508: output item 62905 "Elegant Huntsman's Backpack", ingredients + required
+      rating; output and ingredients fetched in **one** `/v2/items?ids=` batch.
+- [ ] Guild recipe 11777 (output 77721 "Silver Tequatl Trophy", rating 350): guild-upgrade
+      ingredients via `/v2/guild/upgrades?ids=` (best effort).
+- [ ] Recipe name localized ("Rezept: ..." in German).
+- [ ] Skin: name, icon; URL carries `lang`.
+
+**Cache, language, lifetime**
+- [ ] Cache round-trip per type; an old cache format is refetched, never poisons the cache;
+      a missing new field reads back as "unknown".
+- [ ] Language switch never serves the warm English entry for a German request (cache
+      namespaced by language).
+- [ ] Nexus language -> API language mapping (anything but DE -> EN, D12).
+- [ ] Invalid id (e.g. 0) fails synchronously, no request.
+- [ ] **Every request ends in exactly one terminal outcome** (sync answer or event): resolved,
+      failed after timeout, invalid, in cooldown — none stays "not ready" forever.
+- [ ] Failure cooldown: a failed id is not refetched before the cooldown ends.
+- [ ] Teardown while a fetch is in flight waits for it and emits nothing afterwards; calls after
+      teardown are safe.
 
 ### Stage 4 — Core DLL
 - [ ] `public/TrailpackCoreApi.h` (D5-D8, incl. `ResolveMany`) with layout tests.
@@ -168,6 +245,12 @@ in game.
 - [ ] Event chips, `/e` and the event picker read from Core; Memo's `generated/EventData` and
       `tools/gen_events.py` removed.
 - [ ] Greyed-out features + hints without Core (D17), upgrade prefetch (D18).
+- [ ] No references to other creators' repositories or addons left in Memo (D21): Pie UI
+      integration removed (`integrations/PieUiClient.*`, left-click on a waypoint chip copies the
+      code, README / guide / AGENTS / I18n entries gone), "adapted from Pie UI" comments removed;
+      check with a grep for `PieOrCake|Pie ?UI|PieUI|Decoder|Magpie|github.com` (only our own
+      repo URL may remain). **Keep** the `Copyright (c) 2026 PieOrCake` line in
+      `trailpack-memo/LICENSE` (MIT notice for the code derived from Magpie Memo).
 - [ ] README / guide / AGENTS / PLAN of Memo updated. User test with and without Core, and
       unloading Core mid-session.
 
@@ -220,3 +303,6 @@ in game.
   header, never shared) and the matching user-facing statement.
 - 2026-10-30 — Renamed Trailpack Codex -> Trailpack Core (folder, DLL, DataLink / events,
   signature `0x5450436F` "TPCo", namespace `Trailpack::Core`).
+- 2026-10-30 — Stage 3: test checklist derived from Decoder Ring's host tests (own fixtures).
+- 2026-10-30 — D21: Memo drops all references to other creators (Pie UI integration removed in
+  stage 5); the LICENSE copyright line stays.

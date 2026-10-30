@@ -219,7 +219,8 @@ with a live countdown and copy the waypoint on click.
 ### B6 — Switch to Trailpack Core
 **Why:** Decoder Ring is replaced by our own required data service Trailpack Core; event data
 moves there too. Planned in [`../trailpack-core/plans/PLAN.md`](../trailpack-core/plans/PLAN.md)
-(decisions D15-D18 concern Memo; work happens in Core stages 1, 2 and 5).
+(decisions D15-D18 and D21 concern Memo; work happens in Core stages 1, 2 and 5). D21: afterwards
+Memo references no other creator; the Pie UI integration is dropped, the LICENSE line stays.
 - [ ] Follow the Core stages; do not extend `DecoderClient` or `generated/EventData` meanwhile.
 
 ### Ideas (not scheduled — only on user request)
