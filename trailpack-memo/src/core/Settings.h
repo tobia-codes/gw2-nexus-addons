@@ -34,6 +34,8 @@ struct ColorSet {
     bool          showNoteBorder = false;
     OptionalColor listBorder;       // unset: follow `border`
     OptionalColor noteBorder;       // unset: follow `border`
+    bool          showEditorBorder = false;   // the note editor's field frame on/off
+    OptionalColor editorBorder;     // unset: follow `border`
     OptionalColor menuButton;       // menu button next to "Create New Note"; unset: Nexus button
     OptionalColor menuIcon;         // its three lines; unset: window text
     OptionalColor popupBackground;  // menus, tooltips, modals; unset: the list's colour, opaque
@@ -65,12 +67,16 @@ struct Settings {
     static constexpr int   kScaleMax = 200;
     static constexpr float kDefaultListWidth = 200.0f;
     static constexpr float kRoundingMax = 12.0f;   // corner rounding, px
+    static constexpr float kRowSpacingDefault = 3.0f;   // note list row spacing, px
+    static constexpr float kRowSpacingMax     = 20.0f;
 
     bool     showQaIcon    = true;
     bool     editPreview   = false;
     int      uiTextScale   = 100;   // window UI text, percent
     int      noteTextScale = 100;   // note content, percent
     float    listWidth     = kDefaultListWidth;   // px; clamped to the window when drawn
+    bool     groupsFirst   = false;   // note list: groups above the ungrouped notes (default: below)
+    float    rowSpacing    = kRowSpacingDefault;   // note list: space below each row, 0..kRowSpacingMax px
     bool     doneShowTime   = false;  // checked tasks: event chips keep their countdown
     bool     doneShowPopups = false;  // checked tasks: chips keep tooltip + right-click menu
     float    cornerRounding = 0.0f;   // note window corners (windows, buttons, ...), 0..kRoundingMax px

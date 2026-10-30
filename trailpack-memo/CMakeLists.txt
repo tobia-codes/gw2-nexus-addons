@@ -47,7 +47,7 @@ if(NOT GW2_HOST_TESTS)
         ${CMAKE_CURRENT_SOURCE_DIR}/src/vendor   # vendored units keep their own include paths (chat/...)
         ${CMAKE_CURRENT_SOURCE_DIR}/public
     )
-    target_link_libraries(TrailpackMemo PRIVATE gw2_imgui gw2_headers gdi32 wininet shell32 comdlg32)
+    target_link_libraries(TrailpackMemo PRIVATE gw2_imgui gw2_headers gdi32 shell32 comdlg32)
     target_link_options(TrailpackMemo PRIVATE
         -Wl,--out-implib,TrailpackMemo.lib
         -Wl,--strip-all

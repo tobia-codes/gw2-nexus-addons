@@ -23,7 +23,7 @@ Feature folders, includes relative to `src/` (e.g. `"core/Settings.h"`). `genera
 |---|---|---|
 | `dllmain.cpp` | no | Nexus lifecycle, identity, keybind, quick access, options pane; maps `Settings` <-> live state |
 | `core/Settings.{h,cpp}` | yes | settings.json model with validation/clamping (`g_Settings`); `ColorSet` (all colour options) + built-in Light/Dark, user themes |
-| `core/Backup.{h,cpp}` | yes | Backup file format (`trailpack-memo-backup` v1: notes + settings) |
+| `core/Backup.{h,cpp}` | yes | Backup file format (`trailpack-memo-backup` v1: notes + settings) and settings export (`trailpack-memo-settings` v1) |
 | `core/SafeFile.{h,cpp}` | yes | Atomic write (+ `.bak`), read, set aside unreadable files; path helpers (UTF-8 strings, Win32 W-API / POSIX) replacing `std::filesystem` |
 | `core/Reset.{h,cpp}` | yes | GW2 daily/weekly reset times (UTC), countdown text |
 | `core/I18n.{h,cpp}` | yes | English -> German UI string table, `Tr` / `TrN`, current language |
@@ -95,7 +95,15 @@ Feature folders, includes relative to `src/` (e.g. `"core/Settings.h"`). `genera
   `{"format":"trailpack-memo-notes","version":2,groups,notes}` (v1 plain array still loads).
   Export v2 carries `groups` + per-note `group`; `ExportGroupJson` for one group; import reuses a
   group by id or recreates it (only groups used by imported notes). Deleting a group ungroups its
-  notes. List UI: `renderGroupHeader_` / `renderNoteRow_`, drag payload `TPM_NOTE`.
+  notes. List UI: `renderGroupHeader_` / `renderNoteRow_`, drag payloads `TPM_NOTE` / `TPM_GROUP`.
+  Reorder by drag and drop: list order = store order (`notes_` / `groups_`, saved in notes.json);
+  `MoveNoteNextTo` (note onto note: before / after by row half, takes the target's group),
+  `MoveGroupNextTo` (header onto header; below all rows = last), `MoveToGroup` puts the note last
+  in its new group. Drops are collected in `listDrop_` and applied after the list is drawn
+  (`applyListDrop_`); targets use `AcceptBeforeDelivery` to draw an insert line.
+  Backup / export keep the order (store order); import: existing notes and groups keep their
+  place (local order wins), new groups follow in the file's group order (`ImportItem::groupOrder`),
+  new notes go last in their group in file order (`test_import_keeps_order`).
 - Note ids are globally unique (32 hex, random 128 bit, `IsNoteId`); `FromJson` migrates legacy
   counter ids (`00000000`, old notes.json files) and `NotesWindow::Init` saves right after loading so ids
   stay stable.
@@ -127,6 +135,8 @@ Feature folders, includes relative to `src/` (e.g. `"core/Settings.h"`). `genera
   Pane borders: `show_{list,note}_border` + `color_{list,note}_border` (null = follow the window
   border colour), pushed via `Theme::PushListBorder/PushNoteBorder` around BeginChild only
   (ChildBorderSize + ImGuiCol_Border); the preview pane uses the note's border.
+  Editor field frame: `show_editor_border` (default off) + `color_editor_border` (null = window
+  border), Colour options > "Note editor"; passed as `borderCol` to `ChipTextEdit::Render` (0 = none).
   All colour options are one `Trailpack::ColorSet` (`g_Settings.colors`; JSON keys stay flat);
   dllmain `ApplyColors` / `CollectColors` map it to `Theme::UserColors`. Borders default off.
   Themes: Default (= `ColorSet{}`), `ColorSet::Light()` / `Dark()` (window text stays Nexus's;
@@ -136,9 +146,15 @@ Feature folders, includes relative to `src/` (e.g. `"core/Settings.h"`). `genera
   (plain Nexus style, readable with any theme). Secondary text in list / note (group arrow and
   count, task progress, done tasks, empty state) derives from the pane's text colour
   (`NotesUi::Dimmed`) instead of Nexus's fixed TextDisabled.
-  Backup (Settings > Backup, dllmain): `Backup::Make/Parse`; restore validates notes + settings
+  Backup (Settings > Data, dllmain): `Backup::Make/Parse`; restore validates notes + settings
   first, asks inline, then `NotesWindow::RestoreNotes` + settings from defaults. Default folder
   `addons/TrailpackMemo/backups/`.
+  Settings window order: "General" (open: quick access icon, language, Decoder Ring status),
+  Font, Layout, Colour, Events; below a separator "Data: backup and transfer" (backup + settings
+  export, file actions apart from the settings).
+  Settings export / import (Settings > Data, dllmain): `Backup::MakeSettings`
+  / `ParseSettings` (also reads a full backup's settings); same dialog flow (`FileJob`), import
+  confirmed inline, then `ReplaceSettings` (from defaults, like a restore); notes untouched.
   Menu button: `color_menu_button` / `color_menu_icon` (hover/pressed = `FieldBg` shades).
   Panes (list, note, preview) always have inner padding: `PushPaneBorder` also pushes
   WindowPadding, and they are begun with `Theme::kPaneFlags` (AlwaysUseWindowPadding) because
@@ -149,7 +165,10 @@ Feature folders, includes relative to `src/` (e.g. `"core/Settings.h"`). `genera
   `PopupTextScope` also gives input fields a shade of the popup background; `Theme::PopupTextScope` first inside each `BeginPopup` block / around
   `BeginTooltip` and Combos, `Theme::Tooltip` instead of `ImGui::SetTooltip`, all modals via
   `renderModals_`. New popups must do the same.
-  Ungrouped notes follow the groups without a heading; dropping a note on empty list space
+  Ungrouped notes (no heading) come before the groups by default; `groups_first` (Settings,
+  Layout options > "Groups above single notes", `NotesWindow::SetGroupsFirst`) puts the groups
+  first. Row spacing: `list_row_spacing` (0-20 px, default 3; Layout options > "List row spacing",
+  `NotesWindow::SetRowSpacing`, used by `RowGap`). Dropping a note on empty list space
   (`BeginDragDropTargetCustom` over the list) or "Remove from group" ungroups it.
   Options layout: label | swatch | Reset in fixed columns, subheadings Window / Note list /
   badges (2x2 table with preview), "Reset all colours" resets `Theme::UserColors`.
@@ -198,7 +217,7 @@ with a live countdown and copy the waypoint on click.
       changing them). One feature branch + PR per stage.
 
 ### Ideas (not scheduled — only on user request)
-- Search/filter in the note list; note reordering (drag or up/down).
+- Search/filter in the note list.
 - Export/import a single note as plain `.md` (JSON export/import exists).
 - Pinning or a "daily routine" auto-uncheck at reset time.
 - **Event table as a separate addon** (discussed 2026-10-30): an in-game overview of all events
@@ -213,6 +232,7 @@ with a live countdown and copy the waypoint on click.
 ---
 
 ## Changelog of this plan
+- 2026-10-30 — Notes and groups reorderable by drag and drop (was under Ideas).
 - 2026-10-30 — B5 stages 1-5 done (user tests passed; stage 5: inline `/e ` suggestions); open point on D13 before stage 6; event
   table addon noted under Ideas. `src/` grouped into feature folders (`generated/`, `vendor/`).
 - 2026-10-30 — DLL size 1.87 MB -> 0.95 MB: streams and `std::filesystem` replaced by `SafeFile`,

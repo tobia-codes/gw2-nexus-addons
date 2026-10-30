@@ -211,12 +211,16 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "- Click a group to fold / unfold it. Drag notes onto it, or right-click a note > "
       "'Move to group'. To take a note out of its group, drag it to an empty spot in the "
       "list or use 'Move to group' > 'Remove from group'.\n"
+      "- Order: drag a note onto another note (it goes above or below it, into that note's "
+      "group), or a group onto another group.\n"
       "- Right-click a group: new note in it, rename, colour, export, delete (its notes are kept).",
       "- Menü-Button (neben 'Neue Notiz') > 'Neue Gruppe...' oder Rechtsklick auf eine leere "
       "Stelle in der Liste (dort auch: neue Notiz, Notizen löschen).\n"
       "- Eine Gruppe anklicken klappt sie auf / zu. Notizen darauf ziehen oder Rechtsklick auf "
       "eine Notiz > 'In Gruppe verschieben'. Aus der Gruppe nehmen: auf eine leere Stelle in "
       "der Liste ziehen oder 'In Gruppe verschieben' > 'Aus Gruppe entfernen'.\n"
+      "- Reihenfolge: eine Notiz auf eine andere ziehen (sie landet darüber oder darunter, in "
+      "deren Gruppe) oder eine Gruppe auf eine andere.\n"
       "- Rechtsklick auf eine Gruppe: neue Notiz darin, umbenennen, Farbe, exportieren, löschen "
       "(ihre Notizen bleiben erhalten)." },
     { "Chat links",                        "Chat-Links" },
@@ -263,26 +267,31 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "löscht eine." },
     { "Settings",                          "Einstellungen" },
     { "Nexus addon options > Trailpack Memo, or menu button > 'Settings...':\n"
-      "- Language (Auto follows Nexus), quick access icon.\n"
+      "- 'General': quick access icon, language (Auto follows Nexus), Decoder Ring status.\n"
       "- 'Font options': UI and note text size.\n"
-      "- 'Events': event chips in checked tasks keep their time / tooltip and menu (both off by default).\n"
-      "- 'Layout options': corner rounding of the addon's windows, buttons, fields, popups and list rows (0 = square).\n"
-      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names), note (border on/off and colour, background, text), popups (background, text) and the daily / weekly badges.\n"
+      "- 'Layout options': corner rounding of the addon's windows, buttons, fields, popups and list rows (0 = square); 'Groups above single notes' puts the groups at the top of the list (default: below the single notes); 'List row spacing' sets the space between the rows of the note list.\n"
+      "- 'Colour options': window (border on/off and colour, background, text, menu button and icon), note list (border on/off and colour, background, text, group names), note (border on/off and colour, background, text), note editor (border on/off and colour), popups (background, text) and the daily / weekly badges.\n"
       "- 'Colour options' > Theme: Default, Light, Dark or one of your own; 'Save as theme' "
       "stores the current colours under a name. Borders are off by default.\n"
-      "- 'Backup': 'Create backup...' saves all notes, groups and settings in one file; "
-      "'Restore backup...' replaces them with a backup's after you confirm.\n"
+      "- 'Events': event chips in checked tasks keep their time / tooltip and menu (both off by default).\n"
+      "- 'Data: backup and transfer' (at the bottom): 'Create backup...' saves all notes, groups and "
+      "settings in one file, 'Restore backup...' replaces them with a backup's; 'Export settings...' "
+      "saves the settings (incl. themes) without notes, 'Import settings...' replaces the settings "
+      "and keeps the notes. Both ask before replacing anything.\n"
       "- Drag the divider between list and note to change the list width.",
       "Nexus-Addon-Optionen > Trailpack Memo, oder Menü-Knopf > 'Einstellungen...':\n"
-      "- Sprache (Automatisch folgt Nexus), Schnellzugriff-Icon.\n"
+      "- 'Allgemein': Schnellzugriff-Icon, Sprache (Automatisch folgt Nexus), Decoder-Ring-Status.\n"
       "- 'Schriftoptionen': UI- und Notiz-Textgröße.\n"
-      "- 'Events': Event-Chips in erledigten Aufgaben behalten Zeit / Tooltip und Menü (beide standardmäßig aus).\n"
-      "- 'Layout-Optionen': Eckenrundung der Addon-Fenster, Buttons, Felder, Popups und Listenzeilen (0 = eckig).\n"
-      "- 'Farboptionen': Fenster (Rahmen an/aus und Farbe, Hintergrund, Text, Menü-Knopf und -Symbol), Notizliste (Rahmen an/aus und Farbe, Hintergrund, Text, Gruppennamen), Notiz (Rahmen an/aus und Farbe, Hintergrund, Text), Popups (Hintergrund, Text) und die Täglich-/Wöchentlich-Badges.\n"
+      "- 'Layout-Optionen': Eckenrundung der Addon-Fenster, Buttons, Felder, Popups und Listenzeilen (0 = eckig); 'Gruppen über einzelnen Notizen' stellt die Gruppen an den Anfang der Liste (Standard: unter den einzelnen Notizen); 'Zeilenabstand der Liste' legt den Abstand zwischen den Zeilen der Notizliste fest.\n"
+      "- 'Farboptionen': Fenster (Rahmen an/aus und Farbe, Hintergrund, Text, Menü-Knopf und -Symbol), Notizliste (Rahmen an/aus und Farbe, Hintergrund, Text, Gruppennamen), Notiz (Rahmen an/aus und Farbe, Hintergrund, Text), Notiz-Editor (Rahmen an/aus und Farbe), Popups (Hintergrund, Text) und die Täglich-/Wöchentlich-Badges.\n"
       "- 'Farboptionen' > Theme: Standard, Hell, Dunkel oder ein eigenes; 'Als Theme speichern' "
       "sichert die aktuellen Farben unter einem Namen. Rahmen sind standardmäßig aus.\n"
-      "- 'Backup': 'Backup erstellen...' speichert alle Notizen, Gruppen und Einstellungen in einer "
-      "Datei; 'Backup wiederherstellen...' ersetzt sie nach einer Rückfrage durch die des Backups.\n"
+      "- 'Events': Event-Chips in erledigten Aufgaben behalten Zeit / Tooltip und Menü (beide standardmäßig aus).\n"
+      "- 'Daten: Backup und Übertragung' (ganz unten): 'Backup erstellen...' speichert alle Notizen, "
+      "Gruppen und Einstellungen in einer Datei, 'Backup wiederherstellen...' ersetzt sie durch die "
+      "des Backups; 'Einstellungen exportieren...' speichert die Einstellungen (inklusive Themes) "
+      "ohne Notizen, 'Einstellungen importieren...' ersetzt die Einstellungen und behält die "
+      "Notizen. Beides fragt vor dem Ersetzen nach.\n"
       "- Den Trenner zwischen Liste und Notiz ziehen ändert die Breite der Liste." },
     { "Your data",                         "Deine Daten" },
     { "Notes are saved in addons/TrailpackMemo/notes.json; the previous version is kept as "
@@ -294,12 +303,18 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
 
     // ── Options (dllmain) ─────────────────────────────────────────────────
     { "Toggle Trailpack Memo",             "Trailpack Memo ein-/ausblenden" },
-    { "Decoder Ring: connected -- chips show full names and icons.",
-      "Decoder Ring: verbunden -- Chips zeigen volle Namen und Icons." },
-    { "Decoder Ring not loaded -- chips show basic labels.",
-      "Decoder Ring nicht geladen -- Chips zeigen einfache Bezeichnungen." },
-    { "Copy code and Open in wiki still work.",
-      "Chatcode kopieren und Im Wiki öffnen funktionieren weiterhin." },
+    { "Decoder Ring: connected",           "Decoder Ring: verbunden" },
+    { "Chat-link chips: basic labels (optional: Decoder Ring addon)",
+      "Chatlink-Chips: einfache Bezeichnungen (optional: Addon Decoder Ring)" },
+    { "Decoder Ring is an optional addon. With it, chat-link chips "
+      "([&...]) show the real name, icon and a detailed tooltip; "
+      "without it they show basic labels like [Item].\n"
+      "Everything else works either way: copy code, open in wiki "
+      "and event chips.",
+      "Decoder Ring ist ein optionales Addon. Damit zeigen Chatlink-Chips ([&...]) den echten "
+      "Namen, ein Icon und einen ausführlichen Tooltip; ohne zeigen sie einfache Bezeichnungen "
+      "wie [Item].\nAlles andere funktioniert so oder so: Chatcode kopieren, im Wiki öffnen "
+      "und Event-Chips." },
     { "Language",                          "Sprache" },
     { "Auto (Nexus language)",             "Automatisch (Nexus-Sprache)" },
     { "Show quick access icon",            "Schnellzugriff-Icon anzeigen" },
@@ -315,6 +330,7 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Event chips in checked tasks keep their tooltip and right-click menu (wiki, copy waypoint). Left-click does nothing.",
       "Event-Chips in erledigten Aufgaben behalten Tooltip und Rechtsklick-Menü (Wiki, Wegpunkt kopieren). Linksklick tut nichts." },
     { "Corner rounding",                   "Eckenrundung" },
+    { "List row spacing",                  "Zeilenabstand der Liste" },
     { "Colour options",                    "Farboptionen" },
     { "Border",                            "Rahmen" },
     { "Background",                        "Hintergrund" },
@@ -325,6 +341,8 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Window",                            "Fenster" },
     { "Show border",                       "Rahmen anzeigen" },
     { "Note list",                         "Notizliste" },
+    { "Note editor",                       "Notiz-Editor" },
+    { "Groups above single notes",         "Gruppen über einzelnen Notizen" },
     { "Popups",                            "Popups" },
     { "Daily / weekly badges",             "Täglich-/Wöchentlich-Badges" },
     { "Reset all colours",                 "Alle Farben zurücksetzen" },
@@ -387,6 +405,26 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Restore %s (%d notes)? This replaces all notes and settings.",
       "%s (%d Notizen) wiederherstellen? Das ersetzt alle Notizen und Einstellungen." },
     { "Restore",                           "Wiederherstellen" },
+    { "General",                           "Allgemein" },
+    { "Data: backup and transfer",         "Daten: Backup und Übertragung" },
+    { "Saves all settings (including themes) without notes. "
+      "Importing replaces all settings; the notes stay as they are. "
+      "A backup file can be imported too (only its settings).",
+      "Speichert alle Einstellungen (inklusive Themes) ohne Notizen. "
+      "Importieren ersetzt alle Einstellungen; die Notizen bleiben, wie sie sind. "
+      "Auch eine Backup-Datei lässt sich importieren (nur ihre Einstellungen)." },
+    { "Export settings...",                "Einstellungen exportieren..." },
+    { "Import settings...",                "Einstellungen importieren..." },
+    { "Export settings",                   "Einstellungen exportieren" },
+    { "Import settings",                   "Einstellungen importieren" },
+    { "Trailpack Memo settings (*.json)",  "Trailpack-Memo-Einstellungen (*.json)" },
+    { "Settings saved as %s.",             "Einstellungen gespeichert als %s." },
+    { "%s contains no Trailpack Memo settings. Nothing was changed.",
+      "%s enthält keine Trailpack-Memo-Einstellungen. Es wurde nichts geändert." },
+    { "Import settings from %s? This replaces all settings.",
+      "Einstellungen aus %s importieren? Das ersetzt alle Einstellungen." },
+    { "Settings imported from %s.",        "Einstellungen aus %s importiert." },
+    { "Import",                            "Importieren" },
     { "Reset uses the Nexus default (gold for the border).",
       "Zurücksetzen nutzt den Nexus-Standard (Gold für den Rahmen)." },
 };

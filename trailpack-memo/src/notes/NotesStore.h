@@ -42,6 +42,7 @@ struct ImportItem {
                                     // note -> can be offered as an update (UpdateImported)
     std::string groupId;            // the note's group in the file (valid id), or empty
     std::string groupName;          // that group's name in the file
+    int         groupOrder = -1;    // that group's index in the file's group list (its order)
     NoteType    type = NoteType::Note;
     int64_t     resetStamp = 0;
     bool        groupHasColor = false;  // that group's own colour in the file, if any
@@ -78,8 +79,15 @@ public:
     Group* GetGroup(const std::string& id);
     // Remove the group; its notes are kept and become ungrouped.
     void   DeleteGroup(const std::string& id);
-    // Put a note into a group ("" = ungroup). False if the note or group is unknown.
+    // Put a note into a group ("" = ungroup), as its last note. False if the note or group is
+    // unknown.
     bool   MoveToGroup(const std::string& noteId, const std::string& groupId);
+    // Reorder (drag and drop in the list; the list shows notes and groups in store order):
+    // put the note right before / after `targetId` and into the target note's group, or the
+    // group right before / after the group `targetId`. False if either id is unknown or both
+    // are the same.
+    bool   MoveNoteNextTo(const std::string& noteId, const std::string& targetId, bool after);
+    bool   MoveGroupNextTo(const std::string& groupId, const std::string& targetId, bool after);
 
     // notes.json:
     //   {"format":"trailpack-memo-notes","version":2,
@@ -111,6 +119,9 @@ public:
     // item keeps its id when it has one; otherwise it gets a fresh id. An item's group is
     // reused when a group with that id exists (keeping its local name/colour), else created
     // with the file's id, name and colour.
+    // Order: what already exists keeps its place (local order wins). New groups follow the
+    // existing ones in the file's group order; new notes go to the end of their group (or of
+    // the ungrouped notes) in file order.
     // Returns the count added.
     int         AddImported(const std::vector<ImportItem>& items);
     // Overwrite title + body of the local notes that share an item's id (the "changed"

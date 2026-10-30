@@ -708,6 +708,8 @@ static void test_settings_roundtrip()
     a.uiTextScale   = 150;
     a.noteTextScale = 80;
     a.listWidth     = 333.0f;
+    a.groupsFirst   = true;
+    a.rowSpacing    = 7.5f;
     a.doneShowTime   = true;
     a.cornerRounding   = 2.5f;
     a.language      = Trailpack::Settings::Language::De;
@@ -715,6 +717,8 @@ static void test_settings_roundtrip()
     c.showBorder      = true;
     c.showListBorder  = true;
     c.listBorder      = { true, Trailpack::Rgba{ 0.0f, 0.0f, 0.7f, 1.0f } };
+    c.showEditorBorder = true;
+    c.editorBorder    = { true, Trailpack::Rgba{ 0.4f, 0.8f, 0.4f, 1.0f } };
     c.menuIcon        = { true, Trailpack::Rgba{ 0.3f, 0.3f, 0.3f, 1.0f } };
     c.popupBackground = { true, Trailpack::Rgba{ 0.1f, 0.1f, 0.2f, 0.9f } };
     c.popupText       = { true, Trailpack::Rgba{ 1.0f, 0.9f, 0.6f, 1.0f } };
@@ -734,11 +738,14 @@ static void test_settings_roundtrip()
     CHECK_EQ(b.uiTextScale, 150);
     CHECK_EQ(b.noteTextScale, 80);
     CHECK(b.listWidth == 333.0f);
+    CHECK(b.groupsFirst);
+    CHECK(b.rowSpacing == 7.5f);
     CHECK(b.doneShowTime && !b.doneShowPopups);
     CHECK(b.cornerRounding == 2.5f);
     CHECK(b.language == Trailpack::Settings::Language::De);
     CHECK(b.colors == a.colors);                         // every colour option survives
     CHECK(b.colors.showBorder && b.colors.showListBorder && !b.colors.showNoteBorder);
+    CHECK(b.colors.showEditorBorder && b.colors.editorBorder.set && b.colors.editorBorder.color.g == 0.8f);
     CHECK(!b.colors.background.set && !b.colors.text.set);   // null stays unset
     CHECK(b.colors.dailyBadgeText.a == 0.5f);
     CHECK(b.colors.menuIcon.set && !b.colors.menuButton.set);
@@ -754,6 +761,7 @@ static void test_settings_validation()
 
     // Defaults: no borders; popups follow the note list (unset).
     CHECK(!s.colors.showBorder && !s.colors.showListBorder && !s.colors.showNoteBorder);
+    CHECK(!s.colors.showEditorBorder && !s.colors.editorBorder.set);
     CHECK(!s.colors.popupBackground.set && !s.colors.popupText.set);
     // The short-lived "color_popup_background" (always opaque black) is ignored.
     Trailpack::Settings old;
@@ -774,6 +782,12 @@ static void test_settings_validation()
     CHECK(s.cornerRounding == Trailpack::Settings::kRoundingMax);
     CHECK(Trailpack::Settings{}.cornerRounding == 0.0f);      // square by default
     CHECK(!Trailpack::Settings{}.doneShowTime && !Trailpack::Settings{}.doneShowPopups);
+    CHECK(!Trailpack::Settings{}.groupsFirst);                // single notes above the groups
+    CHECK(Trailpack::Settings{}.rowSpacing == Trailpack::Settings::kRowSpacingDefault);
+    Trailpack::Settings sp;
+    CHECK(sp.FromJson("{\"list_row_spacing\": 99}") && sp.rowSpacing == Trailpack::Settings::kRowSpacingMax);
+    CHECK(sp.FromJson("{\"list_row_spacing\": -2}") && sp.rowSpacing == 0.0f);
+    CHECK(sp.FromJson("{\"list_row_spacing\": \"x\"}") && sp.rowSpacing == 0.0f);   // wrong type: unchanged
 
     // Badge colours: a missing or malformed value keeps the default.
     CHECK(s.FromJson("{\"color_daily_badge\": null, \"color_weekly_badge_text\": [1, 1]}"));
@@ -846,6 +860,43 @@ static void test_backup()
                                  "\"notes\":[],\"settings\":{}}", notes, cfg));
     CHECK(!Trailpack::Backup::Parse("{\"format\":\"trailpack-memo-backup\",\"version\":1,"
                                  "\"notes\":[]}", notes, cfg));
+}
+
+static void test_settings_export()
+{
+    Trailpack::Settings settings;
+    settings.noteTextScale = 130;
+    settings.groupsFirst   = true;
+    settings.colors.showEditorBorder = true;
+    settings.SaveTheme("Mine", Trailpack::ColorSet::Light());
+
+    const std::string text = Trailpack::Backup::MakeSettings(settings.ToJson(), 1700000000);
+    CHECK(!text.empty());
+    std::string cfg;
+    CHECK(Trailpack::Backup::ParseSettings(text, cfg));
+    Trailpack::Settings imported;
+    CHECK(imported.FromJson(cfg));
+    CHECK_EQ(imported.noteTextScale, 130);
+    CHECK(imported.groupsFirst && imported.colors.showEditorBorder);
+    CHECK(imported.FindTheme("Mine") != nullptr && imported.FindTheme("Mine")->colors == Trailpack::ColorSet::Light());
+
+    // A full backup works too (its settings part).
+    Trailpack::NotesStore store;
+    store.Create("Note");
+    CHECK(Trailpack::Backup::ParseSettings(
+        Trailpack::Backup::Make(store.ToJson(), settings.ToJson(), 0), cfg));
+    CHECK(imported.FromJson(cfg) && imported.noteTextScale == 130);
+
+    // Not settings: invalid, a notes export / notes.json, a newer version, no settings object.
+    CHECK(Trailpack::Backup::MakeSettings("not json", 0).empty());
+    CHECK(Trailpack::Backup::MakeSettings("[1]", 0).empty());
+    CHECK(!Trailpack::Backup::ParseSettings("not json", cfg));
+    CHECK(!Trailpack::Backup::ParseSettings(store.ExportJson({}), cfg));
+    CHECK(!Trailpack::Backup::ParseSettings(store.ToJson(), cfg));
+    CHECK(!Trailpack::Backup::ParseSettings("{\"format\":\"trailpack-memo-settings\",\"version\":2,"
+                                         "\"settings\":{}}", cfg));
+    CHECK(!Trailpack::Backup::ParseSettings("{\"format\":\"trailpack-memo-settings\",\"version\":1,"
+                                         "\"settings\":[]}", cfg));
 }
 
 // ── Event data (generated by tools/gen_events.py) ──────────────────────────────
@@ -2083,6 +2134,130 @@ static void test_event_trigger()
     CHECK_EQ(std::string(CategoryShort(kCategoryCount, Trailpack::I18n::Lang::En)), std::string(""));
 }
 
+// Drag-and-drop reordering in the list: store order is list order.
+static void test_reorder_notes_and_groups()
+{
+    Trailpack::NotesStore store;
+    const std::string g1 = store.CreateGroup("G1").id;
+    const std::string g2 = store.CreateGroup("G2").id;
+    const std::string g3 = store.CreateGroup("G3").id;
+    const std::string a = store.Create("A", g1).id;
+    const std::string b = store.Create("B", g1).id;
+    const std::string c = store.Create("C").id;
+    const std::string d = store.Create("D").id;
+    auto order = [&]() {
+        std::string s;
+        for (const auto& n : store.Notes()) s += n.title;
+        return s;
+    };
+    auto groups = [&]() {
+        std::string s;
+        for (const auto& g : store.Groups()) s += g.name.substr(1);
+        return s;
+    };
+
+    // Within a group, and among ungrouped notes; before / after.
+    CHECK(store.MoveNoteNextTo(b, a, false));
+    CHECK_EQ(order(), std::string("BACD"));
+    CHECK(store.MoveNoteNextTo(c, d, true));
+    CHECK_EQ(order(), std::string("BADC"));
+    CHECK(store.MoveNoteNextTo(b, a, true));   // back again
+    CHECK_EQ(order(), std::string("ABDC"));
+
+    // Onto a note of another group: takes that group.
+    CHECK(store.MoveNoteNextTo(d, a, true));
+    CHECK_EQ(order(), std::string("ADBC"));
+    CHECK_EQ(store.Get(d)->groupId, g1);
+    CHECK(store.MoveNoteNextTo(a, c, false));   // into the ungrouped notes
+    CHECK(store.Get(a)->groupId.empty());
+    CHECK_EQ(order(), std::string("DBAC"));
+
+    // No-ops: itself, unknown ids.
+    CHECK(!store.MoveNoteNextTo(a, a, true));
+    CHECK(!store.MoveNoteNextTo(a, std::string(32, 'e'), true));
+    CHECK(!store.MoveNoteNextTo(std::string(32, 'e'), a, true));
+    CHECK_EQ(order(), std::string("DBAC"));
+
+    // MoveToGroup: the note becomes the group's last note; same group keeps the place.
+    CHECK(store.MoveToGroup(a, g1));
+    CHECK_EQ(order(), std::string("DBCA"));
+    CHECK(store.MoveToGroup(d, g1));
+    CHECK_EQ(order(), std::string("DBCA"));
+
+    // Groups.
+    CHECK_EQ(groups(), std::string("123"));
+    CHECK(store.MoveGroupNextTo(g3, g1, false));
+    CHECK_EQ(groups(), std::string("312"));
+    CHECK(store.MoveGroupNextTo(g3, g2, true));
+    CHECK_EQ(groups(), std::string("123"));
+    CHECK(store.MoveGroupNextTo(g1, g2, true));
+    CHECK_EQ(groups(), std::string("213"));
+    CHECK(!store.MoveGroupNextTo(g1, g1, false));
+    CHECK(!store.MoveGroupNextTo(g1, std::string(32, 'e'), false));
+
+    // The order survives a save / load.
+    Trailpack::NotesStore loaded;
+    CHECK(loaded.FromJson(store.ToJson()));
+    std::string lo, lg;
+    for (const auto& n : loaded.Notes()) lo += n.title;
+    for (const auto& g : loaded.Groups()) lg += g.name.substr(1);
+    CHECK_EQ(lo, order());
+    CHECK_EQ(lg, groups());
+}
+
+// Import keeps the exported order; on conflicts the local order wins.
+static void test_import_keeps_order()
+{
+    auto titles = [](const Trailpack::NotesStore& s) {
+        std::string out;
+        for (const auto& n : s.Notes()) out += n.title;
+        return out;
+    };
+    auto groupNames = [](const Trailpack::NotesStore& s) {
+        std::string out;
+        for (const auto& g : s.Groups()) out += g.name;
+        return out;
+    };
+
+    // Source: groups sorted Y before X, but X's note comes first in the note order.
+    Trailpack::NotesStore src;
+    const std::string x = src.CreateGroup("X").id;
+    const std::string y = src.CreateGroup("Y").id;
+    const std::string z = src.CreateGroup("Z").id;
+    src.Create("a", x);
+    src.Create("b", y);
+    src.Create("c");
+    src.Create("d", y);
+    CHECK(src.MoveGroupNextTo(y, x, false));
+    CHECK_EQ(groupNames(src), std::string("YXZ"));
+
+    // Into an empty store: the same group order (also the empty group Z) and note order.
+    Trailpack::NotesStore fresh;
+    std::vector<Trailpack::ImportItem> items;
+    CHECK(fresh.PrepareImport(src.ExportJson(), items));
+    CHECK_EQ(fresh.AddImported(items), 4);
+    CHECK_EQ(groupNames(fresh), std::string("YX"));   // groups without imported notes aren't created
+    CHECK_EQ(titles(fresh), std::string("abcd"));
+
+    // Conflicts: the local store already has Y with note b, then its own group Mine. Existing
+    // things keep their place, new groups follow in file order, new notes go last.
+    Trailpack::NotesStore local;
+    std::vector<Trailpack::ImportItem> onlyB;
+    CHECK(local.PrepareImport(src.ExportJson(), onlyB));
+    for (auto it = onlyB.begin(); it != onlyB.end();) it = it->title == "b" ? it + 1 : onlyB.erase(it);
+    CHECK_EQ(local.AddImported(onlyB), 1);            // creates Y with b
+    Trailpack::Group& lx = local.CreateGroup("Mine");
+    const std::string mine = lx.id;
+    local.Create("e", mine);
+    CHECK(local.PrepareImport(src.ExportJson(), items));
+    CHECK_EQ(local.AddImported(items), 3);            // a, c, d (b is a duplicate)
+    CHECK_EQ(groupNames(local), std::string("YMineX"));
+    CHECK_EQ(titles(local), std::string("beacd"));
+    const Trailpack::Note* d = nullptr;
+    for (const auto& n : local.Notes()) if (n.title == "d") d = &n;
+    CHECK(d != nullptr && d->groupId == y);           // joins the existing group, at its end
+}
+
 int main()
 {
     test_create_appears_in_notes();
@@ -2099,6 +2274,8 @@ int main()
     test_export_all_import_roundtrip();
     test_export_selected_ids_only();
     test_group_create_move_delete();
+    test_reorder_notes_and_groups();
+    test_import_keeps_order();
     test_groups_persist_roundtrip();
     test_fromjson_drops_unknown_group_refs();
     test_export_all_includes_groups_and_import_recreates_them();
@@ -2117,6 +2294,7 @@ int main()
     test_settings_validation();
     test_settings_themes();
     test_backup();
+    test_settings_export();
     test_event_data();
     test_events_lookup();
     test_events_state();

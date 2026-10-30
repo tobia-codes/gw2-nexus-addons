@@ -39,6 +39,10 @@ public:
     static constexpr float kDefaultListWidth = 200.0f;
     float ListWidth() const         { return listWidth_; }
     void  SetListWidth(float w)     { listWidth_ = w; }
+    // Groups above the ungrouped notes (default: below them; settings.json "groups_first").
+    void  SetGroupsFirst(bool on)   { groupsFirst_ = on; }
+    // Space below each list row in px (settings.json "list_row_spacing").
+    void  SetRowSpacing(float px)   { rowSpacing_ = px; }
     // True once after the user changed a persisted UI setting (caller saves settings).
     bool ConsumeSettingsChanged()   { bool c = settingsChanged_; settingsChanged_ = false; return c; }
     // True once after menu -> "Settings..." (caller opens its settings window).
@@ -91,6 +95,8 @@ private:
     bool  showPreview_     = false;
     float noteTextScale_   = 1.0f;
     float listWidth_       = kDefaultListWidth;
+    bool  groupsFirst_     = false;
+    float rowSpacing_      = 3.0f;
     bool  settingsChanged_ = false;
     bool  openSettings_    = false;
 
@@ -108,6 +114,19 @@ private:
     std::string deleteRequestId_;
     bool        createRequested_ = false;
     std::string createRequestGroupId_;
+
+    // Drag and drop in the list, applied once the list is drawn (the rows iterate the store).
+    struct ListDrop {
+        enum Kind { None, NoteNextTo, GroupNextTo, NoteToGroup } kind = None;
+        std::string id;       // the dragged note / group
+        std::string target;   // note / group to drop next to, or the group ("" = ungroup)
+        bool        after = false;
+    };
+    ListDrop    listDrop_;
+    // Insert line of the hovered drop target this frame (y < 0: none) and the group whose
+    // "after" line goes below its last note (known only once its notes are drawn).
+    float       dropLineY_ = -1.0f, dropLineX0_ = 0.0f, dropLineX1_ = 0.0f;
+    std::string dropAfterGroupId_;
 
     std::string pendingDeleteId_;        // the note awaiting delete confirmation
 
@@ -182,10 +201,12 @@ private:
     void  renderSplitter_(float listWidth);
     void  requestNewGroup_();     // "New group..." (menu button, list context menu)
     void  requestBulkDelete_();   // "Delete notes..." (menu button, list context menu)
-    // One note row (selectable, badge, progress, context menu, drag source).
+    // One note row (selectable, badge, progress, context menu, drag source + reorder target).
     void  renderNoteRow_(const Trailpack::Note& note, float indent);
-    // A group header (collapse toggle, count, context menu, drop target); true if expanded.
+    // A group header (collapse toggle, count, context menu, drag source, drop target); true if
+    // expanded.
     bool  renderGroupHeader_(Trailpack::Group& group);
+    void  applyListDrop_();       // listDrop_ -> store, after the list is drawn
     void  typeMenu_(const std::string& noteId);   // "Type" submenu: Note / Daily / Weekly
     // A group's name colour: its own, else the addon-wide group colour, else the border.
     ImVec4 groupColor_(const Trailpack::Group& group) const;
