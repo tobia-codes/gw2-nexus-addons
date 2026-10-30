@@ -166,11 +166,11 @@ Then check the summary, run the host tests, and review the diff of `src/events/`
 - [ ] User test: search "teq", collapse / expand, insert into an empty and a long note.
 
 ### Stage 5 — `/e ` suggestions in the editor
-- [ ] Detect `/e ` / `/event ` before the caret in `ChipTextEdit`; expose query + caret screen pos.
-- [ ] Compact list at the caret (D9); keys: Up / Down / Enter / Escape; mouse click.
-- [ ] Replace the typed trigger + query with the event cell; Escape leaves the text as typed.
-- [ ] Make sure the keys don't leak to the game or trigger toolbar shortcuts (see backlog B1).
-- [ ] User test: type `/e teq`, pick with keys and with the mouse, cancel with Escape.
+- [x] Detect `/e ` / `/event ` before the caret in `ChipTextEdit`; expose query + caret screen pos.
+- [x] Compact list at the caret (D9); keys: Up / Down / Enter / Escape; mouse click.
+- [x] Replace the typed trigger + query with the event cell; Escape leaves the text as typed.
+- [x] Make sure the keys don't leak to the game or trigger toolbar shortcuts (see backlog B1).
+- [x] User test: type `/e teq`, pick with keys and with the mouse, cancel with Escape.
 
 ### Stage 6 — Colours and polish
 - [ ] `ColorSet::eventUpcoming` / `eventActive` (+ JSON keys, equality, themes), `UserColors`,
@@ -213,3 +213,14 @@ Then check the summary, run the host tests, and review the diff of `src/events/`
   merged (D15): 93 events; ids `ley-line-anomaly`, `fractal-incursion`,
   `dragon-bash-hologram-stampede` replace the per-place ids from stage 1 (an old per-place token
   shows as "unknown event").
+- (Stage 5, 2026-10-30) **Inline suggestions.** Trigger detection is pure
+  (`Events::FindTrigger`: "/e " or "/event ", any case, at line start or after a space; query up
+  to the caret, same line, no chip, max 40 codepoints; host test `test_event_trigger`). The
+  editor routes Up / Down / Enter / Escape to the list only while rows are shown (`suggestCount`
+  from the caller, one frame behind); Escape hides the list until a new trigger. The list is a
+  popup (`##event_suggest`, `ImGuiWindowFlags_NoNav`) begun right after the editor; the editor
+  uses `ImGuiHoveredFlags_AllowWhenBlockedByPopup` so a click into the text while it is open
+  moves the caret, and a click on the list keeps the focus (list rect). Category labels:
+  `Events::CategoryShort` (hand-written table by English name; unknown -> full name). The
+  replacement, like `InsertChip`, records no undo step. Keys: the editor already captures the
+  keyboard while focused -- the remaining leak is B1 (WndProc), not specific to the list.

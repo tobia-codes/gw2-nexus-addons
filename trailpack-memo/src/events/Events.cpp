@@ -57,6 +57,57 @@ bool IsToken(const std::string& s, std::string* id)
     return true;
 }
 
+static void appendUtf8(std::string& s, unsigned int cp)
+{
+    if (cp < 0x80) {
+        s += (char)cp;
+    } else if (cp < 0x800) {
+        s += (char)(0xC0 | (cp >> 6));
+        s += (char)(0x80 | (cp & 0x3F));
+    } else if (cp < 0x10000) {
+        s += (char)(0xE0 | (cp >> 12));
+        s += (char)(0x80 | ((cp >> 6) & 0x3F));
+        s += (char)(0x80 | (cp & 0x3F));
+    } else {
+        s += (char)(0xF0 | (cp >> 18));
+        s += (char)(0x80 | ((cp >> 12) & 0x3F));
+        s += (char)(0x80 | ((cp >> 6) & 0x3F));
+        s += (char)(0x80 | (cp & 0x3F));
+    }
+}
+
+Trigger FindTrigger(const std::vector<unsigned int>& text, int caret)
+{
+    Trigger t;
+    if (caret < 0 || caret > (int)text.size()) return t;
+    // Walk back from the caret over the query (stops at a line break, a chip or the limit);
+    // every '/' on the way is a candidate, the nearest one to the caret wins.
+    for (int slash = caret - 1; slash >= 0 && caret - slash <= kMaxTriggerQuery + 7; --slash) {
+        const unsigned int c = text[slash];
+        if (c == '\n' || c == 0xFFFCu) break;
+        if (c != '/') continue;
+        if (slash > 0 && text[slash - 1] != ' ' && text[slash - 1] != '\n') continue;
+        // "e " or "event " after the slash, any case.
+        int q = -1;
+        for (const char* word : { "e ", "event " }) {
+            int i = slash + 1;
+            const char* w = word;
+            while (*w != '\0' && i < caret &&
+                   (text[i] == (unsigned char)*w || text[i] == (unsigned char)*w - 32u)) {
+                ++w;
+                ++i;
+            }
+            if (*w == '\0') { q = i; break; }
+        }
+        if (q < 0 || caret - q > kMaxTriggerQuery) continue;
+        t.found = true;
+        t.start = slash;
+        for (int i = q; i < caret; ++i) appendUtf8(t.query, text[i]);
+        return t;
+    }
+    return t;
+}
+
 Status State(const EventDef& e, int64_t now)
 {
     // Every event repeats daily from 00:00 UTC. An occurrence may run past midnight, so the
@@ -136,6 +187,32 @@ const char* CategoryName(uint8_t category, Lang lang)
     if (category >= kCategoryCount) return "";
     const CategoryDef& c = kCategories[category];
     return lang == Lang::De && c.nameDe != nullptr ? c.nameDe : c.nameEn;
+}
+
+const char* CategoryShort(uint8_t category, Lang lang)
+{
+    if (category >= kCategoryCount) return "";
+    // By the generated English name, so a new category simply shows its full name.
+    struct Short { const char* nameEn; const char* en; const char* de; };
+    static const Short kShort[] = {
+        { "Core Tyria",             "Core",     "Zentral" },
+        { "Living World Season 2",  "LW2",      "LW2" },
+        { "Heart of Thorns",        "HoT",      "HoT" },
+        { "Living World Season 3",  "LW3",      "LW3" },
+        { "Path of Fire",           "PoF",      "PoF" },
+        { "Living World Season 4",  "LW4",      "LW4" },
+        { "The Icebrood Saga",      "IBS",      "IBS" },
+        { "End of Dragons",         "EoD",      "EoD" },
+        { "Secrets of the Obscure", "SotO",     "SotO" },
+        { "Janthir Wilds",          "JW",       "JW" },
+        { "Visions of Eternity",    "VoE",      "VoE" },
+        { "Public Instances",       "Instance", "Instanz" },
+        { "Special Events",         "Festival", "Festival" },
+    };
+    const char* en = kCategories[category].nameEn;
+    for (const Short& s : kShort)
+        if (std::string(s.nameEn) == en) return lang == Lang::De ? s.de : s.en;
+    return CategoryName(category, lang);
 }
 
 // Lower-case for matching: ASCII and the Latin-1 letters as UTF-8 (C3 80..9E -> C3 A0..BE,

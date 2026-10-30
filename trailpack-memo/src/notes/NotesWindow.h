@@ -83,6 +83,9 @@ private:
     // Event picker (toolbar "Event", EventPicker.h): search text + focus-once flag.
     std::string            eventQuery_;
     bool                   eventPickerFocus_ = false;
+    // Inline "/e " suggestions (D9): highlighted row, reset when the query changes.
+    int                    eventSuggestSel_ = 0;
+    std::string            eventSuggestQuery_;
 
     // ── UI settings ───────────────────────────────────────────────────────
     bool  showPreview_     = false;
@@ -192,6 +195,7 @@ private:
     void renderEditMode_(Trailpack::Note& note);
     void renderViewMode_(Trailpack::Note& note);
     void renderEditToolbar_();
+    void renderEventSuggest_();
     void renderViewBody_(Trailpack::Note* note);
 
     // ── NotesModals.cpp ───────────────────────────────────────────────────

@@ -74,6 +74,27 @@ struct ChipTextEdit {
     void        ApplyEdit(const Md::EditResult& r);
     // Enter on a "- " / "- [ ] " line continues the list (empty item ends it).
     bool        continueLists = true;
+
+    // ── Inline event suggestions (D9) ───────────────────────────────────────
+    // Render fills `suggest` from the "/e query" before the caret (Events::FindTrigger) while
+    // focused. The caller draws the list and sets `suggestCount` (rows shown, 0 = hidden) and
+    // the list's screen rect; while rows are shown, Up / Down / Enter / Escape go to the list
+    // (move / accept / dismissed) instead of the text. Escape hides it until a new trigger.
+    struct Suggest {
+        bool        active = false;
+        int         start  = 0;      // cells [start, end) = the typed "/e query"
+        int         end    = 0;
+        std::string query;
+        ImVec2      pos;             // screen position below the caret
+        int         move   = 0;      // -1 / +1 this frame
+        bool        accept = false;  // Enter this frame
+    };
+    Suggest     suggest;
+    int         suggestCount = 0;
+    ImVec2      suggestMin, suggestMax;   // a click inside keeps the editor focused
+    int         suggestDismissed = -1;    // start of the trigger Escape closed
+    // Replace the cells [from, to) with one chip cell; the caret goes after it.
+    void        ReplaceWithChip(int from, int to, const std::string& code);
 };
 
 } // namespace Trailpack

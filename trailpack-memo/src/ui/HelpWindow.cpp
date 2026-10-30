@@ -90,6 +90,8 @@ const Section kSections[] = {
     { "Event timers",
       "While editing, 'Event' in the toolbar picks an event: search by name or map, or browse "
       "the categories. It becomes an event chip; {{event:<id>}} typed by hand works too.\n"
+      "- Or type /e and a name (e.g. /e teq): pick with the arrow keys and Enter, or click; "
+      "Escape closes the list.\n"
       "- It shows the time until the next start, or since when the event is running.\n"
       "- Hover it for the next starts in your local time, the duration, map and waypoint.\n"
       "- Left-click copies the waypoint; right-click: copy waypoint or open the wiki.\n"

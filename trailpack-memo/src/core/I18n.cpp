@@ -231,6 +231,8 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
     { "Event timers",                      "Event-Timer" },
     { "While editing, 'Event' in the toolbar picks an event: search by name or map, or browse "
       "the categories. It becomes an event chip; {{event:<id>}} typed by hand works too.\n"
+      "- Or type /e and a name (e.g. /e teq): pick with the arrow keys and Enter, or click; "
+      "Escape closes the list.\n"
       "- It shows the time until the next start, or since when the event is running.\n"
       "- Hover it for the next starts in your local time, the duration, map and waypoint.\n"
       "- Left-click copies the waypoint; right-click: copy waypoint or open the wiki.\n"
@@ -238,6 +240,8 @@ static const std::vector<std::pair<const char*, const char*>> kGerman = {
       "Beim Bearbeiten wählt 'Event' in der Werkzeugleiste ein Event: Suche nach Name oder Karte, "
       "oder in den Kategorien stöbern. Es wird zum Event-Chip; von Hand geschriebenes "
       "{{event:<id>}} geht auch.\n"
+      "- Oder /e und einen Namen tippen (z. B. /e teq): mit den Pfeiltasten und Enter wählen "
+      "oder klicken; Escape schließt die Liste.\n"
       "- Er zeigt die Zeit bis zum nächsten Start oder seit wann das Event läuft.\n"
       "- Beim Darüberfahren: nächste Starts in deiner Ortszeit, Dauer, Karte und Wegpunkt.\n"
       "- Linksklick kopiert den Wegpunkt; Rechtsklick: Wegpunkt kopieren oder Wiki öffnen.\n"
