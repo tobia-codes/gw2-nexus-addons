@@ -18,7 +18,10 @@
   Not blockers: trading-post prices, account data, item search, breakbar, event table addon.
 - **R3 — Versions:** both start public at **1.0.0**, then SemVer each on its own (patch = fix,
   minor = feature, major = break, e.g. Memo needing a newer Core ABI).
-- **R4 — Policy tier:** both **Tier 0** (official API / wiki only; Memo never touches the game).
+- **R4 — Policy labels:** Raidcore's addon policy (updated 2026-10-22) uses labels instead of
+  tiers (old Tier 0 = "No Special Label"). Both addons: **"No Special Label"** (official APIs only;
+  Memo never touches the game) **plus "AI Notice"** — they contain AI-assisted code, which the
+  policy asks to declare (https://raidcore.gg/gw2/addon-policy).
 - **R5 — Pre-releases:** versions below 1.0.0 are published as GitHub pre-releases
   automatically. Each addon's first release is its `initialVersion` 0.9.0 (`.changeset/config.json`,
   the bump of the first changesets is ignored); a later `major` changeset ("First stable
@@ -81,21 +84,27 @@ pinned messages / channel list for an addon-submission or developer channel and 
    library all have positive IDs. Ours are positive today (Core `0x5450436F`, Memo `0x54504D6D`).
    Changing it before the first release costs nothing; afterwards users lose their Nexus settings
    for the addon. So the answer must be in before the first pre-release.
-3. **"Is Tier 0 right for both?"** — Why: the tier decides the warning shown in the library
-   (addon policy, raidcore.gg/gw2/addon-policy); we want them to confirm it, not guess.
+3. **"Are 'No Special Label' + 'AI Notice' right for both?"** — Why: the labels decide what the
+   library shows (addon policy, raidcore.gg/gw2/addon-policy); we want them to confirm it, not
+   guess.
 4. **"Can an entry say that Memo works better with Core?"** — Why: Nexus has no addon
    dependencies; the library text is the only place to point players to Core (R6).
+5. **"If Core later reads public GW2 API data (e.g. trading-post prices) from our own feed
+   (static JSON built from the official API), is that still 'No Special Label'?"** — Why: the
+   label says "exclusively uses official APIs"; the own data feed in the Core backlog depends on
+   the answer.
 
 **Submission text** (English; adjust after their answers):
 
 > **Trailpack Core** — Game data for the Trailpack addons: names, icons and tooltips for chat
 > links (items, skills, traits, recipes, skins), built-in waypoints and event timers. Official
 > GW2 API and wiki only, no API key, cached and rate-limited. English / German.
-> Download: https://github.com/tobia-codes/trailpack-core — Tier 0 — tags: utility, data, library
+> Download: https://github.com/tobia-codes/trailpack-core — No Special Label, AI Notice — tags: utility, data, library
 >
 > **Trailpack Memo** — Notepad with markdown, checklists, groups, daily / weekly notes and
 > chat-link chips. Extended features (chip details, event timers) with Trailpack Core.
-> English / German. Download: https://github.com/tobia-codes/trailpack-memo — Tier 0 —
+> English / German. Download: https://github.com/tobia-codes/trailpack-memo — No Special Label,
+> AI Notice —
 > tags: notes, utility
 >
 > Source of both: https://github.com/tobia-codes/gw2-nexus-addons (MIT)
@@ -148,5 +157,7 @@ PNG, game UI at normal size, no personal data (character / account names) visibl
 - 2026-10-30 — Plan set up with the user (R1-R14); release script, CI, changelog skill, release
   READMEs added.
 - 2026-10-30 — `main` protected (ruleset); release script goes through a release PR (R13).
+- 2026-10-30 — R4: Raidcore's new policy labels ("No Special Label" + "AI Notice"); question 5
+  (own data feed) for the Raidcore contact.
 - 2026-10-30 — Git flow with `develop` (R15), changesets instead of "## Unreleased" + release
   script (R11-R13), version from the build (R16), safety switch (R17).

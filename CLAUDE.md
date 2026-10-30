@@ -42,8 +42,9 @@ something is unclear or needs any of the "never" points, stop and ask the user â
   on the network): batch with `?ids=`, cache, back off on 429 / 5xx, honest User-Agent
   (https://wiki.guildwars2.com/wiki/API:Best_practices). An API key only when the user enters it,
   stored locally and sent only to `api.guildwars2.com` (see `trailpack-core/AGENTS.md`).
-- **Target Raidcore addon policy Tier 0** (official APIs only, https://raidcore.gg/gw2/addon-policy);
-  a plan that would need a higher tier needs the user's explicit decision first.
+- **Raidcore addon policy** (https://raidcore.gg/gw2/addon-policy, labels since 2026-10-22): target
+  **"No Special Label"** (official APIs only); "Memory Access" or "Macro Usage" only after the
+  user's explicit decision. Our addons also carry **"AI Notice"** (AI-assisted code).
 
 ## Addons
 
