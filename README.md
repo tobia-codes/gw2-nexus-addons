@@ -51,6 +51,8 @@ release repository. Every player-visible change goes under `## Unreleased` in th
 
 ## Adding an addon
 
+0. Plan it within the Guild Wars 2 rules (no game memory, hooks or input automation; official
+   API / wiki / MumbleLink only; Raidcore policy Tier 0) — see "Guild Wars 2 rules" in `CLAUDE.md`.
 1. Create `<addon-name>/` with its own `CMakeLists.txt` (copy `trailpack-memo/CMakeLists.txt` as a template).
 2. Link `gw2_imgui` and `gw2_headers` for the DLL target, `gw2_headers` for host tests.
 3. Add `add_subdirectory(<addon-name>)` to the root `CMakeLists.txt` and a row to the table above.
