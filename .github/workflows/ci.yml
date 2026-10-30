@@ -1,5 +1,6 @@
-# Every push and pull request: host tests first, then the DLL builds (the Definition of Done in
-# the addons' AGENTS.md). A failing test stops the build.
+# Every push and pull request: tests first (tool tests, host tests), then the DLL builds (the
+# Definition of Done in the addons' AGENTS.md). A failing test stops the build. Required for pull
+# requests into main ("test-and-build"); on develop it only informs.
 
 name: CI
 
@@ -19,6 +20,12 @@ jobs:
 
       - name: Toolchain
         run: sudo apt-get update && sudo apt-get install -y mingw-w64 cmake g++ make
+
+      - name: Tool tests
+        run: python3 -m unittest discover -s tools -p 'test_*.py'
+
+      - name: Changesets are valid
+        run: python3 tools/changeset.py status
 
       - name: Host tests
         run: |

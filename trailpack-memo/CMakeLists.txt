@@ -37,6 +37,7 @@ if(NOT GW2_HOST_TESTS)
         TrailpackMemo.def
     )
     set_target_properties(TrailpackMemo PROPERTIES SUFFIX ".dll" PREFIX "")
+    trailpack_release(TrailpackMemo)
 
     target_include_directories(TrailpackMemo PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src

@@ -7,16 +7,21 @@ Layout, build commands and "Adding an addon" are in [README.md](README.md); the 
 - The user writes German — reply in German. Code, comments, commit messages and docs stay English.
 - One folder per addon; each has its own `AGENTS.md` (rules) and `plans/PLAN.md` (state + backlog),
   loaded via that folder's `CLAUDE.md`. Shared third-party code lives in `shared/` — don't modify it.
-- Commit/push only when asked, on a feature branch. `main` is protected on GitHub (ruleset
-  "Protect main"): changes only via PR, CI `test-and-build` must pass before the merge.
-- **Tests always:** new or changed logic gets a host test; run the host tests before building
-  (`ctest` in `build-host`, see README). CI (`.github/workflows/ci.yml`) runs them before the
-  DLL build on every push — keep it green.
+- **Branches:** `develop` is the default branch — feature branches start from it and go back by
+  PR (rebase merge; no CI required there, direct pushes allowed, no force push / deletion).
+  `main` is the released state: only a PR from `develop` (merge commit, CI `test-and-build` and
+  `source-is-develop` must pass); merging it releases the addons with pending changesets
+  (plans/RELEASE.md). Commit/push only when asked.
+- **Tests always:** new or changed logic gets a test (host tests for C++, `tools/test_*.py` for
+  the tools); run them before building (`ctest` in `build-host`, see README). CI
+  (`.github/workflows/ci.yml`) runs them before the DLL build on every push — keep it green.
 - **README always current:** a user-visible change updates the addon's `README.md` in the same
   change, its `release/README.md` (text of the release repository / Nexus library) when that
   text is affected, and the root README table. Docs are English.
-- **Changelog:** a player-visible change gets an entry under `## Unreleased` in the addon's
-  `CHANGELOG.md` (or run `/changelog`). Releases only via `tools/release.py` (plans/RELEASE.md).
+- **Changesets:** a player-visible change gets a changeset in `.changeset/` with its bump
+  (major / minor / patch) — `python3 tools/changeset.py add ...` or `/changeset`. `CHANGELOG.md`
+  files are written by the release workflow, never by hand. Versions are never set by hand
+  either: they come from the changesets when `develop` is merged into `main`.
 
 ## Guild Wars 2 rules (every addon, every plan — the user must never risk a ban)
 
@@ -37,8 +42,9 @@ something is unclear or needs any of the "never" points, stop and ask the user �
   on the network): batch with `?ids=`, cache, back off on 429 / 5xx, honest User-Agent
   (https://wiki.guildwars2.com/wiki/API:Best_practices). An API key only when the user enters it,
   stored locally and sent only to `api.guildwars2.com` (see `trailpack-core/AGENTS.md`).
-- **Target Raidcore addon policy Tier 0** (official APIs only, https://raidcore.gg/gw2/addon-policy);
-  a plan that would need a higher tier needs the user's explicit decision first.
+- **Raidcore addon policy** (https://raidcore.gg/gw2/addon-policy, labels since 2026-10-22): target
+  **"No Special Label"** (official APIs only); "Memory Access" or "Macro Usage" only after the
+  user's explicit decision. Our addons also carry **"AI Notice"** (AI-assisted code).
 
 ## Addons
 

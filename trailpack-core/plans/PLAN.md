@@ -330,7 +330,7 @@ marked *(DR feature)* only apply once we build that feature.
 - [x] `.github/workflows/release.yml`: tag `core-v<version>` / `memo-v<version>` here -> checks
       the tag against the DLL's `V_*`, host tests, MinGW build, `gh release create v<version>`
       in the release repository (secret `RELEASE_TOKEN`). Both addons: `UP_GitHub` + UpdateLink.
-- [x] Release script `tools/release.py`, changelogs, release READMEs, CI — the rest of the way to
+- [x] Changesets + release on merge to `main` (`tools/changeset.py`), release READMEs, CI — the rest of the way to
       the Nexus Addon Library (blockers, Raidcore contact, repos, token, screenshots, versions)
       is planned in [`../../plans/RELEASE.md`](../../plans/RELEASE.md).
 
@@ -338,6 +338,19 @@ marked *(DR feature)* only apply once we build that feature.
 
 ## Backlog
 - Trading-post prices (`/v2/commerce/prices`, memory only, ~5 min TTL).
+- **Own data feed (idea, discussed 2026-10-30)** for data the API can't serve per request:
+  trading-post prices of all items every ~2 h, the item search / filter index (below), later
+  maybe price history. Start: a scheduled GitHub Actions workflow (e.g. every 2 h) fetches from
+  the official API (same etiquette as D10) and publishes static JSON on GitHub Pages; Core downloads
+  the file instead of many single requests and searches locally. Free for public repos; no server
+  or database to run. Caveats: scheduled workflows pause after 60 days without repository
+  activity; static files only, no queries; Pages is not meant for commercial use. A database
+  (Cloudflare Workers + D1, Neon, Turso, Supabase free tiers) only once real queries are needed
+  (e.g. price history) — D1's free 100k row writes per day can't take ~27k prices every 2 h row by
+  row. Conditions: public API data only, never an API key or account data through it; Core falls
+  back to the official API when the feed is down; extends the allowed data sources in
+  `CLAUDE.md` ("Guild Wars 2 rules") — needs the user's decision and Raidcore's answer whether an
+  addon reading such a feed keeps "No Special Label" (plans/RELEASE.md, Raidcore contact).
 - **Account data with an optional API key.** Without a key Core behaves as today; with a key it
   also serves account data (e.g. bank, inventories, material storage, wallet, unlocks). Points to
   decide with the user before building it:
