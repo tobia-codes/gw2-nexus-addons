@@ -3,9 +3,6 @@
 A notepad for Guild Wars 2 as a [Raidcore Nexus](https://raidcore.gg/Nexus) addon: several notes
 with markdown, checklists, groups and daily / weekly notes, right in the game. English and German.
 
-<!-- Screenshots (plans/RELEASE.md): images/notes.png, images/tooltip.png, images/editor.png
-![Notes with chat-link and event chips](images/notes.png)
--->
 
 ## Features
 

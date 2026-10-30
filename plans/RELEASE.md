@@ -82,7 +82,7 @@ pinned messages / channel list for an addon-submission or developer channel and 
 ## Screenshots (R10)
 
 PNG, game UI at normal size, no personal data (character / account names) visible. Put them in
-`<addon>/release/images/` and un-comment the image lines in `<addon>/release/README.md`.
+`<addon>/release/images/` and add them to `<addon>/release/README.md` (and the addon README).
 
 | File | Shows |
 |---|---|

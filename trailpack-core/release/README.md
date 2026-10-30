@@ -5,9 +5,6 @@ addon without a window of its own. It unlocks the extended features of the other
 addons, e.g. names, icons, tooltips and event timers in
 [Trailpack Memo](https://github.com/tobia-codes/trailpack-memo). English and German.
 
-<!-- Screenshot (plans/RELEASE.md): images/options.png
-![Options page](images/options.png)
--->
 
 ## What it does
 
