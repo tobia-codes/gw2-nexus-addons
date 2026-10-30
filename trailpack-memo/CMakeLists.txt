@@ -5,45 +5,46 @@ if(NOT GW2_HOST_TESTS)
 
     add_library(TrailpackMemo SHARED
         src/dllmain.cpp
-        src/Theme.cpp
-        src/FontScale.cpp
-        src/NotesStore.cpp
-        src/I18n.cpp
-        src/Reset.cpp
-        src/SafeFile.cpp
-        src/Settings.cpp
-        src/Backup.cpp
-        src/FileDialog.cpp
-        src/events/EventData.cpp
-        src/Events.cpp
-        src/NotesWindow.cpp
-        src/NotesList.cpp
-        src/NotesDetail.cpp
-        src/NotesModals.cpp
-        src/NotesImportExport.cpp
-        src/NotesUi.cpp
-        src/HelpWindow.cpp
-        src/Markdown.cpp
-        src/MarkdownRender.cpp
-        src/MarkdownEdit.cpp
-        src/chat/ChatLinks.cpp
-        src/ChipResolver.cpp
-        src/ChipColor.cpp
-        src/ChipCodec.cpp
-        src/ChipTextEdit.cpp
-        src/ChipRich.cpp
-        src/EventChip.cpp
-        src/EventPicker.cpp
-        src/DecoderClient.cpp
-        src/PieUiClient.cpp
-        src/IconUrl.cpp
-        src/IconCache.cpp
+        src/ui/Theme.cpp
+        src/ui/FontScale.cpp
+        src/notes/NotesStore.cpp
+        src/core/I18n.cpp
+        src/core/Reset.cpp
+        src/core/SafeFile.cpp
+        src/core/Settings.cpp
+        src/core/Backup.cpp
+        src/ui/FileDialog.cpp
+        src/generated/EventData.cpp
+        src/events/Events.cpp
+        src/notes/NotesWindow.cpp
+        src/notes/NotesList.cpp
+        src/notes/NotesDetail.cpp
+        src/notes/NotesModals.cpp
+        src/notes/NotesImportExport.cpp
+        src/notes/NotesUi.cpp
+        src/ui/HelpWindow.cpp
+        src/markdown/Markdown.cpp
+        src/markdown/MarkdownRender.cpp
+        src/markdown/MarkdownEdit.cpp
+        src/vendor/chat/ChatLinks.cpp
+        src/chips/ChipResolver.cpp
+        src/chips/ChipColor.cpp
+        src/chips/ChipCodec.cpp
+        src/chips/ChipTextEdit.cpp
+        src/chips/ChipRich.cpp
+        src/chips/EventChip.cpp
+        src/events/EventPicker.cpp
+        src/integrations/DecoderClient.cpp
+        src/integrations/PieUiClient.cpp
+        src/chips/IconUrl.cpp
+        src/chips/IconCache.cpp
         TrailpackMemo.def
     )
     set_target_properties(TrailpackMemo PROPERTIES SUFFIX ".dll" PREFIX "")
 
     target_include_directories(TrailpackMemo PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/vendor   # vendored units keep their own include paths (chat/...)
         ${CMAKE_CURRENT_SOURCE_DIR}/public
     )
     target_link_libraries(TrailpackMemo PRIVATE gw2_imgui gw2_headers gdi32 wininet shell32 comdlg32)
@@ -64,24 +65,25 @@ else()
 
     add_executable(trailpack_host_tests
         tests/host_tests_main.cpp
-        src/NotesStore.cpp
-        src/I18n.cpp
-        src/Reset.cpp
-        src/SafeFile.cpp
-        src/Settings.cpp
-        src/Backup.cpp
-        src/events/EventData.cpp
-        src/Events.cpp
-        src/Markdown.cpp
-        src/MarkdownEdit.cpp
-        src/chat/ChatLinks.cpp
-        src/ChipResolver.cpp
-        src/ChipColor.cpp
-        src/ChipCodec.cpp
-        src/IconUrl.cpp
+        src/notes/NotesStore.cpp
+        src/core/I18n.cpp
+        src/core/Reset.cpp
+        src/core/SafeFile.cpp
+        src/core/Settings.cpp
+        src/core/Backup.cpp
+        src/generated/EventData.cpp
+        src/events/Events.cpp
+        src/markdown/Markdown.cpp
+        src/markdown/MarkdownEdit.cpp
+        src/vendor/chat/ChatLinks.cpp
+        src/chips/ChipResolver.cpp
+        src/chips/ChipColor.cpp
+        src/chips/ChipCodec.cpp
+        src/chips/IconUrl.cpp
     )
     target_include_directories(trailpack_host_tests PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
+        ${CMAKE_CURRENT_SOURCE_DIR}/src/vendor   # vendored units keep their own include paths (chat/...)
         ${CMAKE_CURRENT_SOURCE_DIR}/public
     )
     target_link_libraries(trailpack_host_tests PRIVATE gw2_headers)
