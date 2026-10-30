@@ -2033,6 +2033,56 @@ static void test_edit_chip_cell_is_preserved()
     CHECK(c.back() == 0xFFFCu);
 }
 
+// D9: "/e " / "/event " before the caret opens the inline suggestions.
+static void test_event_trigger()
+{
+    using namespace Trailpack::Events;
+    auto cells = [](const std::string& s) {
+        std::vector<unsigned int> out;
+        for (const auto& c : Trailpack::ParseToCells(s)) out.push_back(c.isChip ? 0xFFFCu : c.cp);
+        return out;
+    };
+    auto at = [&](const std::string& s) {   // caret at the end
+        const std::vector<unsigned int> c = cells(s);
+        return FindTrigger(c, (int)c.size());
+    };
+
+    Trigger t = at("/e ");
+    CHECK(t.found && t.start == 0 && t.query.empty());
+    t = at("Boss: /e teq");
+    CHECK(t.found && t.start == 6 && t.query == "teq");
+    t = at("- [ ] /event Tequatl the");
+    CHECK(t.found && t.start == 6 && t.query == "Tequatl the");
+    t = at("line one\n/E drag");
+    CHECK(t.found && t.start == 9 && t.query == "drag");
+    t = at("/e äh");                                  // query is UTF-8
+    CHECK(t.found && t.query == "\xC3\xA4h");
+    t = at("/e a/b");                                 // a later '/' inside the query
+    CHECK(t.found && t.start == 0 && t.query == "a/b");
+
+    CHECK(!at("/e").found);                           // no space yet
+    CHECK(!at("/ev teq").found);
+    CHECK(!at("a/e teq").found);                      // not after a space / line start
+    CHECK(!at("/e teq\nnext").found);                 // other line
+    CHECK(!at("/e {{event:dragons-stand}} x").found); // a chip in between
+    CHECK(!at("/e " + std::string(kMaxTriggerQuery + 1, 'x')).found);
+    CHECK(at("/e " + std::string(kMaxTriggerQuery, 'x')).found);
+
+    // Caret in the middle: only the text before it counts; out of range is no trigger.
+    const std::vector<unsigned int> c = cells("/e teq more");
+    t = FindTrigger(c, 6);
+    CHECK(t.found && t.query == "teq");
+    CHECK(!FindTrigger(c, 99).found && !FindTrigger(c, -1).found);
+
+    // Category labels: abbreviations stay, generic names are translated, unknown index is "".
+    for (uint8_t i = 0; i < kCategoryCount; ++i) {
+        CHECK(*CategoryShort(i, Trailpack::I18n::Lang::En) != '\0');
+        CHECK(*CategoryShort(i, Trailpack::I18n::Lang::De) != '\0');
+    }
+    CHECK_EQ(std::string(CategoryShort(0, Trailpack::I18n::Lang::De)), std::string("Zentral"));
+    CHECK_EQ(std::string(CategoryShort(kCategoryCount, Trailpack::I18n::Lang::En)), std::string(""));
+}
+
 int main()
 {
     test_create_appears_in_notes();
@@ -2076,6 +2126,7 @@ int main()
 #endif
     test_events_search_and_format();
     test_event_tokens();
+    test_event_trigger();
     test_soft_wrap();
     test_delete_many();
     test_i18n_lookup_and_fallback();

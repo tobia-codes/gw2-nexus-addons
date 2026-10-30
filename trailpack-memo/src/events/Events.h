@@ -26,6 +26,18 @@ size_t FindToken(const std::string& s, size_t from, size_t& length, std::string&
 // True if all of `s` is one token (sets `id` when given).
 bool IsToken(const std::string& s, std::string* id = nullptr);
 
+// ── Inline suggestions in the editor (D9) ───────────────────────────────────
+// "/e " or "/event " (any case) at the start of a line or after a space, then the query up to
+// the caret: same line, no chip cell (U+FFFC), at most kMaxTriggerQuery codepoints. `text` is
+// the editor's text as one codepoint per cell.
+constexpr int kMaxTriggerQuery = 40;
+struct Trigger {
+    bool        found = false;
+    int         start = 0;    // cell of the '/'; the cells [start, caret) are replaced by the chip
+    std::string query;        // UTF-8, may be empty ("/e " alone lists every event)
+};
+Trigger FindTrigger(const std::vector<unsigned int>& text, int caret);
+
 // One occurrence of an event: when and where (index into EventDef::places).
 struct Occurrence {
     int64_t start = 0;
@@ -47,6 +59,9 @@ std::vector<Occurrence> NextOccurrences(const EventDef& e, int64_t now, int n);
 // Texts in `lang` (German falls back to English; map / waypoint name may be "").
 const char* Name(const EventDef& e, I18n::Lang lang);
 const char* CategoryName(uint8_t category, I18n::Lang lang);
+// Short category label for the inline suggestions: expansion abbreviations ("HoT", "LW3")
+// stay as they are, generic names are translated ("Core" / "Zentral"); else the full name.
+const char* CategoryShort(uint8_t category, I18n::Lang lang);
 const char* MapName(const PlaceDef& p, I18n::Lang lang);
 const char* WaypointName(const PlaceDef& p, I18n::Lang lang);
 // All maps of an event, ", "-separated, without repeats ("Timberline Falls, Iron Marches").

@@ -64,4 +64,22 @@ std::string Render(std::string& query, bool& focusSearch)
     return picked;
 }
 
+std::string RenderSuggestions(const std::vector<const Events::EventDef*>& hits, int selected)
+{
+    std::string picked;
+    const I18n::Lang lang = I18n::Current();
+    for (int i = 0; i < (int)hits.size(); ++i) {
+        const Events::EventDef* e = hits[i];
+        ImGui::PushID(e->id);
+        const float x = ImGui::GetCursorPosX();
+        if (ImGui::Selectable("##row", i == selected)) picked = e->id;
+        ImGui::SameLine(x);
+        ImGui::TextUnformatted(Events::Name(*e, lang));
+        ImGui::SameLine();
+        ImGui::TextDisabled("%s", Events::CategoryShort(e->category, lang));
+        ImGui::PopID();
+    }
+    return picked;
+}
+
 }} // namespace Trailpack::EventPicker

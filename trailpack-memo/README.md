@@ -23,7 +23,8 @@ Default toggle hotkey: `CTRL+SHIFT+T`. Data lives in `addons/TrailpackMemo/`.
   - **Left-click a waypoint chip to open the world map** at that point (needs [Pie UI](https://github.com/PieOrCake/pie_ui); see below).
   - Build links show their spec automatically (e.g. `[Mirage Build]`).
 - **Event timers** — pick an event with *Event* in the edit toolbar (search by name or map, or browse
-  the categories), or write `{{event:<id>}}` (e.g. `{{event:tequatl-the-sunless}}`); it becomes a live
+  the categories), type `/e` and a name in the editor (e.g. `/e teq`; arrow keys + Enter or click, Escape
+  closes the list), or write `{{event:<id>}}` (e.g. `{{event:tequatl-the-sunless}}`); it becomes a live
   chip: "Tequatl the Sunless - in 23 min" or "- for 4 min" while it runs. Hover for the next starts in
   local time, duration, map and waypoint; left-click copies the waypoint, right-click offers
   *Copy waypoint* / *Open in wiki*. ~90 fixed-schedule events (world bosses, metas, ...), computed

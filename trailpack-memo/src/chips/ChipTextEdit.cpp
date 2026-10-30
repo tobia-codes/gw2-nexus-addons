@@ -190,6 +190,16 @@ void ChipTextEdit::InsertChip(const std::string& code) {
     s.select_start = s.select_end = s.cursor;
 }
 
+void ChipTextEdit::ReplaceWithChip(int from, int to, const std::string& code) {
+    STB_TexteditState& s = St(this);
+    from = ClampI(from, 0, (int)cells.size());
+    to   = ClampI(to, from, (int)cells.size());
+    ChipTE_DeleteChars(this, from, to - from);   // no undo record, like InsertChip
+    s.cursor = from;
+    InsertChip(code);
+    s.has_preferred_x = 0;
+}
+
 std::string ChipTextEdit::GetText() const {
     std::string out;
     for (const auto& c : cells) { if (c.isChip) out += c.code; else AppendUtf8(out, c.cp); }
@@ -311,16 +321,23 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
 
     ImVec2 p0 = ImGui::GetCursorScreenPos();
     ImGui::InvisibleButton(id, ImVec2(width, h));
-    const bool hovered = ImGui::IsItemHovered();
+    // Hover / click also while a popup is open (the "/e" suggestion list is one): a click
+    // into the text then moves the caret instead of blurring the editor.
+    const bool hovered = ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    const bool clicked = hovered && io.MouseClicked[0];
     const bool held    = ImGui::IsItemActive();
     // No ImGuiMouseCursor_TextInput: GW2 / Nexus shows it as a gear (see AddonRender).
 
     // Focus: claim on click inside; release on a click that isn't ours.
-    if (ImGui::IsItemClicked()) focused = true;
-    else if (io.MouseClicked[0] && !hovered) focused = false;
+    // A click on the suggestion list (drawn by the caller) keeps the focus.
+    const bool inSuggest = suggestCount > 0 &&
+        io.MousePos.x >= suggestMin.x && io.MousePos.x < suggestMax.x &&
+        io.MousePos.y >= suggestMin.y && io.MousePos.y < suggestMax.y;
+    if (clicked) focused = true;
+    else if (io.MouseClicked[0] && !hovered && !inSuggest) focused = false;
     {
         unsigned int seq = s_blurSeq.load(std::memory_order_relaxed);
-        if (seq != blurSeen) { blurSeen = seq; if (!ImGui::IsItemClicked()) focused = false; }
+        if (seq != blurSeen) { blurSeen = seq; if (!clicked) focused = false; }
     }
     if (focusNext) { focused = true; focusNext = false; }
     if (focused) {
@@ -336,12 +353,17 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
     bool changed = false;
     const int sizeBefore = (int)cells.size();
 
+    // The suggestion list as the caller drew it last frame takes Up / Down / Enter / Escape.
+    const bool listOpen = focused && suggest.active && suggestCount > 0;
+    suggest.move   = 0;
+    suggest.accept = false;
+
     // ---- input (only while focused) ----
     if (focused) {
         // Mouse: map screen (x,y) to text-local coords, real y so clicks land on the right row.
         const float mx = io.MousePos.x - inner_min.x;
         const float my = io.MousePos.y - inner_min.y;
-        if (ImGui::IsItemClicked()) stb_textedit_click(this, &s, mx, my);
+        if (clicked) stb_textedit_click(this, &s, mx, my);
         else if (held && (io.MouseDelta.x != 0.0f || io.MouseDelta.y != 0.0f)) stb_textedit_drag(this, &s, mx, my);
 
         for (int i = 0; i < io.InputQueueCharacters.Size; ++i) {
@@ -353,8 +375,13 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
         const bool word = io.KeyCtrl;
         if (K(ImGuiKey_LeftArrow))   stb_textedit_key(this, &s, (word ? STB_TEXTEDIT_K_WORDLEFT  : STB_TEXTEDIT_K_LEFT)  | sh);
         if (K(ImGuiKey_RightArrow))  stb_textedit_key(this, &s, (word ? STB_TEXTEDIT_K_WORDRIGHT : STB_TEXTEDIT_K_RIGHT) | sh);
-        if (K(ImGuiKey_UpArrow))     stb_textedit_key(this, &s, STB_TEXTEDIT_K_UP   | sh);
-        if (K(ImGuiKey_DownArrow))   stb_textedit_key(this, &s, STB_TEXTEDIT_K_DOWN | sh);
+        if (listOpen) {
+            if (K(ImGuiKey_UpArrow))   suggest.move = -1;
+            if (K(ImGuiKey_DownArrow)) suggest.move = +1;
+        } else {
+            if (K(ImGuiKey_UpArrow))   stb_textedit_key(this, &s, STB_TEXTEDIT_K_UP   | sh);
+            if (K(ImGuiKey_DownArrow)) stb_textedit_key(this, &s, STB_TEXTEDIT_K_DOWN | sh);
+        }
         if (K(ImGuiKey_PageUp))      stb_textedit_key(this, &s, STB_TEXTEDIT_K_PGUP | sh);
         if (K(ImGuiKey_PageDown))    stb_textedit_key(this, &s, STB_TEXTEDIT_K_PGDOWN | sh);
         if (K(ImGuiKey_Home))        stb_textedit_key(this, &s, STB_TEXTEDIT_K_LINESTART | sh);
@@ -385,7 +412,9 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
         }
         // MULTI-LINE: Enter INSERTS a newline (it does NOT submit). On a list line it continues
         // the list instead (or ends it on an empty item).
-        if (K(ImGuiKey_Enter) || K(ImGuiKey_KeyPadEnter)) {
+        if (listOpen && (K(ImGuiKey_Enter) || K(ImGuiKey_KeyPadEnter))) {
+            suggest.accept = true;   // the caller replaces the trigger with the chip
+        } else if (K(ImGuiKey_Enter) || K(ImGuiKey_KeyPadEnter)) {
             Md::EditResult lr;
             if (continueLists && s.select_start == s.select_end)
                 lr = Md::ContinueListOnEnter(Codepoints(), s.cursor);
@@ -400,11 +429,25 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
             ApplyEdit(Md::WrapSelection(Codepoints(), a, b, ImGui::IsKeyPressed('B') ? "**" : "*"));
             changed = true;
         }
-        if (K(ImGuiKey_Escape)) focused = false;
+        if (K(ImGuiKey_Escape)) {
+            if (listOpen) suggestDismissed = suggest.start;   // close the list, keep the text
+            else          focused = false;
+        }
 
         Measure(cells);   // input may have changed cells; re-measure for the draw below
     }
     if ((int)cells.size() != sizeBefore) changed = true;
+
+    // "/e query" before the caret (no selection) -> suggestions, unless Escape closed this one.
+    {
+        Events::Trigger tr;
+        if (focused && s.select_start == s.select_end) tr = Events::FindTrigger(Codepoints(), s.cursor);
+        if (!tr.found) suggestDismissed = -1;
+        suggest.active = tr.found && tr.start != suggestDismissed;
+        suggest.start  = tr.start;
+        suggest.end    = ClampI(s.cursor, 0, (int)cells.size());
+        suggest.query  = tr.query;
+    }
 
     // ---- draw ----
     const std::vector<int> rowStarts = RowStarts(*this);   // after this frame's edits
@@ -463,11 +506,12 @@ bool ChipTextEdit::Render(const char* id, float width, ImU32 borderCol, int minL
     }
     flushRun();
 
-    // Caret at the cursor's (row, x).
+    // Caret at the cursor's (row, x); the suggestion list opens below it.
     if (focused) {
         int crow; float cx; CaretPos(cells, rowStarts, s.cursor, crow, cx);
         float caretX = inner_min.x + cx;
         float caretY = inner_min.y + crow * lh;
+        suggest.pos = ImVec2(caretX, caretY + lh);
         if (std::fmod((float)ImGui::GetTime(), 1.0f) < 0.6f)
             dl->AddLine(ImVec2(caretX, caretY), ImVec2(caretX, caretY + lh), textCol);
     }

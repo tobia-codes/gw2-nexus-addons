@@ -107,6 +107,7 @@ void NotesWindow::renderEditMode_(Trailpack::Note& note)
         if (uc.hasNoteBg) ImGui::PushStyleColor(ImGuiCol_FrameBg, fieldBg);
         bodyEditor_.Render("##body_edit", ImGui::GetContentRegionAvail().x, border, /*minLines=*/6);
         if (uc.hasNoteBg) ImGui::PopStyleColor();
+        renderEventSuggest_();
         return;
     }
 
@@ -120,6 +121,7 @@ void NotesWindow::renderEditMode_(Trailpack::Note& note)
         bodyEditor_.Render("##body_edit", ImGui::GetContentRegionAvail().x, border, /*minLines=*/6);
         if (uc.hasNoteBg) ImGui::PopStyleColor();
     }
+    renderEventSuggest_();
     ImGui::EndChild();
 
     ImGui::SameLine();
@@ -253,6 +255,58 @@ void NotesWindow::renderEditToolbar_()
             ImGui::CloseCurrentPopup();
         }
         ImGui::EndPopup();
+    }
+}
+
+// Inline "/e " suggestions (D9) below the editor's caret. The editor routes Up / Down / Enter /
+// Escape here while rows are shown; Enter or a click replaces the typed "/e query" with the
+// event chip. The popup is begun in the same id scope as the editor, right after it.
+void NotesWindow::renderEventSuggest_()
+{
+    using namespace Trailpack;
+    ChipTextEdit::Suggest& sg = bodyEditor_.suggest;
+
+    std::vector<const Events::EventDef*> hits;
+    if (sg.active) {
+        hits = Events::Search(sg.query);
+        if ((int)hits.size() > EventPicker::kMaxSuggestions) hits.resize(EventPicker::kMaxSuggestions);
+    }
+    if (!sg.active || sg.query != eventSuggestQuery_) {
+        eventSuggestSel_   = 0;
+        eventSuggestQuery_ = sg.query;
+    }
+    const int n = (int)hits.size();
+    if (n > 0) eventSuggestSel_ = (eventSuggestSel_ + sg.move + n) % n;
+
+    std::string picked;
+    if (sg.accept && n > 0) picked = hits[eventSuggestSel_]->id;
+
+    bodyEditor_.suggestCount = 0;
+    if (n > 0 && picked.empty()) {
+        if (!ImGui::IsPopupOpen("##event_suggest")) ImGui::OpenPopup("##event_suggest");
+        ImGui::SetNextWindowPos(sg.pos);
+        if (ImGui::BeginPopup("##event_suggest", ImGuiWindowFlags_NoNav)) {
+            Theme::PopupTextScope popupText;
+            picked = EventPicker::RenderSuggestions(hits, eventSuggestSel_);
+            bodyEditor_.suggestCount = n;
+            bodyEditor_.suggestMin = ImGui::GetWindowPos();
+            bodyEditor_.suggestMax = ImVec2(bodyEditor_.suggestMin.x + ImGui::GetWindowWidth(),
+                                            bodyEditor_.suggestMin.y + ImGui::GetWindowHeight());
+            ImGui::EndPopup();
+        }
+    } else if (ImGui::IsPopupOpen("##event_suggest")) {
+        // No public close-by-id in this ImGui: begin it once more, off screen, and close it.
+        ImGui::SetNextWindowPos(ImVec2(-10000.0f, -10000.0f));
+        if (ImGui::BeginPopup("##event_suggest", ImGuiWindowFlags_NoNav)) {
+            ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+    }
+
+    if (!picked.empty()) {
+        bodyEditor_.ReplaceWithChip(sg.start, sg.end, Events::Token(picked));
+        bodyEditor_.Focus();
+        sg.active = false;
     }
 }
 
