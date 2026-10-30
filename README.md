@@ -5,6 +5,7 @@
 | Addon | Description |
 |-------|-------------|
 | [Trailpack Memo](trailpack-memo/) | Notepad with markdown, **checklists**, a formatting toolbar, live preview and GW2 chat-link chips. Event timer chips with live countdowns. |
+| [Trailpack Codex](trailpack-codex/) *(planned)* | Headless data service required by all Trailpack addons: chat-link names, icons and tooltips from the GW2 API, built-in event and waypoint data. |
 
 ## Layout
 
