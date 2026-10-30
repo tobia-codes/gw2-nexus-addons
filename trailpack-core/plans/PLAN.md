@@ -330,7 +330,7 @@ marked *(DR feature)* only apply once we build that feature.
 - [x] `.github/workflows/release.yml`: tag `core-v<version>` / `memo-v<version>` here -> checks
       the tag against the DLL's `V_*`, host tests, MinGW build, `gh release create v<version>`
       in the release repository (secret `RELEASE_TOKEN`). Both addons: `UP_GitHub` + UpdateLink.
-- [x] Release script `tools/release.py`, changelogs, release READMEs, CI — the rest of the way to
+- [x] Changesets + release on merge to `main` (`tools/changeset.py`), release READMEs, CI — the rest of the way to
       the Nexus Addon Library (blockers, Raidcore contact, repos, token, screenshots, versions)
       is planned in [`../../plans/RELEASE.md`](../../plans/RELEASE.md).
 

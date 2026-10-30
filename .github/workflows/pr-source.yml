@@ -1,0 +1,22 @@
+# `main` only takes pull requests from `develop` (plans/RELEASE.md). The check "source-is-develop"
+# is required by the ruleset "Protect main".
+
+name: PR source
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  source-is-develop:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Head branch is develop
+        run: |
+          if [ "${{ github.head_ref }}" != "develop" ]; then
+            echo "Pull requests into main must come from develop (this one: ${{ github.head_ref }})."
+            exit 1
+          fi

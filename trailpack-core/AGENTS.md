@@ -19,8 +19,8 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 ```
 
 - **Definition of Done:** host tests (incl. new ones for the change) green, **then** the DLL
-  builds clean; `README.md` (and `release/README.md` if the player-facing text changes) and the
-  `## Unreleased` section of `CHANGELOG.md` updated for player-visible changes. In-game behaviour can only be
+  builds clean; `README.md` (and `release/README.md` if the player-facing text changes) updated
+  and a changeset in `../.changeset/` (`/changeset`) for player-visible changes. In-game behaviour can only be
   verified by the user — say what to test, never claim it works in game.
 
 ## Identity
@@ -33,7 +33,7 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 | Data dir | `addons/TrailpackCore/` (`settings.json`, `cache/<lang>/`) |
 | DataLink / events | `TRAILPACK_CORE_API`, `EV_TRAILPACK_CORE_{READY,UNLOADING,PING,RESOLVED}` |
 | Author | `tobia-codes` |
-| Updates | `UP_GitHub`, release repo `tobia-codes/trailpack-core` (tag `core-v<version>` here, see `.github/workflows/release.yml`) |
+| Updates | Release builds only: `UP_GitHub`, release repo `tobia-codes/trailpack-core`; version from the changesets (`TRAILPACK_VERSION_TrailpackCore`); local builds 0.0.0, `UP_None` |
 
 ## Code rules
 
@@ -67,5 +67,5 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 ## Workflow
 
 - **Never deploy the DLL** into the game folder — the user does that.
-- Never bump the version defines unless asked.
+- Never set a version by hand: it comes from the changesets at release (plans/RELEASE.md).
 - Commit/push only when asked, on a feature branch (not `main`).

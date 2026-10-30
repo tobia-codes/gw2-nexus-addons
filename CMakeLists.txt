@@ -36,6 +36,23 @@ else()
     enable_testing()
 endif()
 
+# Release builds (CI only, plans/RELEASE.md): the version computed from the changesets and the
+# update channel. Local builds stay 0.0.0 without an update channel.
+#   cmake -S . -B build -DTRAILPACK_RELEASE=ON -DTRAILPACK_VERSION_TrailpackCore=1.2.0
+option(TRAILPACK_RELEASE "Release build: Nexus update channel on" OFF)
+function(trailpack_release target)
+    set(version "${TRAILPACK_VERSION_${target}}")
+    if(version MATCHES "^([0-9]+)\\.([0-9]+)\\.([0-9]+)$")
+        target_compile_definitions(${target} PRIVATE
+            V_MAJOR=${CMAKE_MATCH_1} V_MINOR=${CMAKE_MATCH_2} V_BUILD=${CMAKE_MATCH_3})
+    elseif(version)
+        message(FATAL_ERROR "TRAILPACK_VERSION_${target} must be MAJOR.MINOR.PATCH, got '${version}'")
+    endif()
+    if(TRAILPACK_RELEASE)
+        target_compile_definitions(${target} PRIVATE TRAILPACK_RELEASE)
+    endif()
+endfunction()
+
 add_subdirectory(shared)
 add_subdirectory(libs)
 

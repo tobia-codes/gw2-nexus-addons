@@ -1,110 +1,98 @@
-# Release one addon (plans/RELEASE.md). Start it with `python3 tools/release.py <addon> <version>`.
+# Release the addons that changed (plans/RELEASE.md).
 #
-# A tag `core-v<version>` / `memo-v<version>` (or `core-pre-v...` / `memo-pre-v...`) in this
-# repository: check the tag against the DLL's version defines and the CHANGELOG section, run the
-# host tests, build the DLL with MinGW, publish it as release `v<version>` in the addon's
-# release-only repository (versions below 1.0.0 and `-pre-` tags as pre-releases) and copy the
-# addon's `release/` folder (README, images) there.
+# Runs when `develop` is merged into `main`. `tools/changeset.py plan` lists every addon with
+# pending changesets and its new version (last release tag + highest bump). For each: host
+# tests, release build with that version and the update channel, tag `<addon>-v<version>` here,
+# release `v<version>` in the addon's release-only repository (versions below 1.0.0 as
+# pre-releases) and its `release/` folder (README, images) + LICENSE copied there. Afterwards the
+# consumed changesets become CHANGELOG sections on `develop`.
 #
-# Nexus (UP_GitHub) reads those releases: it takes the highest `v<version>` tag and its first
-# `.dll`, so every release repository holds exactly one addon.
-#
-# Needs the secret RELEASE_TOKEN: a fine-grained token with "Contents: read and write" on the
-# release repositories (GITHUB_TOKEN cannot write to other repositories).
+# Safety switch: nothing is published unless the repository variable RELEASES_ENABLED is "true"
+# (Settings > Secrets and variables > Actions > Variables); without it the plan is only shown.
+# Publishing needs the secret RELEASE_TOKEN: a fine-grained token with "Contents: read and
+# write" on the release repositories (GITHUB_TOKEN cannot write to other repositories).
 
 name: Release
 
 on:
   push:
-    tags: ['core-v*', 'memo-v*', 'core-pre-v*', 'memo-pre-v*']
+    branches: [main]
 
 permissions:
-  contents: read
+  contents: write          # tags here, CHANGELOG commit on develop
+
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0       # tags + history: which changesets are already released
 
-      - name: Which addon
-        id: addon
+      - name: Plan
+        id: plan
         run: |
-          tag="${GITHUB_REF_NAME}"
-          case "$tag" in
-            core-*) target=TrailpackCore; repo=tobia-codes/trailpack-core; dir=trailpack-core; name="Trailpack Core" ;;
-            memo-*) target=TrailpackMemo; repo=tobia-codes/trailpack-memo; dir=trailpack-memo; name="Trailpack Memo" ;;
-            *) echo "unknown tag $tag"; exit 1 ;;
-          esac
-          version="${tag##*-v}"
-          pre=false
-          case "$tag" in *-pre-v*) pre=true ;; esac
-          case "$version" in 0.*) pre=true ;; esac
+          python3 tools/changeset.py plan --json plan.json
+          echo "count=$(python3 tools/changeset.py show plan.json count)" >> "$GITHUB_OUTPUT"
           {
-            echo "target=$target"; echo "repo=$repo"; echo "dir=$dir"; echo "name=$name"
-            echo "version=$version"; echo "pre=$pre"
-          } >> "$GITHUB_OUTPUT"
-
-      - name: Tag matches the DLL version and the changelog
-        run: |
-          main="${{ steps.addon.outputs.dir }}/src/dllmain.cpp"
-          v() { grep -E "^#define $1 " "$main" | awk '{print $3}'; }
-          dll="$(v V_MAJOR).$(v V_MINOR).$(v V_BUILD)"
-          [ "$(v V_REVISION)" != "0" ] && dll="$dll.$(v V_REVISION)"
-          tag="${{ steps.addon.outputs.version }}"
-          if [ "$tag" != "$dll" ]; then
-            echo "Tag version $tag does not match the DLL version $dll (V_* in $main)."
-            exit 1
-          fi
-          # Release notes: the CHANGELOG section of this version (must exist and not be empty).
-          awk -v v="$tag" '
-            $0 ~ "^## " v "( |$)" { on = 1; next }
-            on && /^## /          { exit }
-            on                    { print }
-          ' "${{ steps.addon.outputs.dir }}/CHANGELOG.md" > notes.md
-          if ! grep -q '[^[:space:]]' notes.md; then
-            echo "No '## $tag' section with entries in ${{ steps.addon.outputs.dir }}/CHANGELOG.md."
-            exit 1
-          fi
+            echo "## Release plan"
+            python3 tools/changeset.py show plan.json summary
+            [ "${{ vars.RELEASES_ENABLED }}" = "true" ] || echo "RELEASES_ENABLED is not 'true': nothing is published."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Toolchain
+        if: steps.plan.outputs.count != '0' && vars.RELEASES_ENABLED == 'true'
         run: sudo apt-get update && sudo apt-get install -y mingw-w64 cmake g++ make
 
-      - name: Host tests
+      - name: Tests
+        if: steps.plan.outputs.count != '0' && vars.RELEASES_ENABLED == 'true'
         run: |
+          python3 -m unittest discover -s tools -p 'test_*.py'
           cmake -S . -B build-host -DGW2_HOST_TESTS=ON
           cmake --build build-host -j 4
           ctest --test-dir build-host --output-on-failure
 
       - name: Build
+        if: steps.plan.outputs.count != '0' && vars.RELEASES_ENABLED == 'true'
         run: |
-          cmake -S . -B build
-          cmake --build build --target ${{ steps.addon.outputs.target }} -j 4
+          cmake -S . -B build -DTRAILPACK_RELEASE=ON $(python3 tools/changeset.py show plan.json cmake)
+          cmake --build build -j 4
 
-      - name: Publish
+      - name: Tag and publish
+        if: steps.plan.outputs.count != '0' && vars.RELEASES_ENABLED == 'true'
         env:
           GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
         run: |
-          version="${{ steps.addon.outputs.version }}"
-          pre=""
-          [ "${{ steps.addon.outputs.pre }}" = "true" ] && pre="--prerelease"
-          gh release create "v$version" "build/${{ steps.addon.outputs.target }}.dll" $pre \
-            --repo "${{ steps.addon.outputs.repo }}" \
-            --title "${{ steps.addon.outputs.name }} $version" \
-            --notes-file notes.md
-
-      - name: Sync README and images
-        env:
-          GH_TOKEN: ${{ secrets.RELEASE_TOKEN }}
-        run: |
-          git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${{ steps.addon.outputs.repo }}.git" target
-          cp -r "${{ steps.addon.outputs.dir }}/release/." target/
-          cp "${{ steps.addon.outputs.dir }}/LICENSE" target/LICENSE
-          cd target
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          python3 tools/changeset.py show plan.json tsv > releases.tsv   # also writes <tag>.md notes
+          while IFS=$'\t' read -r tag version target repo name folder pre; do
+            git tag -a "$tag" -m "$name $version"
+            git push origin "$tag"
+            flag=""; [ "$pre" = "true" ] && flag="--prerelease"
+            gh release create "v$version" "build/$target.dll" $flag \
+              --repo "$repo" --title "$name $version" --notes-file "$tag.md"
+            rm -rf target
+            git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/$repo.git" target
+            cp -r "$folder/release/." target/
+            cp "$folder/LICENSE" target/LICENSE
+            (cd target && git add -A && { git diff --cached --quiet || { git commit -q -m "$name $version: README" && git push -q; }; })
+          done < releases.tsv
+
+      - name: CHANGELOG on develop
+        if: steps.plan.outputs.count != '0' && vars.RELEASES_ENABLED == 'true'
+        run: |
+          cp plan.json /tmp/plan.json
+          cp releases.tsv /tmp/releases.tsv
+          git fetch origin develop
+          git checkout -B develop origin/develop
+          python3 tools/changeset.py apply /tmp/plan.json
+          git add -A .changeset trailpack-*/CHANGELOG.md
           if ! git diff --cached --quiet; then
-            git commit -m "${{ steps.addon.outputs.name }} ${{ steps.addon.outputs.version }}: README"
-            git push
+            git commit -m "Release notes: $(cut -f1 /tmp/releases.tsv | paste -sd, -)"
+            git push origin develop
           fi

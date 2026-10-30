@@ -34,9 +34,15 @@
 #include "tpfiles/SafeFile.h"
 #include "tpui/Style.h"
 
+// Version and update channel come from the build (root CMakeLists.txt, `trailpack_release()`):
+// the release workflow builds with the version computed from the changesets and
+// TRAILPACK_RELEASE; local builds are 0.0.0 without an update channel, so Nexus never replaces
+// a test DLL with a published release (plans/RELEASE.md).
+#ifndef V_MAJOR
 #define V_MAJOR    0
-#define V_MINOR    1
+#define V_MINOR    0
 #define V_BUILD    0
+#endif
 #define V_REVISION 0
 
 #define ADDON_NAME     "Trailpack Core"
@@ -351,7 +357,12 @@ extern "C" __declspec(dllexport) AddonDefinition_t* GetAddonDef() {
     AddonDef.Load             = AddonLoad;
     AddonDef.Unload           = AddonUnload;
     AddonDef.Flags            = AF_None;
-    AddonDef.Provider         = UP_GitHub;                                    // releases: see .github/workflows/release.yml
+#ifdef TRAILPACK_RELEASE
+    AddonDef.Provider         = UP_GitHub;                                    // release builds only
     AddonDef.UpdateLink       = "https://github.com/tobia-codes/trailpack-core";
+#else
+    AddonDef.Provider         = UP_None;                                      // local / test builds
+    AddonDef.UpdateLink       = nullptr;
+#endif
     return &AddonDef;
 }

@@ -21,8 +21,8 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 - Toolchain: `x86_64-w64-mingw32-g++`, `cmake`, `g++` (WSL). If one is missing, the agent has no
   sudo — ask the user to run `sudo apt install mingw-w64 cmake g++ make`.
 - **Definition of Done:** host tests (incl. new ones for the change) green, **then** the DLL
-  builds clean; `README.md` (and `release/README.md` if the player-facing text changes) and the
-  `## Unreleased` section of `CHANGELOG.md` updated for player-visible changes. In-game behaviour can only be
+  builds clean; `README.md` (and `release/README.md` if the player-facing text changes) updated
+  and a changeset in `../.changeset/` (`/changeset`) for player-visible changes. In-game behaviour can only be
   verified by the user — say what to test, never claim it works in game.
 
 ## Identity
@@ -37,7 +37,7 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 | Texture ids | prefix `TPM_ICON_` | `src/chips/IconCache.cpp` |
 | Author | `tobia-codes` | `src/dllmain.cpp` |
 | Localization keys | `TPM_LANG_PROBE` (active-language probe), `KB_TRAILPACK_MEMO_TOGGLE` (keybind name) | `src/dllmain.cpp` |
-| Updates | `UP_GitHub`, release repo `tobia-codes/trailpack-memo` (tag `memo-v<version>` here, see `.github/workflows/release.yml`) | `src/dllmain.cpp` |
+| Updates | Release builds only: `UP_GitHub`, release repo `tobia-codes/trailpack-memo`; version from the changesets (`TRAILPACK_VERSION_TrailpackMemo`); local builds 0.0.0, `UP_None` | `src/dllmain.cpp`, root `CMakeLists.txt` |
 
 ## Code rules
 
@@ -94,5 +94,5 @@ Core may be missing, too old, or load/unload mid-session. Everything goes throug
 ## Workflow
 
 - **Never deploy the DLL** into the game folder — the user does that.
-- **Never bump the `V_*` version** defines in `src/dllmain.cpp` unless asked.
+- **Never set a version by hand**: it comes from the changesets at release (plans/RELEASE.md).
 - Commit/push only when asked, on a feature branch (not `main`).

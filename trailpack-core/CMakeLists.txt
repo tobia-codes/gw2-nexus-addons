@@ -25,6 +25,7 @@ if(NOT GW2_HOST_TESTS)
         TrailpackCore.def
     )
     set_target_properties(TrailpackCore PROPERTIES SUFFIX ".dll" PREFIX "")
+    trailpack_release(TrailpackCore)
     target_include_directories(TrailpackCore PRIVATE
         ${CMAKE_CURRENT_SOURCE_DIR}/src
         ${CMAKE_CURRENT_SOURCE_DIR}/public

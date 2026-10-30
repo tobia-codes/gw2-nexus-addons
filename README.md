@@ -44,12 +44,13 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host && ctes
 
 ## Releasing
 
-`main` is protected: every change goes through a branch and a pull request, and CI must pass.
-On an up-to-date `main`, `python3 tools/release.py <core|memo> <version>` puts the changelog and
-version into a release PR, merges it once CI is green, tags the merge and pushes the tag (after
-asking once); `.github/workflows/release.yml` then publishes the DLL in the addon's release
-repository. Every player-visible change goes under `## Unreleased` in the addon's
-`CHANGELOG.md`. Details: `plans/RELEASE.md`.
+Work happens on `develop` (default branch); `main` holds what is released. Every player-visible
+change adds a changeset (`python3 tools/changeset.py add <major|minor|patch> <addon> "<text>"`,
+see `.changeset/README.md`). Merging `develop` into `main` (pull request, CI must pass) releases
+every addon with pending changesets: `.github/workflows/release.yml` computes the version (last
+release + highest bump), builds, tags and publishes the DLL in the addon's release repository and
+writes the CHANGELOG on `develop`. `python3 tools/changeset.py status` shows what a merge would
+release. Details: `plans/RELEASE.md`.
 
 ## Adding an addon
 
@@ -61,8 +62,9 @@ repository. Every player-visible change goes under `## Unreleased` in the addon'
 4. Give it a unique Nexus signature, data directory, keybind and texture identifiers.
 5. Add `AGENTS.md` (rules for AI agents), `plans/PLAN.md` (state + backlog) and a `CLAUDE.md`
    containing `@AGENTS.md` and `@plans/PLAN.md`.
-6. Add `CHANGELOG.md` (with `## Unreleased`), `release/README.md` for its release repository, and
-   the addon to `tools/release.py` and `.github/workflows/release.yml`.
+6. Add `release/README.md` for its release repository, the addon to `.changeset/config.json`
+   (folder, CMake target, release repo, initial version) and `trailpack_release(<target>)` in its
+   CMakeLists; read the version / update channel in `dllmain.cpp` like the other addons.
 
 ## Licenses
 
