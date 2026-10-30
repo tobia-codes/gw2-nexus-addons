@@ -32,7 +32,7 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 | DLL | `TrailpackMemo.dll`, export via `TrailpackMemo.def` | `CMakeLists.txt` |
 | Data dir | `addons/TrailpackMemo/` (`notes.json`, `settings.json`) | `Paths_GetAddonDirectory("TrailpackMemo")` |
 | Toggle keybind | `CTRL+SHIFT+T` | `src/dllmain.cpp` |
-| Texture ids | prefix `TPM_ICON_` | `src/IconCache.cpp` |
+| Texture ids | prefix `TPM_ICON_` | `src/chips/IconCache.cpp` |
 | Author | `tobia-codes` | `src/dllmain.cpp` |
 | Localization keys | `TPM_LANG_PROBE` (active-language probe), `KB_TRAILPACK_MEMO_TOGGLE` (keybind name) | `src/dllmain.cpp` |
 | Updates | `UP_None`, `UpdateLink = nullptr` (see PLAN backlog B2) | `src/dllmain.cpp` |
@@ -40,14 +40,19 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 ## Code rules
 
 - C++ namespace: **`Trailpack`**.
-- **Vendored codec is byte-identical:** `src/chat/ChatLinks.{h,cpp}`, `src/chat/SpecData.h` come
+- **Source layout:** own code in feature folders under `src/` (`core/`, `notes/`, `markdown/`,
+  `chips/`, `events/`, `integrations/`, `ui/`; `dllmain.cpp` at the root). Include own headers
+  relative to `src/` (`#include "core/Settings.h"`). `src/generated/` is written by `tools/*.py`,
+  `src/vendor/` is copied from upstream -- never edit either by hand. `src/vendor` is an extra
+  include root so vendored files keep their upstream include paths (`chat/ChatLinks.h`).
+- **Vendored codec is byte-identical:** `src/vendor/chat/ChatLinks.{h,cpp}`, `src/vendor/chat/SpecData.h` come
   from Pie UI. Never edit them; a codec bug is fixed upstream and re-vendored.
 - **Pure units stay pure** (no ImGui/Nexus/Win32 includes) so the host-test target builds:
-  `NotesStore`, `Settings`, `Backup`, `Events` (+ generated `events/EventData`), `Markdown`,
-  `MarkdownEdit`, `ChipCodec`, `ChipResolver`, `ChipColor`, `IconUrl`, `chat/ChatLinks`. Put new
+  `NotesStore`, `Settings`, `Backup`, `Events` (+ generated `generated/EventData`), `Markdown`,
+  `MarkdownEdit`, `ChipCodec`, `ChipResolver`, `ChipColor`, `IconUrl`, `vendor/chat/ChatLinks`. Put new
   logic into a pure unit + host test (`tests/host_tests_main.cpp`) where possible.
 - **UI text is translated (English + German):** wrap every user-visible literal in
-  `Trailpack::I18n::Tr("English text")` and add the German line to the table in `src/I18n.cpp`
+  `Trailpack::I18n::Tr("English text")` and add the German line to the table in `src/core/I18n.cpp`
   (same printf specifiers — host-tested). Plurals via `TrN`, popups via `PopupName` (stable
   `###id`), button widths via `ButtonWidth` (German labels are longer).
 - **Rendered characters:** ASCII plus Latin-1 letters (German umlauts/ß — Nexus's own German
@@ -56,14 +61,14 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
   libstdc++ they pull ~1 MB of locale code into the DLL. Files and paths go through `SafeFile`
   (UTF-8 `std::string` paths; `FileDialog::Widen`/`Narrow` at the dialog boundary).
 - **No game-memory reading, no game-function hooks.** Anything that seems to need it is out of scope.
-- NotesWindow is split by area (see the header comment in `src/NotesWindow.h`). Open modals only
+- NotesWindow is split by area (see the header comment in `src/notes/NotesWindow.h`). Open modals only
   via `requestPopup_` / render them with `beginModal_`; never call `ImGui::OpenPopup` for a modal
   from inside a child window. Settings belong in `Settings` (pure, tested), not in new globals.
 - **Popups in the note window** (menus, context menus, tooltips, pickers, modals) use the popup
   colours: `Theme::PopupTextScope` first inside each `if (ImGui::BeginPopup...(...)) {` (or around
   `BeginTooltip` / a Combo) and `Theme::Tooltip(...)` instead of `ImGui::SetTooltip`; modals are
   covered by `renderModals_`. The background comes from `Theme::PushWindowStyle`.
-- New user-visible features also get a line in the in-game guide (`src/HelpWindow.cpp`, plus the
+- New user-visible features also get a line in the in-game guide (`src/ui/HelpWindow.cpp`, plus the
   German text in `I18n.cpp`) and in `README.md`.
 - Match the surrounding style, naming and comment density. Keep `README.md` (addon + root table)
   in sync with user-visible changes.
@@ -72,12 +77,12 @@ cmake -S . -B build-host -DGW2_HOST_TESTS=ON && cmake --build build-host \
 
 Decoder Ring and Pie UI may be missing, or load/unload mid-session.
 
-- **Decoder Ring** (`public/DecoderRingApi.h`, `src/DecoderClient.cpp`): never cache
+- **Decoder Ring** (`public/DecoderRingApi.h`, `src/integrations/DecoderClient.cpp`): never cache
   `DecoderRingApi*`; call `GetDecoder()` (DataLink `DECODER_RING_API` + `apiVersion == 1`) before
   every use; presence is live, not latched; on `EV_DECODER_RING_UNLOADING` drop the record cache and
   pending keys; the `EV_DECODER_RING_RESOLVED` payload is only valid during the handler — copy it
   out; check `DecoderRecord.schemaVersion`. Build links (`0x0D`) need the full chat-code string.
-- **Pie UI** (`src/PieUiClient.cpp`): presence latched on `EV_PIE_UI_READY`; `OpenChatLink` raises
+- **Pie UI** (`src/integrations/PieUiClient.cpp`): presence latched on `EV_PIE_UI_READY`; `OpenChatLink` raises
   `EV_PIEUI_OPEN_CHATLINK` with the `[&...]` string — fire-and-forget, a no-op when Pie UI is absent.
 
 ## Workflow

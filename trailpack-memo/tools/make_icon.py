@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Draw the Trailpack Memo icon and embed it.
 
-Writes trailpack-memo/icon.png (64x64 RGBA) and src/EmbeddedIcon.h (the PNG bytes as
+Writes trailpack-memo/icon.png (64x64 RGBA) and src/generated/EmbeddedIcon.h (the PNG bytes as
 TRAILPACK_ICON[]). Pure standard library: shapes are drawn hard-edged at 4x and averaged
 down, which anti-aliases them. Optional argument: a path for an extra 256x256 preview PNG.
 
@@ -146,7 +146,7 @@ lines = ["#pragma once",
 for i in range(0, len(icon), 16):
     lines.append("    " + ", ".join("0x%02x" % b for b in icon[i:i + 16]) + ",")
 lines += ["};", "static const unsigned int TRAILPACK_ICON_size = %d;" % len(icon), ""]
-with open(os.path.join(root, "src", "EmbeddedIcon.h"), "w") as f:
+with open(os.path.join(root, "src", "generated", "EmbeddedIcon.h"), "w") as f:
     f.write("\n".join(lines))
 
 if len(sys.argv) > 1:

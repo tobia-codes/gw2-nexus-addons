@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate src/events/EventData.{h,cpp} from the GW2 wiki event timer data.
+"""Generate src/generated/EventData.{h,cpp} from the GW2 wiki event timer data.
 
 Sources (see plans/EVENTS.md, D2):
   * English wiki "Widget:Event timer/data.json" -- schedules, categories, names, waypoint
@@ -31,8 +31,8 @@ from pathlib import Path
 ROOT       = Path(__file__).resolve().parents[1]           # trailpack-memo/
 OVERRIDES  = ROOT / "tools" / "event_overrides.json"
 CACHE      = ROOT / "tools" / ".cache"
-OUT_H      = ROOT / "src" / "events" / "EventData.h"
-OUT_CPP    = ROOT / "src" / "events" / "EventData.cpp"
+OUT_H      = ROOT / "src" / "generated" / "EventData.h"
+OUT_CPP    = ROOT / "src" / "generated" / "EventData.cpp"
 
 EN_DATA_URL   = "https://wiki.guildwars2.com/index.php?title=Widget:Event_timer/data.json&action=raw"
 DE_SCRIPT_URL = "https://wiki-de.guildwars2.com/index.php?title=Widget:Event-Timer/script.js&action=raw"

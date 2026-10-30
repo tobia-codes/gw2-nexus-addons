@@ -16,39 +16,42 @@ namespace `Trailpack`. Host tests: 81 test functions in
 
 ### Module map (`src/`)
 
+Feature folders, includes relative to `src/` (e.g. `"core/Settings.h"`). `generated/` and
+`vendor/` hold code that is never edited by hand (see AGENTS.md).
+
 | Module | Pure? | Role |
 |---|---|---|
 | `dllmain.cpp` | no | Nexus lifecycle, identity, keybind, quick access, options pane; maps `Settings` <-> live state |
-| `Settings.{h,cpp}` | yes | settings.json model with validation/clamping (`g_Settings`); `ColorSet` (all colour options) + built-in Light/Dark, user themes |
-| `Events.{h,cpp}` | yes | Event timers (B5): lookup, UTC schedule maths, search, chip time text |
-| `events/EventData.{h,cpp}` | yes | **Generated** event table (`tools/gen_events.py`) — never edit by hand |
-| `Backup.{h,cpp}` | yes | Backup file format (`trailpack-memo-backup` v1: notes + settings) |
-| `FileDialog.{h,cpp}` | no | Windows open/save dialog (worker thread), JSON filter; used by export/import and backups |
-| `SafeFile.{h,cpp}` | yes | Atomic write (+ `.bak`), read, set aside unreadable files; path helpers (UTF-8 strings, Win32 W-API / POSIX) replacing `std::filesystem` |
-| `NotesWindow.{h,cpp}` | no | Note state, load/save, navigation, frame layout, popup requests (`requestPopup_` / `beginModal_`), caches |
-| `NotesList.cpp` | no | Left column: groups, note rows, menu button, splitter |
-| `NotesDetail.cpp` | no | Right pane: view / edit modes, toolbar, rendered body |
-| `NotesModals.cpp` | no | Confirmations, group name / colour / delete, bulk delete, notice |
-| `NotesImportExport.cpp` | no | File dialogs (worker thread), export, import selection |
-| `HelpWindow.{h,cpp}` | no | "?" title-bar button + guide window (sections translated via `Tr`; update it with new features) |
-| `NotesUi.{h,cpp}` | no | Shared UI helpers (button width, type badge / colour / countdown) |
-| `NotesStore.{h,cpp}` | yes | Note + group model, CRUD, notes.json round-trip, export/import |
-| `Markdown.{h,cpp}` | yes | Line parser (Paragraph/Heading/Bullet/Task; Text/Bold/Italic/Chip spans); task count/toggle/uncheck-all |
-| `MarkdownEdit.{h,cpp}` | yes | Toolbar commands on a cell model: wrap bold/italic, toggle line prefixes, list continuation on Enter |
-| `MarkdownRender.{h,cpp}` | no | ImGui view rendering: FontBig headings, faux bold (double draw), faux italic (shear), checkboxes, rich chips |
-| `ChipTextEdit.{h,cpp}` | no | Multi-line stb_textedit editor with atomic chip cells (adapted from Pie UI), `ApplyEdit` for toolbar ops; soft wrap at the field width (`RowLen` -> `WrapRowLength` in `ChipCodec.h`, used by layout, caret, selection and drawing) |
-| `ChipCodec.{h,cpp}` | yes | Text <-> cell round-trip (chat codes -> one chip cell), UTF-8 helpers |
-| `ChipResolver.{h,cpp}` | yes | Offline structural label + colour from the codec (`[Item]`, `[Mirage Build]`) |
-| `ChipColor.{h,cpp}` | yes | GW2 link colours (per type, per item rarity) |
-| `ChipRich.{h,cpp}` | no | Rich chip: resolved name/icon/tooltip, right-click Copy code / Open wiki, Pie UI left-click |
-| `DecoderClient.{h,cpp}` | no | Decoder Ring consumer |
-| `PieUiClient.{h,cpp}` | no | Pie UI consumer (`OpenChatLink`) |
-| `IconCache.{h,cpp}` / `IconUrl.{h,cpp}` | no / yes | URL -> texture via Nexus `Textures_*FromURL`, failure set (retryable); FNV-1a key, URL split |
-| `Reset.{h,cpp}` | yes | GW2 daily/weekly reset times (UTC), countdown text |
-| `I18n.{h,cpp}` | yes | English -> German UI string table, `Tr` / `TrN`, current language |
-| `FontScale.{h,cpp}` | no | Scaled text without stretching the small font: `SetFontBase`, `FontScaleScope` |
-| `Theme.{h,cpp}` | no | Accent palette (gold border, green/amber buttons, edit tint) |
-| `chat/*` | yes | **Vendored** Pie UI codec — do not edit |
+| `core/Settings.{h,cpp}` | yes | settings.json model with validation/clamping (`g_Settings`); `ColorSet` (all colour options) + built-in Light/Dark, user themes |
+| `core/Backup.{h,cpp}` | yes | Backup file format (`trailpack-memo-backup` v1: notes + settings) |
+| `core/SafeFile.{h,cpp}` | yes | Atomic write (+ `.bak`), read, set aside unreadable files; path helpers (UTF-8 strings, Win32 W-API / POSIX) replacing `std::filesystem` |
+| `core/Reset.{h,cpp}` | yes | GW2 daily/weekly reset times (UTC), countdown text |
+| `core/I18n.{h,cpp}` | yes | English -> German UI string table, `Tr` / `TrN`, current language |
+| `notes/NotesWindow.{h,cpp}` | no | Note state, load/save, navigation, frame layout, popup requests (`requestPopup_` / `beginModal_`), caches |
+| `notes/NotesList.cpp` | no | Left column: groups, note rows, menu button, splitter |
+| `notes/NotesDetail.cpp` | no | Right pane: view / edit modes, toolbar, rendered body |
+| `notes/NotesModals.cpp` | no | Confirmations, group name / colour / delete, bulk delete, notice |
+| `notes/NotesImportExport.cpp` | no | File dialogs (worker thread), export, import selection |
+| `notes/NotesUi.{h,cpp}` | no | Shared UI helpers (button width, type badge / colour / countdown) |
+| `notes/NotesStore.{h,cpp}` | yes | Note + group model, CRUD, notes.json round-trip, export/import |
+| `markdown/Markdown.{h,cpp}` | yes | Line parser (Paragraph/Heading/Bullet/Task; Text/Bold/Italic/Chip spans); task count/toggle/uncheck-all |
+| `markdown/MarkdownEdit.{h,cpp}` | yes | Toolbar commands on a cell model: wrap bold/italic, toggle line prefixes, list continuation on Enter |
+| `markdown/MarkdownRender.{h,cpp}` | no | ImGui view rendering: FontBig headings, faux bold (double draw), faux italic (shear), checkboxes, rich chips |
+| `chips/ChipTextEdit.{h,cpp}` | no | Multi-line stb_textedit editor with atomic chip cells (adapted from Pie UI), `ApplyEdit` for toolbar ops; soft wrap at the field width (`RowLen` -> `WrapRowLength` in `chips/ChipCodec.h`, used by layout, caret, selection and drawing) |
+| `chips/ChipCodec.{h,cpp}` | yes | Text <-> cell round-trip (chat codes -> one chip cell), UTF-8 helpers |
+| `chips/ChipResolver.{h,cpp}` | yes | Offline structural label + colour from the codec (`[Item]`, `[Mirage Build]`) |
+| `chips/ChipColor.{h,cpp}` | yes | GW2 link colours (per type, per item rarity) |
+| `chips/ChipRich.{h,cpp}` | no | Rich chip: resolved name/icon/tooltip, right-click Copy code / Open wiki, Pie UI left-click |
+| `chips/IconCache.{h,cpp}` / `chips/IconUrl.{h,cpp}` | no / yes | URL -> texture via Nexus `Textures_*FromURL`, failure set (retryable); FNV-1a key, URL split |
+| `events/Events.{h,cpp}` | yes | Event timers (B5): lookup, UTC schedule maths, search, chip time text |
+| `integrations/DecoderClient.{h,cpp}` | no | Decoder Ring consumer |
+| `integrations/PieUiClient.{h,cpp}` | no | Pie UI consumer (`OpenChatLink`) |
+| `ui/FileDialog.{h,cpp}` | no | Windows open/save dialog (worker thread), JSON filter; used by export/import and backups |
+| `ui/HelpWindow.{h,cpp}` | no | "?" title-bar button + guide window (sections translated via `Tr`; update it with new features) |
+| `ui/FontScale.{h,cpp}` | no | Scaled text without stretching the small font: `SetFontBase`, `FontScaleScope` |
+| `ui/Theme.{h,cpp}` | no | Accent palette (gold border, green/amber buttons, edit tint) |
+| `generated/EventData.{h,cpp}` | yes | **Generated** event table (`tools/gen_events.py`) — never edit by hand |
+| `vendor/chat/*` | yes | **Vendored** Pie UI codec — do not edit |
 
 ### Features
 

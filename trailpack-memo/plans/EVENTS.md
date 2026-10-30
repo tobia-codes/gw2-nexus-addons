@@ -13,14 +13,14 @@ an inline chip that shows when it starts next ("in 23 Min") or how long it has b
 ("seit 4 Min"); clicking it copies the event's waypoint chat code. Events are inserted from a
 searchable, categorised picker in the edit toolbar or by typing `/e ` in the editor. Schedules
 are static, so start times are computed locally from UTC — like the daily / weekly resets in
-`src/Reset.{h,cpp}`. No network access at runtime.
+`src/core/Reset.{h,cpp}`. No network access at runtime.
 
 ## Decisions
 
 | # | Topic | Decision |
 |---|---|---|
 | D1 | Scope | Every event with a fixed schedule on the wiki page "Event timers". Metas are split into real events only (bosses, finales, fights); pure states like "Daytime" / "Night" are left out. |
-| D2 | Data source | Generated once by `tools/gen_events.py`: schedules from the English wiki, German names via the wiki's language links, waypoint chat codes from the official API. Output `src/events/EventData.h` is checked in. Re-run for new GW2 releases. |
+| D2 | Data source | Generated once by `tools/gen_events.py`: schedules from the English wiki, German names via the wiki's language links, waypoint chat codes from the official API. Output `src/generated/EventData.h` is checked in. Re-run for new GW2 releases. |
 | D3 | Manual fixes | `tools/event_overrides.json` (checked in) corrects single events (waypoint, names, category, exclude) and is applied on every generator run. Never hand-edit `EventData.h`. |
 | D4 | Data check | After each generator run: a summary (count per category, events without waypoint, without German name) and host tests that pin the next start times of a few well-known events (e.g. Tequatl) to wiki values. The user spot-checks in game. |
 | D5 | Categories | Wiki section order (core world bosses, hardcore world bosses, Living World S2-S4, Icebrood Saga, HoT, PoF, EoD, SotO, JW, later expansions). Expansion names / abbreviations stay as they are; generic category names are translated. *Later:* user-defined category order (see Ideas). |
@@ -37,7 +37,7 @@ are static, so start times are computed locally from UTC — like the daily / we
 
 ## Data model (as generated in stage 1)
 
-`src/events/EventData.h` (types) + `src/events/EventData.cpp` (tables) — generated, pure (no
+`src/generated/EventData.h` (types) + `src/generated/EventData.cpp` (tables) — generated, pure (no
 ImGui / Nexus / Win32), in wiki order (category, then meta, then segment):
 
 ```cpp
@@ -83,17 +83,17 @@ are per occurrence because they can differ within one event; so is the place (D1
 | Piece | File(s) | Pure? |
 |---|---|---|
 | Generator + overrides | `tools/gen_events.py`, `tools/event_overrides.json` | — (Python 3, stdlib only) |
-| Event table | `src/events/EventData.h` (+ `.cpp` if the table is large) | yes |
-| Lookup, schedule maths, search, time text | `src/Events.{h,cpp}` (`Find(id)`, `State(def, now)` -> `Status{active, start, end}`, `NextStarts(def, now, n)`, `Name/Map/CategoryName(…, lang)`, `Search(query)`, `FormatTime(seconds, active)`) | yes |
-| `{{event:id}}` in the markdown parser | `src/Markdown.{h,cpp}` (new span kind `Event`) | yes |
-| Atomic event cell in the editor | `src/ChipCodec.{h,cpp}` (text <-> cells), `src/ChipTextEdit.{h,cpp}` | codec yes |
-| Chip drawing, tooltip, click, menu | new `src/EventChip.{h,cpp}` (modelled on `src/ChipRich.cpp`), called from `src/MarkdownRender.cpp` | no |
-| Toolbar button + picker | `src/NotesDetail.cpp` (`renderEditToolbar_`), picker in a new `src/EventPicker.{h,cpp}` | no |
-| `/e ` suggestions | `src/ChipTextEdit.cpp` (detect trigger, expose query + caret pos), list drawn by `EventPicker` | no |
-| Colours | `src/Settings.{h,cpp}` (`ColorSet::eventUpcoming/eventActive`), `src/Theme.h` (`UserColors`), `src/dllmain.cpp` (`ApplyColors` / `CollectColors`, "Events" section) | settings yes |
-| Texts | `src/I18n.cpp` (German lines), guide `src/HelpWindow.cpp`, `README.md` | — |
+| Event table | `src/generated/EventData.h` (+ `.cpp` if the table is large) | yes |
+| Lookup, schedule maths, search, time text | `src/events/Events.{h,cpp}` (`Find(id)`, `State(def, now)` -> `Status{active, start, end}`, `NextStarts(def, now, n)`, `Name/Map/CategoryName(…, lang)`, `Search(query)`, `FormatTime(seconds, active)`) | yes |
+| `{{event:id}}` in the markdown parser | `src/markdown/Markdown.{h,cpp}` (new span kind `Event`) | yes |
+| Atomic event cell in the editor | `src/chips/ChipCodec.{h,cpp}` (text <-> cells), `src/chips/ChipTextEdit.{h,cpp}` | codec yes |
+| Chip drawing, tooltip, click, menu | new `src/chips/EventChip.{h,cpp}` (modelled on `src/chips/ChipRich.cpp`), called from `src/markdown/MarkdownRender.cpp` | no |
+| Toolbar button + picker | `src/notes/NotesDetail.cpp` (`renderEditToolbar_`), picker in a new `src/events/EventPicker.{h,cpp}` | no |
+| `/e ` suggestions | `src/chips/ChipTextEdit.cpp` (detect trigger, expose query + caret pos), list drawn by `EventPicker` | no |
+| Colours | `src/core/Settings.{h,cpp}` (`ColorSet::eventUpcoming/eventActive`), `src/ui/Theme.h` (`UserColors`), `src/dllmain.cpp` (`ApplyColors` / `CollectColors`, "Events" section) | settings yes |
+| Texts | `src/core/I18n.cpp` (German lines), guide `src/ui/HelpWindow.cpp`, `README.md` | — |
 
-Reuse: `Reset::FormatCountdown` style and UTC handling in `src/Reset.cpp`; `ChipRich.cpp` for the
+Reuse: `Reset::FormatCountdown` style and UTC handling in `src/core/Reset.cpp`; `ChipRich.cpp` for the
 popup-id scoping inside the view child and the wiki-open helper; `Theme::TextColorScope` /
 `WindowText()` so tooltips and menus keep readable text.
 
@@ -106,7 +106,7 @@ popup-id scoping inside the view child and the wiki-open helper; `Theme::TextCol
       (matched by chat code); waypoint + map names (EN/DE) from `/v2/continents/1/floors/*`;
       ids = slug of the English event name (unique, else an override).
 - [x] `tools/event_overrides.json` for fixes; generator applies it and prints the summary (D4).
-- [x] Generate `src/events/EventData.{h,cpp}` (`.h` + `.cpp`: ~100 events); both CMake targets.
+- [x] Generate `src/generated/EventData.{h,cpp}` (`.h` + `.cpp`: ~100 events); both CMake targets.
 - [x] Host test `test_event_data` (ids unique, starts ascending, Tequatl and Dragon's Stand
       pinned to the wiki schedule).
 - [x] "How to re-run" note (below) and in `README.md` (Building).
@@ -124,7 +124,7 @@ python3 trailpack-memo/tools/gen_events.py \
 Then check the summary, run the host tests, and review the diff of `src/events/`.
 
 ### Stage 2 — Schedule maths (pure, host-tested)
-- [x] `src/Events.{h,cpp}`: `Find`, `State` (active + start/end, or next start), `NextStarts`,
+- [x] `src/events/Events.{h,cpp}`: `Find`, `State` (active + start/end, or next start), `NextStarts`,
       `Name` / `Map` / `CategoryName` (DE falls back to EN), `Search` (case-insensitive substring
       over name / map / id in both languages, umlauts folded), `FormatTime` (D10 formats via
       `I18n::Tr`, EN + DE).
@@ -154,7 +154,7 @@ Then check the summary, run the host tests, and review the diff of `src/events/`
 
 ### Stage 4 — Picker in the edit toolbar
 - [x] "Event" toolbar button, picker with search + collapsible categories, no countdown (D8):
-      `src/EventPicker.{h,cpp}` (`EventPicker::Render(query, focusSearch)` -> picked id; Enter
+      `src/events/EventPicker.{h,cpp}` (`EventPicker::Render(query, focusSearch)` -> picked id; Enter
       takes the first hit, Escape closes). Popup `##event_picker` in the detail child's scope.
 - [x] Insert at the caret with `bodyEditor_.InsertChip(Events::Token(id))` (`ApplyEdit` only
       handles text cells); refocus the editor afterwards.
