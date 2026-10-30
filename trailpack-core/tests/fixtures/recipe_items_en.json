@@ -1,0 +1,212 @@
+[
+  {
+    "name": "Elegant Huntsman's Backpack",
+    "description": "This equipment can hold an additional upgrade. Unequip this backpack to use it as a crafting ingredient. Using this as a crafting ingredient will destroy any upgrades held within.",
+    "type": "Back",
+    "level": 78,
+    "rarity": "Exotic",
+    "vendor_value": 256,
+    "default_skin": 2311,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [
+      "AccountBound",
+      "NoSalvage",
+      "NoSell",
+      "AccountBindOnUse"
+    ],
+    "restrictions": [],
+    "id": 62905,
+    "chat_link": "[&AgG59QAA]",
+    "icon": "https://render.guildwars2.com/file/2E01DFA01448FB305D9D3903D0965108394C056B/866608.png",
+    "details": {
+      "infusion_slots": [
+        {
+          "flags": [
+            "Infusion"
+          ]
+        }
+      ],
+      "attribute_adjustment": 82.34,
+      "stat_choices": [
+        1052,
+        1042,
+        1044,
+        1043,
+        1046,
+        1048,
+        1047,
+        1041,
+        1050,
+        1051
+      ],
+      "secondary_suffix_item_id": ""
+    }
+  },
+  {
+    "name": "Elegant Huntsman's Tools",
+    "description": "Component for Huntsman's Backpack",
+    "type": "CraftingMaterial",
+    "level": 0,
+    "rarity": "Exotic",
+    "vendor_value": 64,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [
+      "NoSalvage"
+    ],
+    "restrictions": [],
+    "id": 62948,
+    "chat_link": "[&AgHk9QAA]",
+    "icon": "https://render.guildwars2.com/file/4B333F2CAA4D0C3AE93795BDB9CBFA5CF3764F07/866736.png"
+  },
+  {
+    "name": "Ornate Huntsman's Backpack",
+    "description": "This equipment can hold an additional upgrade. Unequip this backpack to use it as a crafting ingredient. Using this as a crafting ingredient will destroy any upgrades held within.",
+    "type": "Back",
+    "level": 60,
+    "rarity": "Exotic",
+    "vendor_value": 244,
+    "default_skin": 2321,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [
+      "AccountBound",
+      "NoSalvage",
+      "NoSell",
+      "AccountBindOnUse"
+    ],
+    "restrictions": [],
+    "id": 62901,
+    "chat_link": "[&AgG19QAA]",
+    "icon": "https://render.guildwars2.com/file/6BB3AE2709AC785F02E47E57534A04A83E3EC475/866580.png",
+    "details": {
+      "infusion_slots": [],
+      "attribute_adjustment": 74.78,
+      "stat_choices": [
+        161,
+        155,
+        159,
+        157,
+        158,
+        160,
+        153,
+        605,
+        700,
+        616,
+        154,
+        156,
+        162,
+        686,
+        559,
+        754,
+        753,
+        799,
+        1026,
+        1067,
+        628,
+        1032,
+        1231,
+        1232,
+        1226,
+        1225,
+        1229,
+        1224,
+        1228,
+        1227,
+        1230,
+        1379,
+        1377,
+        1378,
+        1484,
+        1539,
+        1717,
+        1687,
+        1826
+      ],
+      "secondary_suffix_item_id": ""
+    }
+  },
+  {
+    "name": "Glob of Ectoplasm",
+    "description": "Salvage Item",
+    "type": "Trophy",
+    "level": 0,
+    "rarity": "Exotic",
+    "vendor_value": 256,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [],
+    "restrictions": [],
+    "id": 19721,
+    "chat_link": "[&AgEJTQAA]",
+    "icon": "https://render.guildwars2.com/file/18CE5D78317265000CF3C23ED76AB3CEE86BA60E/65941.png"
+  },
+  {
+    "name": "Silver Tequatl Trophy",
+    "description": "A decoration schematic that is processed by the guild's assembly device to make the decoration.",
+    "type": "Consumable",
+    "level": 0,
+    "rarity": "Basic",
+    "vendor_value": 0,
+    "game_types": [
+      "Activity",
+      "Wvw",
+      "Dungeon"
+    ],
+    "flags": [
+      "AccountBound",
+      "NoMysticForge",
+      "NoSalvage",
+      "NoSell",
+      "SoulbindOnAcquire",
+      "AccountBindOnUse"
+    ],
+    "restrictions": [],
+    "id": 77721,
+    "chat_link": "[&AgGZLwEA]",
+    "icon": "https://render.guildwars2.com/file/973E4605375E0F7947016274F915AFEF19044B0B/1341373.png",
+    "details": {
+      "type": "Generic",
+      "guild_upgrade_id": 670
+    }
+  },
+  {
+    "name": "Master's Finishing Kit",
+    "description": "Used to craft decorations.",
+    "type": "CraftingMaterial",
+    "level": 0,
+    "rarity": "Fine",
+    "vendor_value": 4,
+    "game_types": [
+      "Wvw",
+      "Dungeon",
+      "Pve"
+    ],
+    "flags": [
+      "AccountBound",
+      "NoSalvage",
+      "AccountBindOnUse"
+    ],
+    "restrictions": [],
+    "id": 70489,
+    "chat_link": "[&AgFZEwEA]",
+    "icon": "https://render.guildwars2.com/file/44CE134D733E220A94351B9FF67BABB923E9A0E8/1201945.png"
+  }
+]

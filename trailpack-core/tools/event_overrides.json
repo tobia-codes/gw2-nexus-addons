@@ -1,0 +1,50 @@
+{
+  "_comment": [
+    "Manual fixes applied by gen_events.py on every run (EVENTS.md, D3). Never hand-edit src/events/EventData.*.",
+    "exclude_metas: wiki timer rows that are no events (day/night cycles, the time ruler).",
+    "metas: per wiki meta key. merge: all segments are ONE event moving between places (rotating, e.g. the",
+    "  Ley-Line Anomaly). alias maps a segment to another (one occurrence); exclude_segments drops",
+    "  pure states (D1); name / name_de format each segment's event name. Placeholders: {segment} {segment_de}",
+    "  {meta} {meta_de} {map} {map_de}. map / map_de set the map for segments without a waypoint.",
+    "events: per event id (after formatting): id (rename), name, name_de, exclude; map, map_de, waypoint fix",
+    "  the first place.",
+    "categories_de: German names of the wiki categories; expansion names stay unchanged (D5)."
+  ],
+
+  "exclude_metas": ["t", "core-dn", "eod-dn", "voe-dn"],
+
+  "metas": {
+    "core-hwb":  { },
+    "core-la":   { "merge": true, "name": "Ley-Line Anomaly", "name_de": "{meta_de}" },
+    "core-in":   { "map": "", "map_de": "" },
+    "core-fi":   { "merge": true, "name": "Fractal Incursion", "name_de": "{meta_de}" },
+    "core-ateu": { "name": "{segment} (EU)", "name_de": "{segment_de} (EU)", "map": "PvP", "map_de": "PvP" },
+    "core-atna": { "name": "{segment} (NA)", "name_de": "{segment_de} (NA)", "map": "PvP", "map_de": "PvP" },
+    "lws2-dt":   { "map": "Dry Top" },
+    "hot-vb":    { "map": "Verdant Brink" },
+    "hot-ab":    { "exclude_segments": ["3"], "name": "Auric Basin: {segment}", "name_de": "{meta_de}: {segment_de}" },
+    "hot-td":    { "exclude_segments": ["1"], "map": "Tangled Depths" },
+    "hot-ds":    { "alias": { "0": "1" } },
+    "lws3-ld":   { "name": "White Mantle Control: {segment}" },
+    "pof-co":    { "name": "Casino Blitz: {segment}" },
+    "pof-er":    { },
+    "eod-de":    { "exclude_segments": ["1"] },
+    "soto-wt":   { },
+    "public-eotn": { },
+    "public-con":  { "name": "Convergence: {segment}" },
+    "festival-db": { "merge": true, "name": "Dragon Bash Hologram Stampede" }
+  },
+
+  "events": {
+    "start-advancing-on-the-blighting-towers": { "id": "dragons-stand", "name": "Dragon's Stand", "name_de": "Widerstand des Drachen" }
+  },
+
+  "categories_de": {
+    "Core Tyria": "Zentraltyria",
+    "Living World Season 2": "Lebendige Welt Staffel 2",
+    "Living World Season 3": "Lebendige Welt Staffel 3",
+    "Living World Season 4": "Lebendige Welt Staffel 4",
+    "Public Instances": "Öffentliche Instanzen",
+    "Special Events": "Festivals"
+  }
+}

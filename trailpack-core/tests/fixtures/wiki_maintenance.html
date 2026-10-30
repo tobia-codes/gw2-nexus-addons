@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>The Guild Wars Wikis are undergoing maintenance.</title>
+
+    <link rel="shortcut icon" href="https://static.staticwars.com/favicon/1/favicon.ico" />
+
+
+    <link rel="stylesheet"
+        href="https://static.staticwars.com/combo/_/fonts/cronos/v1/cronos-regular-min.css&/fonts/cronos/v1/cronos-bold-min.css&/fonts/cronos/v1/cronos-italic-min.css&/fonts/cronos/v1/cronos-bolditalic-min.css">
+    <link rel="stylesheet" href="https://static.staticwars.com/bumpers/1/index.css">
+
+    <style>
+        html {
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        *,
+        *:before,
+        *:after {
+            box-sizing: inherit;
+        }
+
+        body {
+            margin: 0;
+            height: 100%;
+            font-family: CronosPro;
+            background: #f3f3f3;
+        }
+
+        a {
+            color: gray;
+        }
+
+        .langSet:lang(en) .de,
+        .langSet:lang(en) .es,
+        .langSet:lang(en) .fr,
+
+        .langSet:lang(de) .en,
+        .langSet:lang(de) .es,
+        .langSet:lang(de) .fr,
+
+        .langSet:lang(es) .en,
+        .langSet:lang(es) .de,
+        .langSet:lang(es) .fr,
+
+        .langSet:lang(fr) .en,
+        .langSet:lang(fr) .de,
+        .langSet:lang(fr) .es {
+            display: none;
+        }
+
+
+        .fixed {
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            height: 100%;
+            margin: 0 auto;
+            box-shadow: 0 0 1.2em #0002;
+        }
+
+        header {
+            display: flex;
+            justify-content: flex-start;
+            align-items: flex-start;
+
+            min-height: 180px;
+
+            background: url("https://d3b4yo2b5lbfy.cloudfront.net/wiki/wiki-eod-header.png") no-repeat scroll 0 0;
+        }
+
+        main {
+            flex-grow: 1;
+            display: flex;
+            align-items: flex-start;
+
+            margin-top: 4em;
+            background: linear-gradient(to bottom, transparent, white 100px);
+        }
+
+        main .copy {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2em;
+            width: 60%;
+            margin-left: 4em;
+        }
+
+        main .content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .langSet main .copy {
+            display: block;
+        }
+
+        main p {
+            line-height: 1.5;
+        }
+
+        .langSet main p {
+            width: 100%;
+            font-size: 1.4em;
+        }
+
+        main p strong {
+            font-weight: bold;
+        }
+
+        main a {
+            color: hsl(190deg 100% 39%);
+            text-decoration: underline;
+        }
+
+        .quaggan {
+            width: 40%;
+        }
+
+        .quaggan img {
+            display: block;
+            max-width: 100%;
+            mix-blend-mode: darken;
+        }
+
+        @media screen and (max-width: 800px) {
+            main .content {
+                flex-flow: column wrap;
+            }
+
+            main .copy {
+                margin: 0 2em;
+            }
+
+            main .copy,
+            .quaggan {
+                width: unset;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="fixed">
+
+        <header>
+            <a href="/" role="banner" aria-label="Guild Wars 2 Wiki">
+                <img id="logo" src="https://d3b4yo2b5lbfy.cloudfront.net/wiki/logo-en.png" alt="">
+            </a>
+        </header>
+
+        <main>
+            <div class="content">
+                <div class="copy">
+                    <p class="en">The wikis are temporarily unavailable while we are trying to fix technical issues. We are doing our best to bring them back online as quickly as possible! <br /><br /> To request updates, please check the <a href="https://x.com/guildwars2">Guild Wars 2 X account</a>. <br /><br /> We are sorry about the inconvenience and thank you for your patience.</p>
+                    <p class="de">Die Wikis sind vorübergehend nicht verfügbar, während wir an technischen Problemen arbeiten.  Wir versuchen sie möglichst schnell wieder online zu bringen! <br /><br /> Aktuelle Infos zur Wartung werden auf dem <a href="https://x.com/guildwars2_de">Guild-Wars-2-X-Account</a> veröffentlicht. <br /><br /> Wir entschuldigen uns für die Unannehmlichkeiten und bedanken uns für eure Geduld.</p>
+                    <p class="fr">Les wikis sont momentanément indisponibles, le temps que nous résolvions certains problèmes techniques. Nous nous efforçons de les remettre en ligne au plus vite ! <br /><br /> Pour toute demande de mise à jour, veuillez consulter le <a href="https://x.com/guildwars2_fr">compte X de Guild Wars 2</a>. <br /><br /> Veuillez nous excuser pour la gêne occasionnée et nous vous remercions pour votre patience.</p>
+                    <p class="es">Las wikis no estarán disponibles mientras solucionamos unos problemas técnicos. ¡Estamos haciendo todo lo posible por hacer que vuelvan a estar en línea cuanto antes! <br /><br /> Consultad la cuenta de <a href="https://x.com/guildwars2_es">X de Guild Wars 2</a> para ver las últimas actualizaciones. <br /><br /> Pedimos disculpas por este inconveniente y agradecemos vuestra paciencia.</p>
+                </div>
+
+                <div class="quaggan">
+                    <img src="https://static.staticwars.com/quaggans/construction.jpg" alt="">
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        const langs = [ "en", "de", "es", "fr" ];
+        const defaultLang = "en";
+        const langSetClass = "langSet";
+        const logoEl = document.getElementById("logo");
+
+        function setLang(lang) {
+            if (!lang) {
+                document.documentElement.classList.remove(langSetClass);
+                document.documentElement.lang = defaultLang;
+                logo.src = `https://d3b4yo2b5lbfy.cloudfront.net/wiki/logo-${defaultLang}.png`;
+
+                return;
+            }
+
+            if (langs.indexOf(lang) === -1) {
+                lang = defaultLang;
+            }
+
+            document.documentElement.classList.add(langSetClass);
+            document.documentElement.lang = lang;
+            logo.src = `https://d3b4yo2b5lbfy.cloudfront.net/wiki/logo-${lang}.png`;
+        }
+
+        function startUp() {
+            let lang = langs.find(l => navigator.language.indexOf(l) === 0);
+
+            setLang(lang || defaultLang);
+        }
+
+        startUp();
+
+    </script>
+
+    <script src="https://static.staticwars.com/bumpers/1/index.js"></script>
+
+</body>
+
+</html>

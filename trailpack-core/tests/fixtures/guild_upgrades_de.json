@@ -1,0 +1,14 @@
+[
+  {
+    "id": 706,
+    "name": "Tequatl-Bronzetrophäe",
+    "description": "",
+    "build_time": 30,
+    "icon": "https://render.guildwars2.com/file/4F5049271F5B6CB569707078DF2B3E5797D20826/1341368.png",
+    "type": "Decoration",
+    "required_level": 0,
+    "experience": 0,
+    "prerequisites": [],
+    "costs": []
+  }
+]
